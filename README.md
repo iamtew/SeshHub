@@ -374,7 +374,7 @@ SeshHub/
 ├── .gitignore
 ├── go.mod
 ├── go.sum
-├── Makefile                         # Build targets for Windows & Linux
+├── Justfile                         # Development, test, and build recipes
 └── README.md
 ```
 
@@ -428,8 +428,9 @@ YOUTUBE_CLIENT_SECRET=your_google_oauth_client_secret
 
 ### Prerequisites
 - **Go**: 1.22+ installed and available in `PATH`.
+- **just**: The command runner used for project development and builds. See [just.systems](https://just.systems/) for installation instructions.
 - **GCC / MinGW**: (If compiling with CGO-dependent SQLite drivers; prefer pure-Go / modernc driver where possible for zero-dependency builds).
-- **Tailwind CLI / Node**: (Optional for template/CSS dev; pre-bundled CSS is checked into repository or generated via Makefile).
+- **Tailwind CLI / Node**: (Optional for template/CSS dev; pre-bundled CSS is checked into the repository or generated via a `Justfile` recipe).
 
 ### Local Development (Windows / Linux)
 
@@ -440,20 +441,27 @@ YOUTUBE_CLIENT_SECRET=your_google_oauth_client_secret
    cp .env.example .env
    ```
 
-2. **Download Go Dependencies**:
+2. **Install dependencies**:
    ```bash
-   go mod download
+    just deps
    ```
 
-3. **Run Migrations & Server**:
+3. **Run migrations and start the server**:
    ```bash
-   go run cmd/server/main.go
+    just dev
    ```
 
-4. **Live Reloading (Optional - via Air)**:
+4. **Run tests**:
+    ```bash
+    just test
+    ```
+
+5. **Live Reloading (Optional - via Air)**:
    ```bash
-   air -c .air.toml
+    just watch
    ```
+
+The `Justfile` is the canonical interface for development, testing, asset generation, and builds. Run `just` to list all available recipes. Direct Go commands remain useful for troubleshooting or when `just` is unavailable.
 
 ### Cross-Compilation
 
