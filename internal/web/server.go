@@ -24,6 +24,8 @@ func New(cfg config.Config, db *sql.DB) *Server {
 	s.mux.HandleFunc("GET /healthz", s.healthz)
 	s.mux.HandleFunc("GET /{$}", s.home)
 	s.mux.HandleFunc("GET /team", s.team)
+	s.mux.HandleFunc("GET /skaters", s.skatersAlias)
+	s.mux.HandleFunc("GET /team/{slug}", s.skaterDetail)
 	s.mux.HandleFunc("GET /news", s.news)
 	s.mux.HandleFunc("GET /videos", s.videos)
 	s.mux.HandleFunc("GET /auth/discord", s.startOAuth("discord"))
@@ -36,6 +38,13 @@ func New(cfg config.Config, db *sql.DB) *Server {
 	s.mux.HandleFunc("GET /admin/access", s.adminAccess)
 	s.mux.HandleFunc("POST /admin/access/{id}/approve", s.adminDecide("approved"))
 	s.mux.HandleFunc("POST /admin/access/{id}/reject", s.adminDecide("rejected"))
+	s.mux.HandleFunc("GET /admin/skaters", s.adminSkaters)
+	s.mux.HandleFunc("POST /admin/skaters", s.adminSkaterCreate)
+	s.mux.HandleFunc("GET /admin/skaters/{id}", s.adminSkaterEdit)
+	s.mux.HandleFunc("POST /admin/skaters/{id}", s.adminSkaterEdit)
+	s.mux.HandleFunc("POST /admin/skaters/{id}/delete", s.adminSkaterDelete)
+	s.mux.HandleFunc("GET /dashboard/profile", s.dashboardProfile)
+	s.mux.HandleFunc("POST /dashboard/profile", s.dashboardProfile)
 	return s
 }
 
@@ -75,10 +84,6 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, dat
 
 func (s *Server) home(w http.ResponseWriter, r *http.Request) {
 	s.render(w, r, "index.html", map[string]any{"Title": "Sesh Sofa", "Path": "/"})
-}
-
-func (s *Server) team(w http.ResponseWriter, r *http.Request) {
-	s.render(w, r, "skaters_list.html", map[string]any{"Title": "Team", "Path": "/team"})
 }
 
 func (s *Server) news(w http.ResponseWriter, r *http.Request) {

@@ -22,3 +22,9 @@ h1 { font-size: 2rem; letter-spacing: -0.03em; }
 .queue li { display: flex; gap: 0.75rem; align-items: center; border-bottom: 1px solid var(--line); padding: 0.75rem 0; }
 .queue form { margin: 0; }
 button { background: transparent; color: var(--fg); border: 1px solid var(--line); padding: 0.25rem 0.6rem; font: inherit; cursor: pointer; }
+.grid { list-style: none; padding: 0; display: grid; gap: 0.75rem; }
+.grid li { border: 1px solid var(--line); padding: 0.75rem; display: flex; flex-direction: column; gap: 0.25rem; }
+.form { display: flex; flex-direction: column; gap: 0.75rem; max-width: 36rem; }
+.form label { display: flex; flex-direction: column; gap: 0.25rem; }
+.form input, .form textarea, .form select { background: #14161a; color: var(--fg); border: 1px solid var(--line); padding: 0.4rem 0.5rem; font: inherit; }
+.avatar { max-width: 8rem; }

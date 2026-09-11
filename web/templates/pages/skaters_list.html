@@ -1,4 +1,15 @@
 {{define "content"}}
 <h1>Team</h1>
+{{if not .Skaters}}
 <p>No skaters yet.</p>
+{{else}}
+<ul class="grid">
+{{range .Skaters}}
+<li>
+    <a href="/team/{{.Slug}}"><strong>{{.SkaterName}}</strong></a>
+    <span class="who">{{.Stance}} · {{.Status}}{{if .Location}} · {{.Location}}{{end}}</span>
+</li>
+{{end}}
+</ul>
+{{end}}
 {{end}}

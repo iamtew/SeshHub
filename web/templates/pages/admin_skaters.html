@@ -1,0 +1,40 @@
+{{define "content"}}
+<h1>Roster</h1>
+{{if .Skaters}}
+<ul class="queue">
+{{range .Skaters}}
+<li>
+    <a href="/team/{{.Slug}}">{{.SkaterName}}</a>
+    <a class="btn" href="/admin/skaters/{{.ID}}">Edit</a>
+    <form method="post" action="/admin/skaters/{{.ID}}/delete"><button type="submit">Delete</button></form>
+</li>
+{{end}}
+</ul>
+{{end}}
+<h2>Add skater</h2>
+<form method="post" action="/admin/skaters" class="form">
+    <label>Name <input name="skater_name" required></label>
+    <label>Slug <input name="slug" placeholder="auto"></label>
+    <label>Linked user id <input name="user_id"></label>
+    <label>Stance
+        <select name="stance">
+            <option value="regular">Regular</option>
+            <option value="goofy">Goofy</option>
+            <option value="mongo">Mongo</option>
+        </select>
+    </label>
+    <label>Status
+        <select name="status">
+            <option value="active">Active</option>
+            <option value="pro">Pro</option>
+            <option value="am">Am</option>
+            <option value="flow">Flow</option>
+            <option value="legend">Legend</option>
+            <option value="inactive">Inactive</option>
+        </select>
+    </label>
+    <label>Location <input name="location"></label>
+    <label>Bio <textarea name="bio" rows="3"></textarea></label>
+    <button type="submit">Create</button>
+</form>
+{{end}}
