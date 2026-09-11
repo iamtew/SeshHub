@@ -29,6 +29,8 @@ button { background: transparent; color: var(--fg); border: 1px solid var(--line
 .form input, .form textarea, .form select { background: #14161a; color: var(--fg); border: 1px solid var(--line); padding: 0.4rem 0.5rem; font: inherit; }
 .avatar { max-width: 8rem; }
 .thumb { width: 100%; max-width: 20rem; display: block; }
+#monaco-mount { height: 28rem; border: 1px solid var(--line); }
+.monaco-src { position: absolute; left: -9999px; width: 1px; height: 1px; }
 .banner { max-width: 100%; }
 .prose :is(h2,h3) { margin-top: 1.25rem; }
 .prose img { max-width: 100%; }

@@ -95,7 +95,7 @@ func (s *Server) articleCreate(admin bool) http.HandlerFunc {
 		}
 		if r.Method != http.MethodPost {
 			s.render(w, r, "article_form.html", map[string]any{
-				"Title": "New article", "Path": pathFor(admin), "A": article.Article{Status: "draft"}, "Action": pathFor(admin), "Admin": admin,
+				"Title": "New article", "Path": pathFor(admin), "A": article.Article{Status: "draft"}, "Action": pathFor(admin), "Admin": admin, "Monaco": true,
 			})
 			return
 		}
@@ -140,7 +140,7 @@ func (s *Server) articleEdit(admin bool) http.HandlerFunc {
 			http.Redirect(w, r, pathFor(admin), http.StatusSeeOther)
 			return
 		}
-		s.render(w, r, "article_form.html", map[string]any{"Title": "Edit " + a.Title, "Path": pathFor(admin), "A": a, "Action": pathFor(admin) + "/" + a.ID, "Admin": admin})
+		s.render(w, r, "article_form.html", map[string]any{"Title": "Edit " + a.Title, "Path": pathFor(admin), "A": a, "Action": pathFor(admin) + "/" + a.ID, "Admin": admin, "Monaco": true})
 	}
 }
 

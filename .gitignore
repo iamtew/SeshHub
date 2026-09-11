@@ -27,6 +27,5 @@ bin/
 .DS_Store
 Thumbs.db
 
-# Go test coverage
-*.out
-coverage.html
+# Monaco editor dist (drop min/vs here; textarea is the fallback)
+web/static/monaco/

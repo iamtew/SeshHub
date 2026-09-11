@@ -59,6 +59,14 @@ func New(cfg config.Config, db *sql.DB) *Server {
 	s.mux.HandleFunc("POST /dashboard/articles/{id}", s.articleEdit(false))
 	s.mux.HandleFunc("GET /admin/youtube", s.adminYouTube)
 	s.mux.HandleFunc("POST /admin/youtube/sync", s.adminYouTubeSync)
+	s.mux.HandleFunc("GET /admin", s.adminHome)
+	s.mux.HandleFunc("GET /admin/pages", s.adminPages)
+	s.mux.HandleFunc("GET /admin/pages/new", s.adminPageCreate)
+	s.mux.HandleFunc("POST /admin/pages", s.adminPageCreate)
+	s.mux.HandleFunc("GET /admin/pages/{id}", s.adminPageEdit)
+	s.mux.HandleFunc("POST /admin/pages/{id}", s.adminPageEdit)
+	s.mux.HandleFunc("POST /admin/pages/{id}/delete", s.adminPageDelete)
+	s.mux.HandleFunc("GET /{slug}", s.customPage)
 	return s
 }
 

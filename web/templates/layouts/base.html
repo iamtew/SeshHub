@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{if .Title}}{{.Title}} · {{end}}SeshHub</title>
     <link rel="stylesheet" href="/static/css/app.css">
+    {{if .Monaco}}<script src="/static/js/editor.js" defer></script>{{end}}
 </head>
 <body>
     {{template "nav.html" .}}

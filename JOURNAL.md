@@ -4,13 +4,13 @@ Status, not spec. Spec lives in `README.md`.
 
 ## Now
 
-- Public pages, OAuth, access queue, skater roster, articles.
-- YouTube poller: Data API v3, first 50 uploads, ticker + `/admin/youtube/sync`. Public list at `/videos`. Needs `YOUTUBE_API_KEY` and `YOUTUBE_CHANNEL_ID`.
+- Public site, OAuth, access queue, roster, articles, YouTube poller.
+- Admin home at `/admin` (counts + last sync). Custom pages at `/{slug}`; CRUD at `/admin/pages`.
+- Article/page editors load Monaco from `/static/monaco/vs` when present; otherwise the textarea stays. Drop `monaco-editor` `min/vs` there to enable it.
 
 ## Next
 
-1. Admin UI + Monaco.
-2. Tailwind build / Turso when those are actually needed.
+1. Tailwind build / Turso when those are actually needed.
 
 ## Log
 
@@ -21,3 +21,4 @@ Status, not spec. Spec lives in `README.md`.
 - 2026-09-12 — Skater roster CRUD and self-serve profile.
 - 2026-09-12 — Articles CMS with sanitized Markdown.
 - 2026-09-12 — YouTube ingest poller and video gallery.
+- 2026-09-12 — Admin dashboard, custom pages, optional Monaco loader.
