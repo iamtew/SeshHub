@@ -4,8 +4,8 @@ default:
 deps:
     go mod tidy
 
-dev:
-    go run ./cmd/server
+dev *args:
+    go run ./cmd/server {{args}}
 
 test:
     go test ./...

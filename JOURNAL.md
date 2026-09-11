@@ -4,13 +4,12 @@ Status, not spec. Spec lives in `README.md`.
 
 ## Now
 
-- Public site, OAuth, access queue, roster, articles, YouTube poller.
-- Admin home at `/admin` (counts + last sync). Custom pages at `/{slug}`; CRUD at `/admin/pages`.
-- Article/page editors load Monaco from `/static/monaco/vs` when present; otherwise the textarea stays. Drop `monaco-editor` `min/vs` there to enable it.
+- Public site, OAuth, access queue, roster, articles, YouTube poller, admin dashboard, custom pages.
+- Listen address is `PORT` or `-port` (`53054` or `127.0.0.1:53054`). `just dev -port 53054`. Default stays 53053 for the Meat Bag.
 
 ## Next
 
-1. Tailwind build / Turso when those are actually needed.
+1. Tailwind / Turso only when a real need shows up.
 
 ## Log
 
@@ -22,3 +21,4 @@ Status, not spec. Spec lives in `README.md`.
 - 2026-09-12 — Articles CMS with sanitized Markdown.
 - 2026-09-12 — YouTube ingest poller and video gallery.
 - 2026-09-12 — Admin dashboard, custom pages, optional Monaco loader.
+- 2026-09-12 — `-port` / `-db` / `-web` flags. Tailwind and Turso parked.

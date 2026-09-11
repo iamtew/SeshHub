@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"log/slog"
 	"net/http"
 	"os"
@@ -18,6 +19,9 @@ import (
 func main() {
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, nil)))
 	cfg := config.Load()
+	if err := cfg.ApplyFlags(flag.CommandLine, os.Args[1:]); err != nil {
+		os.Exit(2)
+	}
 
 	sqldb, err := db.Open(cfg.DatabaseURL)
 	if err != nil {
@@ -35,7 +39,7 @@ func main() {
 	go yt.Loop(ctx, sqldb, yt.Client{Key: cfg.YouTubeAPIKey, Channel: cfg.YouTubeChannelID}, cfg.YouTubeSyncEvery)
 
 	srv := &http.Server{
-		Addr:              web.Addr(cfg.Port),
+		Addr:              cfg.ListenAddr(),
 		Handler:           web.New(cfg, sqldb),
 		ReadHeaderTimeout: 10 * time.Second,
 	}

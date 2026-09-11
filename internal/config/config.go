@@ -1,6 +1,7 @@
 package config
 
 import (
+	"flag"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -75,6 +76,37 @@ func (c Config) YouTubeEnabled() bool {
 
 func (c Config) CookieSecure() bool {
 	return c.AppEnv == "production"
+}
+
+// ListenAddr is host:port. -port accepts "53054" or "127.0.0.1:53054".
+func (c Config) ListenAddr() string {
+	p := strings.TrimSpace(c.Port)
+	if p == "" {
+		p = "53053"
+	}
+	if strings.Contains(p, ":") {
+		return p
+	}
+	return ":" + p
+}
+
+func (c *Config) ApplyFlags(fs *flag.FlagSet, args []string) error {
+	port := fs.String("port", "", "HTTP listen port or address (overrides PORT)")
+	dbURL := fs.String("db", "", "database URL (overrides DATABASE_URL)")
+	webDir := fs.String("web", "", "web assets directory (overrides WEB_DIR)")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	if *port != "" {
+		c.Port = *port
+	}
+	if *dbURL != "" {
+		c.DatabaseURL = *dbURL
+	}
+	if *webDir != "" {
+		c.WebDir = *webDir
+	}
+	return nil
 }
 
 func splitCSV(s string) []string {
