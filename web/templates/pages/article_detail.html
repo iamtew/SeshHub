@@ -1,0 +1,9 @@
+{{define "content"}}
+<article class="prose">
+    {{if .A.ImageURL}}<img src="{{.A.ImageURL}}" alt="" class="banner">{{end}}
+    <h1>{{.A.Title}}</h1>
+    <p class="who">{{.A.AuthorName}} · {{.Minutes}} min{{if .A.Status}} · {{.A.Status}}{{end}}</p>
+    {{if .Tags}}<p class="who">{{range .Tags}}#{{.}} {{end}}</p>{{end}}
+    {{.HTML}}
+</article>
+{{end}}

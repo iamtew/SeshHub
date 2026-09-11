@@ -27,6 +27,7 @@ func New(cfg config.Config, db *sql.DB) *Server {
 	s.mux.HandleFunc("GET /skaters", s.skatersAlias)
 	s.mux.HandleFunc("GET /team/{slug}", s.skaterDetail)
 	s.mux.HandleFunc("GET /news", s.news)
+	s.mux.HandleFunc("GET /news/{slug}", s.articleDetail)
 	s.mux.HandleFunc("GET /videos", s.videos)
 	s.mux.HandleFunc("GET /auth/discord", s.startOAuth("discord"))
 	s.mux.HandleFunc("GET /auth/youtube", s.startOAuth("youtube"))
@@ -45,6 +46,17 @@ func New(cfg config.Config, db *sql.DB) *Server {
 	s.mux.HandleFunc("POST /admin/skaters/{id}/delete", s.adminSkaterDelete)
 	s.mux.HandleFunc("GET /dashboard/profile", s.dashboardProfile)
 	s.mux.HandleFunc("POST /dashboard/profile", s.dashboardProfile)
+	s.mux.HandleFunc("GET /admin/articles", s.adminArticles)
+	s.mux.HandleFunc("GET /admin/articles/new", s.articleCreate(true))
+	s.mux.HandleFunc("POST /admin/articles", s.articleCreate(true))
+	s.mux.HandleFunc("GET /admin/articles/{id}", s.articleEdit(true))
+	s.mux.HandleFunc("POST /admin/articles/{id}", s.articleEdit(true))
+	s.mux.HandleFunc("POST /admin/articles/{id}/delete", s.articleDelete)
+	s.mux.HandleFunc("GET /dashboard/articles", s.dashboardArticles)
+	s.mux.HandleFunc("GET /dashboard/articles/new", s.articleCreate(false))
+	s.mux.HandleFunc("POST /dashboard/articles", s.articleCreate(false))
+	s.mux.HandleFunc("GET /dashboard/articles/{id}", s.articleEdit(false))
+	s.mux.HandleFunc("POST /dashboard/articles/{id}", s.articleEdit(false))
 	return s
 }
 
@@ -84,10 +96,6 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, dat
 
 func (s *Server) home(w http.ResponseWriter, r *http.Request) {
 	s.render(w, r, "index.html", map[string]any{"Title": "Sesh Sofa", "Path": "/"})
-}
-
-func (s *Server) news(w http.ResponseWriter, r *http.Request) {
-	s.render(w, r, "articles_list.html", map[string]any{"Title": "News", "Path": "/news"})
 }
 
 func (s *Server) videos(w http.ResponseWriter, r *http.Request) {

@@ -1,0 +1,22 @@
+{{define "content"}}
+<h1>{{.Title}}</h1>
+<p>{{if .Skater}}<a class="btn" href="/dashboard/articles/new">New draft</a>{{else}}<a class="btn" href="/admin/articles/new">New article</a>{{end}}</p>
+{{if not .Articles}}
+<p>None yet.</p>
+{{else}}
+<ul class="queue">
+{{range .Articles}}
+<li>
+    <a href="/news/{{.Slug}}">{{.Title}}</a>
+    <span class="who">{{.Status}}</span>
+    {{if $.Skater}}
+    <a class="btn" href="/dashboard/articles/{{.ID}}">Edit</a>
+    {{else}}
+    <a class="btn" href="/admin/articles/{{.ID}}">Edit</a>
+    <form method="post" action="/admin/articles/{{.ID}}/delete"><button type="submit">Delete</button></form>
+    {{end}}
+</li>
+{{end}}
+</ul>
+{{end}}
+{{end}}

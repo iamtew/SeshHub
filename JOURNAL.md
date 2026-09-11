@@ -4,15 +4,14 @@ Status, not spec. Spec lives in `README.md`.
 
 ## Now
 
-- Public empty-state pages, SQLite, Discord/YouTube OAuth, guild RBAC, access-request queue.
-- Skater roster: `/team` list + `/team/{slug}` detail. Admins CRUD at `/admin/skaters`. Linked skaters edit `/dashboard/profile`. Linking a user id promotes member/pending to skater.
+- Public pages, OAuth, access queue, skater roster.
+- Articles: goldmark + bluemonday. Published at `/news` and `/news/{slug}`. Admins CRUD/publish at `/admin/articles`. Skaters draft at `/dashboard/articles`.
 
 ## Next
 
-1. Articles (goldmark + bluemonday).
-2. YouTube poller.
-3. Admin UI + Monaco.
-4. Tailwind build / Turso when those are actually needed.
+1. YouTube poller.
+2. Admin UI + Monaco.
+3. Tailwind build / Turso when those are actually needed.
 
 ## Log
 
@@ -21,3 +20,4 @@ Status, not spec. Spec lives in `README.md`.
 - 2026-09-12 — Discord/YouTube OAuth + guild RBAC. Access-request UI still next.
 - 2026-09-12 — Access-request queue. Approve grants member only.
 - 2026-09-12 — Skater roster CRUD and self-serve profile.
+- 2026-09-12 — Articles CMS with sanitized Markdown.

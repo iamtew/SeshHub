@@ -1,4 +1,16 @@
 {{define "content"}}
 <h1>News</h1>
+{{if not .Articles}}
 <p>No articles yet.</p>
+{{else}}
+<ul class="grid">
+{{range .Articles}}
+<li>
+    <a href="/news/{{.Slug}}"><strong>{{.Title}}</strong></a>
+    {{if .Excerpt}}<p>{{.Excerpt}}</p>{{end}}
+    <span class="who">{{.AuthorName}}{{if .PublishedAt}} · {{.PublishedAt}}{{end}}</span>
+</li>
+{{end}}
+</ul>
+{{end}}
 {{end}}
