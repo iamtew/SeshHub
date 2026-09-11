@@ -1,0 +1,14 @@
+{{define "content"}}
+<h1>Access</h1>
+{{if ne .User.Role "pending"}}
+<p>You already have {{.User.Role}} access.</p>
+{{else if eq .AccessStatus "pending"}}
+<p>Your request is waiting on an admin.</p>
+{{else if eq .AccessStatus "rejected"}}
+<p>Your last request was rejected. You can send another.</p>
+<form method="post" action="/access/request"><button type="submit">Request access</button></form>
+{{else}}
+<p>You are not on the guild roster. Request member access for an admin to review.</p>
+<form method="post" action="/access/request"><button type="submit">Request access</button></form>
+{{end}}
+{{end}}

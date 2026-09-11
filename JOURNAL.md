@@ -4,21 +4,20 @@ Status, not spec. Spec lives in `README.md`.
 
 ## Now
 
-- Public empty-state pages on `:53053` with SQLite schema on start.
-- Discord and YouTube OAuth (PKCE, session cookie `seshhub_session`). Guild roles map to admin/skater/member; everyone else (including YouTube) is `pending`.
-- Login buttons stay disabled until client id/secret are set in env.
+- Public empty-state pages, SQLite, Discord/YouTube OAuth, guild RBAC.
+- Pending users can request member access. Admins review at `/admin/access` (approve = member, not skater/admin). Discord re-login does not wipe an approved member back to pending.
 
 ## Next
 
-1. Access-request queue.
-2. Skater roster CRUD.
-3. Articles (goldmark + bluemonday).
-4. YouTube poller.
-5. Admin UI + Monaco.
-6. Tailwind build / Turso when those are actually needed.
+1. Skater roster CRUD.
+2. Articles (goldmark + bluemonday).
+3. YouTube poller.
+4. Admin UI + Monaco.
+5. Tailwind build / Turso when those are actually needed.
 
 ## Log
 
 - 2026-09-12 — Started journal. Project is docs-only.
 - 2026-09-12 — Bootable server: SQLite + public empty pages. `just test` / `just dev`.
 - 2026-09-12 — Discord/YouTube OAuth + guild RBAC. Access-request UI still next.
+- 2026-09-12 — Access-request queue. Approve grants member only.

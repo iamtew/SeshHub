@@ -9,6 +9,8 @@
     </nav>
     <div class="signin">
         {{if .User}}
+            {{if eq .User.Role "pending"}}<a href="/access" {{if eq .Path "/access"}}aria-current="page"{{end}}>Access</a>{{end}}
+            {{if eq .User.Role "admin"}}<a href="/admin/access" {{if eq .Path "/admin/access"}}aria-current="page"{{end}}>Queue</a>{{end}}
             <span class="who">{{.User.DisplayName}}</span>
             <a href="/auth/logout">Log out</a>
         {{else}}

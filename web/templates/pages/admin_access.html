@@ -1,0 +1,16 @@
+{{define "content"}}
+<h1>Access queue</h1>
+{{if not .Requests}}
+<p>No pending requests.</p>
+{{else}}
+<ul class="queue">
+{{range .Requests}}
+<li>
+    <strong>{{.DisplayName}}</strong> <span class="who">{{.Username}}</span>
+    <form method="post" action="/admin/access/{{.ID}}/approve"><button type="submit">Approve</button></form>
+    <form method="post" action="/admin/access/{{.ID}}/reject"><button type="submit">Reject</button></form>
+</li>
+{{end}}
+</ul>
+{{end}}
+{{end}}

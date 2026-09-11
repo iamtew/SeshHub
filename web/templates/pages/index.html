@@ -1,4 +1,7 @@
 {{define "content"}}
 <h1>Sesh Sofa</h1>
 <p>Portal is up. Roster, news, and videos are empty until content lands.</p>
+{{if and .User (eq .User.Role "pending")}}
+<p><a href="/access">Request member access</a> if you are not on the Discord roster.</p>
+{{end}}
 {{end}}

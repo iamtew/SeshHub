@@ -24,3 +24,15 @@ func TestDiscordRole(t *testing.T) {
 		}
 	}
 }
+
+func TestKeepRole(t *testing.T) {
+	if KeepRole(RoleMember, RolePending) != RoleMember {
+		t.Fatal("approved member must survive pending discord re-login")
+	}
+	if KeepRole(RolePending, RoleMember) != RoleMember {
+		t.Fatal("guild member must still promote")
+	}
+	if KeepRole(RolePending, RolePending) != RolePending {
+		t.Fatal("pending stays pending")
+	}
+}

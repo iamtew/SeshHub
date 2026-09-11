@@ -43,6 +43,7 @@ func UpsertDiscord(db *sql.DB, discordID, username, display, avatar, role string
 	if err != nil {
 		return u, err
 	}
+	role = KeepRole(u.Role, role)
 	u.Username, u.DisplayName, u.AvatarURL, u.Role = username, display, avatar, role
 	_, err = db.Exec(`UPDATE users SET username=?, display_name=?, avatar_url=?, role=?, discord_username=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`,
 		username, display, nullIfEmpty(avatar), role, username, u.ID)

@@ -18,3 +18,7 @@ a[aria-current="page"] { text-decoration: underline; }
 .who { color: var(--muted); font-size: 0.9rem; }
 .foot { color: var(--muted); border-top: 1px solid var(--line); font-size: 0.85rem; }
 h1 { font-size: 2rem; letter-spacing: -0.03em; }
+.queue { list-style: none; padding: 0; }
+.queue li { display: flex; gap: 0.75rem; align-items: center; border-bottom: 1px solid var(--line); padding: 0.75rem 0; }
+.queue form { margin: 0; }
+button { background: transparent; color: var(--fg); border: 1px solid var(--line); padding: 0.25rem 0.6rem; font: inherit; cursor: pointer; }
