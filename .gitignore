@@ -1,0 +1,32 @@
+# Binaries and build outputs
+dist/
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Database files
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Environment & local config
+.env
+.env.local
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Go test coverage
+*.out
+coverage.html

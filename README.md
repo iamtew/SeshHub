@@ -1,0 +1,548 @@
+# SeshHub
+
+> **Content Management System & Portal for Sesh Sofa and the Fakeskate Community**
+
+SeshHub is a lightweight, high-performance Content Management System (CMS) and community portal built with **Go** and **libSQL** (Turso's production-ready SQLite fork). It powers the public **Sesh Sofa** website, hosts skater team rosters and custom profiles, automatically synchronizes media from YouTube, and offers a web-based management suite featuring an embedded Monaco editor.
+
+This document serves as both human developer documentation and an exhaustive architectural specification for AI coding agents implementing features across the codebase.
+
+---
+
+## Table of Contents
+
+1. [Project Overview & Core Principles](#project-overview--core-principles)
+2. [Technology Stack](#technology-stack)
+3. [System Architecture](#system-architecture)
+4. [Authentication & Authorization (RBAC)](#authentication--authorization-rbac)
+5. [Core Functional Modules](#core-functional-modules)
+   - [Skater Profiles & Team Roster](#1-skater-profiles--team-roster)
+   - [YouTube Media Ingestion Engine](#2-youtube-media-ingestion-engine)
+   - [Articles, News & Blog CMS](#3-articles-news--blog-cms)
+   - [Custom Static Pages](#4-custom-static-pages)
+   - [Admin UI & Monaco Editor](#5-admin-ui--monaco-editor)
+6. [Data Models & Database Schema (libSQL)](#data-models--database-schema-libsql)
+7. [Project Directory Layout](#project-directory-layout)
+8. [Configuration & Environment Variables](#configuration--environment-variables)
+9. [Development & Build Workflows](#development--build-workflows)
+10. [Production Deployment & Reverse Proxy](#production-deployment--reverse-proxy)
+11. [AI Agent Engineering Guidelines](#ai-agent-engineering-guidelines)
+
+---
+
+## Project Overview & Core Principles
+
+SeshHub is engineered around specific design principles:
+
+- **Separately Hosted Web Assets**: HTML templates, CSS, JavaScript assets, icons, and SQL migrations are loaded from the configured web and migrations folders at runtime. This keeps the Go server binary separate from content and presentation changes, so templates and assets can be updated without rebuilding the binary.
+- **Cross-Platform Parity**: Developed locally on **Windows** and deployed directly to **Linux** VPS instances. Paths, file separators, and system calls must remain platform-agnostic.
+- **No Passwords / Pure OAuth**: User identity is federated exclusively through **Discord** and **YouTube** OAuth 2.0. No password hashes, email verification loops, or reset tokens are stored.
+- **Discord Guild-Driven RBAC**: Permissions (Admin, Team Skater, Member) are dynamically resolved or validated against user membership and roles within the official Sesh Sofa Discord server. Users who do not match Guild RBAC, including YouTube-authenticated users, can request access for case-by-case approval by a site admin.
+- **Embedded libSQL Database**: Operates using embedded SQLite-compatible libSQL (file-backed locally, optionally synced to Turso Cloud in production) with zero external database server overhead.
+- **Server-Driven Dynamic UI**: Frontend powered by Go standard `html/template` enhanced with **HTMX**, **Alpine.js**, and **Tailwind CSS**, delivering reactive SPA-like interactions without the operational overhead of a heavy client-side JavaScript framework.
+
+---
+
+## Technology Stack
+
+| Layer | Technology | Description |
+| :--- | :--- | :--- |
+| **Backend Runtime** | [Go (Golang)](https://go.dev/) (1.22+) | High-throughput, low-memory HTTP server and background worker engine. |
+| **Database** | [libSQL](https://github.com/tursodatabase/libsql) | Production-grade SQLite fork supporting embedded local files and Turso cloud replication. |
+| **Templating** | Go `html/template` | Standard library server-side rendered HTML with strict context-aware escaping. |
+| **Interactivity** | [HTMX](https://htmx.org/) + [Alpine.js](https://alpinejs.dev/) | Declarative AJAX swaps, inline element updates, modal dialogs, and UI toggles. |
+| **Styling** | [Tailwind CSS](https://tailwindcss.com/) | Modern utility-first CSS design system tailored for responsive dark/light skate aesthetic. |
+| **Content Editor** | [Monaco Editor](https://microsoft.github.io/monaco-editor/) | In-browser Markdown and HTML editor for rich article publishing and page formatting. |
+| **Identity & Auth** | Discord & YouTube OAuth 2.0 | Decentralized authentication with Discord Guild API role validation. |
+| **Media Ingestion** | YouTube Data API v3 | Periodic background sync worker for channel video tracking and metadata ingestion. |
+
+---
+
+## System Architecture
+
+```mermaid
+flowchart TD
+    Client[Web Browser / User]
+
+    subgraph ReverseProxy [Production VPS Proxy]
+        Proxy[Caddy / Nginx]
+    end
+
+    subgraph SeshHubBinary [SeshHub Single Go Binary]
+        Router[HTTP Router / Chi / Standard Mux]
+        AuthMiddleware[Auth & Session Middleware]
+        
+        subgraph Handlers [HTTP Route Handlers]
+            PublicHandlers[Public Website & Media Views]
+            SkaterHandlers[Roster & Profile Views]
+            AdminHandlers[Admin CMS & Monaco Editor]
+            AuthHandlers[Discord / YouTube OAuth Handlers]
+        end
+        
+        subgraph TemplatesLayer [Externally Hosted Web Assets]
+            Templates[Go html/template]
+            StaticFiles[Tailwind CSS / HTMX / Monaco]
+        end
+
+        subgraph BackgroundService [Background Services]
+            YTWorker[YouTube Ingestion Worker - Ticker/Cron]
+        end
+
+        subgraph StorageLayer [Data Persistence]
+            DBDriver[libSQL Driver]
+            SQLiteDB[(libSQL Database / Local file or Turso)]
+        end
+    end
+
+    subgraph ExternalAPIs [External APIs]
+        DiscordAPI[Discord OAuth & Guild API]
+        YouTubeAPI[YouTube Data API v3]
+    end
+
+    Client -->|HTTPS / Port 443| Proxy
+    Proxy -->|Reverse Proxy / Port 53053| Router
+    Router --> AuthMiddleware
+    AuthMiddleware --> Handlers
+    Handlers --> TemplatesLayer
+    Handlers --> DBDriver
+    YTWorker -->|Poll Uploads| YouTubeAPI
+    YTWorker --> DBDriver
+    AuthHandlers -->|Exchange Token & Guild Roles| DiscordAPI
+    AuthHandlers -->|Exchange Channel Token| YouTubeAPI
+    DBDriver --> SQLiteDB
+```
+
+---
+
+## Authentication & Authorization (RBAC)
+
+### Authentication Flow
+1. **Login Initiation**: User selects **Sign in with Discord** or **Sign in with YouTube**.
+2. **State & PKCE**: A cryptographic `state` token is generated and stored in a short-lived, encrypted session cookie to prevent CSRF.
+3. **OAuth Callback**:
+   - For **Discord**: Exchange authorization code for token, fetch Discord user profile (`/users/@me`), and fetch guild member status (`/users/@me/guilds/{guild_id}/member`).
+   - For **YouTube**: Exchange authorization code for Google token and retrieve Google/YouTube user and channel identity.
+4. **Account Upsert**: User is found or created in the `users` table, linking provider identifiers (`discord_id`, `youtube_channel_id`).
+5. **Session Generation**: A high-entropy session token is generated, stored in the `sessions` table (with expiration and user agent data), and returned to the browser in a secure, `HttpOnly`, `SameSite=Lax` cookie (`seshhub_session`).
+
+### Role-Based Access Control (RBAC)
+
+Users who do not match a Discord guild role, as well as users authenticated through YouTube, are shown an option to request user access. Requests remain pending until a site admin reviews and approves or rejects them individually in the admin UI. Approval is explicit and does not automatically grant Admin or Team Skater privileges.
+
+| Role | Hierarchy Level | Determination Logic | Capabilities |
+| :--- | :--- | :--- | :--- |
+| **Admin** | Level 3 | Discord user has configured `DISCORD_ADMIN_ROLE_ID` in the Sesh Sofa Discord guild, OR user ID matches `SUPERADMIN_DISCORD_IDS`. | Full system access: manage team roster, edit all articles/pages, trigger manual YouTube sync, configure site settings. |
+| **Team Skater** | Level 2 | Discord user has configured `DISCORD_SKATER_ROLE_ID` in the guild, OR manually designated by an Admin. | Edit own skater profile, update personal links/sponsors/clips, draft articles. |
+| **Member** | Level 1 | A Discord guild member with the member role, or a user whose access request was individually approved by an Admin. | View member-exclusive media, comment/react (if enabled), link secondary OAuth accounts. |
+| **Access Pending** | N/A | A user who does not match Guild RBAC or is authenticated through YouTube and has submitted an access request. | View public content while awaiting an Admin decision; no member-only access. |
+| **Guest / Anonymous** | Level 0 | Unauthenticated public visitor. | View public pages, read published articles, browse skater roster, watch embedded videos. |
+
+---
+
+## Core Functional Modules
+
+### 1. Skater Profiles & Team Roster
+- **Team Directory (`/team` / `/skaters`)**: Grid listing active and legacy skaters with avatar, stance, status (Pro, Am, Flow, Legend), and location.
+- **Skater Detail Page (`/team/{slug}`)**:
+  - Full bio, years active, preferred stance (Regular / Goofy / Mongo).
+  - Social media hub (Discord, YouTube, Instagram, TikTok, Twitch).
+  - Sponsor & brand affiliations with logos/links.
+  - Signature tricks and favorite fakeskate spots/maps.
+  - Video showcase: Curated list of video parts and highlights linked to synced YouTube videos.
+- **Self-Service Skater Dashboard (`/dashboard/profile`)**: Allows verified skaters to update their own bios, clips, and links without requiring admin intervention.
+
+### 2. YouTube Media Ingestion Engine
+- **Automated Ingestion**: In-process background worker running on a configurable interval (default: every 60 minutes) polling the official Sesh Sofa channel via YouTube Data API v3.
+- **Data Extracted & Tracked**:
+  - Video ID, URL, canonical Title, Description, and Publish Timestamp.
+  - Video duration, tags, and category classification.
+  - Highest resolution thumbnail URLs cached or referenced.
+  - View count, like count, comment count (refreshed periodically).
+- **Featured Playlists & Video Categorization**: Automatic tagging (e.g., `#FullLength`, `#StreetSession`, `#Contest`, `#SOTW`) based on titles, descriptions, or manual admin classification.
+- **Manual Trigger**: Admins can invoke `/admin/youtube/sync` via HTMX in the control panel to trigger an immediate channel sync.
+
+### 3. Articles, News & Blog CMS
+- **Publishing Workflow**: Supports `Draft`, `Published`, and `Archived` statuses.
+- **Rich Content Formats**: Markdown parsing with frontmatter support and sanitized HTML rendering.
+- **Featured Image & SEO**: OpenGraph tags, slug generation with uniqueness validation, excerpt generation, and reading time estimation.
+- **Categorization & Tagging**: Tag clouds and category filters (News, Event Recaps, Modding, Trick Tips).
+
+### 4. Custom Static Pages
+- **Dynamic Slug Routing (`/{slug}`)**: Manage standalone pages such as `/about`, `/rules`, `/fakeskate-setup`, `/sponsors`, `/join-team`.
+- **Custom Metadata**: Page title, custom navigation header/footer inclusion, and optional custom CSS injection per page for special campaign styling.
+
+### 5. Admin UI & Monaco Editor
+- **Admin Control Center (`/admin`)**: Metric overviews (total articles, synced video count, active skaters, recent sync status) and a queue for reviewing, approving, or rejecting user access requests individually.
+- **Monaco Editor Integration**: Embedded VS Code-grade Monaco Editor component on `/admin/articles/{id}/edit` and `/admin/pages/{id}/edit`.
+  - Side-by-side live Markdown preview powered by Alpine.js/HTMX.
+  - Syntax highlighting for Markdown, HTML, and YAML frontmatter.
+  - Image uploader modal with drag-and-drop support.
+
+---
+
+## Data Models & Database Schema (libSQL)
+
+```sql
+-- Users and authentication
+CREATE TABLE IF NOT EXISTS users (
+    id TEXT PRIMARY KEY,                       -- UUID or Nanoid
+    username TEXT NOT NULL,
+    display_name TEXT NOT NULL,
+    avatar_url TEXT,
+    role TEXT NOT NULL DEFAULT 'member',      -- 'admin', 'skater', 'member'
+    discord_id TEXT UNIQUE,
+    discord_username TEXT,
+    youtube_channel_id TEXT UNIQUE,
+    youtube_channel_title TEXT,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS sessions (
+    id TEXT PRIMARY KEY,                       -- Secure random token hash
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    ip_address TEXT,
+    user_agent TEXT,
+    expires_at DATETIME NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Skater profiles and roster
+CREATE TABLE IF NOT EXISTS skater_profiles (
+    id TEXT PRIMARY KEY,
+    user_id TEXT UNIQUE REFERENCES users(id) ON DELETE SET NULL,
+    slug TEXT UNIQUE NOT NULL,
+    skater_name TEXT NOT NULL,
+    real_name TEXT,
+    bio TEXT,
+    stance TEXT DEFAULT 'regular',             -- 'regular', 'goofy', 'mongo'
+    status TEXT DEFAULT 'active',             -- 'pro', 'am', 'flow', 'legend', 'inactive'
+    avatar_url TEXT,
+    banner_url TEXT,
+    location TEXT,
+    sponsors TEXT,                             -- JSON array of sponsor objects
+    social_links TEXT,                         -- JSON map of platform -> URL
+    signature_tricks TEXT,                     -- JSON array of strings
+    featured_video_id TEXT,                    -- References youtube_videos(id)
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Articles and announcements
+CREATE TABLE IF NOT EXISTS articles (
+    id TEXT PRIMARY KEY,
+    slug TEXT UNIQUE NOT NULL,
+    title TEXT NOT NULL,
+    excerpt TEXT,
+    content_raw TEXT NOT NULL,                 -- Raw Markdown
+    content_html TEXT NOT NULL,                -- Sanitized rendered HTML
+    featured_image_url TEXT,
+    author_id TEXT NOT NULL REFERENCES users(id),
+    status TEXT NOT NULL DEFAULT 'draft',      -- 'draft', 'published', 'archived'
+    tags TEXT,                                 -- JSON array of tag strings
+    published_at DATETIME,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Static custom pages
+CREATE TABLE IF NOT EXISTS pages (
+    id TEXT PRIMARY KEY,
+    slug TEXT UNIQUE NOT NULL,
+    title TEXT NOT NULL,
+    content_raw TEXT NOT NULL,                 -- Raw Markdown or HTML
+    content_html TEXT NOT NULL,                -- Sanitized rendered HTML
+    custom_css TEXT,
+    is_published BOOLEAN NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- YouTube videos and sync logs
+CREATE TABLE IF NOT EXISTS youtube_videos (
+    id TEXT PRIMARY KEY,                       -- YouTube Video ID (e.g. 'dQw4w9WgXcQ')
+    channel_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    published_at DATETIME NOT NULL,
+    thumbnail_url TEXT NOT NULL,
+    duration_seconds INTEGER DEFAULT 0,
+    view_count INTEGER DEFAULT 0,
+    like_count INTEGER DEFAULT 0,
+    tags TEXT,                                 -- JSON array of video tags
+    category TEXT,                             -- 'session', 'part', 'contest', 'short'
+    is_featured BOOLEAN NOT NULL DEFAULT 0,
+    is_hidden BOOLEAN NOT NULL DEFAULT 0,
+    synced_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS sync_logs (
+    id TEXT PRIMARY KEY,
+    service TEXT NOT NULL,                     -- 'youtube'
+    status TEXT NOT NULL,                      -- 'success', 'error', 'running'
+    videos_fetched INTEGER DEFAULT 0,
+    videos_inserted INTEGER DEFAULT 0,
+    videos_updated INTEGER DEFAULT 0,
+    error_message TEXT,
+    started_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    completed_at DATETIME
+);
+```
+
+---
+
+## Project Directory Layout
+
+The project adheres to the standard Go project layout:
+
+```
+SeshHub/
+├── cmd/
+│   └── server/
+│       └── main.go                  # Application entry point, CLI flags, graceful shutdown
+├── internal/
+│   ├── auth/                        # Discord & YouTube OAuth handlers, session management, RBAC
+│   │   ├── discord.go
+│   │   ├── oauth.go
+│   │   ├── session.go
+│   │   └── youtube.go
+│   ├── config/                      # Environment parsing and app configuration
+│   │   └── config.go
+│   ├── db/                          # libSQL connection, migrations, query helper routines
+│   │   ├── db.go
+│   │   └── migrations/              # Runtime-loaded SQL migration files (.sql)
+│   ├── models/                      # Go structs representing database entities
+│   │   ├── article.go
+│   │   ├── page.go
+│   │   ├── skater.go
+│   │   ├── user.go
+│   │   └── video.go
+│   ├── repository/                  # Database data access layer / CRUD queries
+│   │   ├── article_repo.go
+│   │   ├── page_repo.go
+│   │   ├── skater_repo.go
+│   │   ├── user_repo.go
+│   │   └── video_repo.go
+│   ├── services/                    # Business logic services
+│   │   ├── article_service.go
+│   │   ├── markdown.go              # Goldmark / Bluemonday sanitizer pipeline
+│   │   ├── skater_service.go
+│   │   └── youtube_sync.go          # YouTube Data API v3 background ingest worker
+│   └── web/                         # HTTP routing, middleware, and handler controllers
+│       ├── handlers/
+│       │   ├── admin.go             # Admin control panel and CRUD endpoints
+│       │   ├── auth.go              # OAuth callback endpoints
+│       │   ├── home.go              # Public home, news, and video gallery
+│       │   ├── pages.go             # Custom dynamic pages handler
+│       │   ├── skaters.go           # Skater roster and profile views
+│       │   └── ws.go                # Optional WebSocket / SSE for live sync updates
+│       ├── middleware/
+│       │   ├── auth_middleware.go   # Session validation and context injection
+│       │   ├── logging.go
+│       │   └── rbac.go              # RequireRole(RoleAdmin), RequireRole(RoleSkater)
+│       └── render/
+│           └── render.go            # Template rendering engine with layout support
+├── web/                             # Runtime-loaded frontend assets served separately from the binary
+│   ├── static/
+│   │   ├── css/                     # Compiled Tailwind CSS
+│   │   ├── js/                      # HTMX, Alpine.js, Monaco initialization scripts
+│   │   ├── img/                     # Brand icons, placeholders, default avatars
+│   │   └── monaco/                  # Monaco Editor distribution assets
+│   └── templates/
+│       ├── layouts/
+│       │   ├── base.html            # Main public shell layout
+│       │   └── admin.html           # Admin dashboard shell layout
+│       ├── pages/
+│       │   ├── index.html           # Home page
+│       │   ├── articles_list.html   # News & articles index
+│       │   ├── article_detail.html  # Single article view
+│       │   ├── skaters_list.html    # Team roster grid
+│       │   ├── skater_detail.html   # Individual skater profile
+│       │   ├── videos_list.html     # YouTube video gallery
+│       │   └── custom_page.html     # Generic static page template
+│       ├── admin/
+│       │   ├── dashboard.html       # Overview dashboard
+│       │   ├── article_editor.html  # Monaco article editor with live preview
+│       │   ├── page_editor.html     # Monaco page editor
+│       │   ├── skater_editor.html   # Skater profile editor
+│       │   └── sync_status.html     # YouTube sync status and trigger
+│       └── partials/                # HTMX partials (modals, cards, sync toasts)
+│           ├── nav.html
+│           ├── footer.html
+│           ├── video_card.html
+│           └── skater_card.html
+├── .env.example                     # Example environment variable file
+├── .gitignore
+├── go.mod
+├── go.sum
+├── Makefile                         # Build targets for Windows & Linux
+└── README.md
+```
+
+---
+
+## Configuration & Environment Variables
+
+Copy `.env.example` to `.env` in your local development environment:
+
+```ini
+# ==============================================================================
+# SeshHub Core Server Configuration
+# ==============================================================================
+APP_ENV=development                  # 'development' or 'production'
+PORT=53053                           # HTTP port to listen on
+BASE_URL=http://localhost:53053      # Public base URL for OAuth callbacks
+SESSION_SECRET=change-me-to-a-secure-random-32-byte-hex-string
+
+# ==============================================================================
+# Database (libSQL / Turso)
+# ==============================================================================
+# For local file: "file:seshhub.db"
+# For in-memory (testing): ":memory:"
+# For Turso Cloud: "libsql://[your-db].turso.io?authToken=[your-token]"
+DATABASE_URL=file:seshhub.db
+DATABASE_AUTH_TOKEN=                 # Required only if connecting to Turso Cloud
+
+# ==============================================================================
+# Discord OAuth2 & Guild RBAC
+# ==============================================================================
+DISCORD_CLIENT_ID=your_discord_client_id
+DISCORD_CLIENT_SECRET=your_discord_client_secret
+DISCORD_GUILD_ID=your_sesh_sofa_discord_guild_id
+DISCORD_ADMIN_ROLE_ID=your_admin_role_id
+DISCORD_SKATER_ROLE_ID=your_team_skater_role_id
+SUPERADMIN_DISCORD_IDS=123456789012345678,987654321098765432
+
+# ==============================================================================
+# YouTube OAuth2 & Data API v3 Ingest
+# ==============================================================================
+YOUTUBE_API_KEY=your_google_youtube_data_api_v3_key
+YOUTUBE_CHANNEL_ID=your_sesh_sofa_youtube_channel_id
+YOUTUBE_SYNC_INTERVAL_MINUTES=60     # Background worker sync frequency
+YOUTUBE_CLIENT_ID=your_google_oauth_client_id
+YOUTUBE_CLIENT_SECRET=your_google_oauth_client_secret
+```
+
+---
+
+## Development & Build Workflows
+
+### Prerequisites
+- **Go**: 1.22+ installed and available in `PATH`.
+- **GCC / MinGW**: (If compiling with CGO-dependent SQLite drivers; prefer pure-Go / modernc driver where possible for zero-dependency builds).
+- **Tailwind CLI / Node**: (Optional for template/CSS dev; pre-bundled CSS is checked into repository or generated via Makefile).
+
+### Local Development (Windows / Linux)
+
+1. **Clone and Configure**:
+   ```bash
+   git clone https://github.com/your-org/SeshHub.git
+   cd SeshHub
+   cp .env.example .env
+   ```
+
+2. **Download Go Dependencies**:
+   ```bash
+   go mod download
+   ```
+
+3. **Run Migrations & Server**:
+   ```bash
+   go run cmd/server/main.go
+   ```
+
+4. **Live Reloading (Optional - via Air)**:
+   ```bash
+   air -c .air.toml
+   ```
+
+### Cross-Compilation
+
+Build a self-contained Linux executable from Windows:
+```powershell
+$env:GOOS="linux"; $env:GOARCH="amd64"; $env:CGO_ENABLED="0"; go build -ldflags="-s -w" -o dist/seshhub-linux-amd64 cmd/server/main.go
+```
+
+Build for Windows:
+```powershell
+go build -ldflags="-s -w" -o dist/seshhub.exe cmd/server/main.go
+```
+
+---
+
+## Production Deployment & Reverse Proxy
+
+In production, run the `seshhub-linux-amd64` binary as a `systemd` service behind **Caddy** or **Nginx**.
+
+### Systemd Service Unit (`/etc/systemd/system/seshhub.service`)
+
+```ini
+[Unit]
+Description=SeshHub CMS Daemon
+After=network.target
+
+[Service]
+Type=simple
+User=seshhub
+Group=seshhub
+WorkingDirectory=/opt/seshhub
+ExecStart=/opt/seshhub/seshhub
+Restart=always
+RestartSec=5
+EnvironmentFile=/opt/seshhub/.env
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target
+```
+
+### Caddy Reverse Proxy Configuration (`/etc/caddy/Caddyfile`)
+
+```caddy
+seshsofa.com, www.seshsofa.com {
+    encode gzip zstd
+    
+    # Reverse proxy to local SeshHub instance
+    reverse_proxy 127.0.0.1:53053 {
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+
+    # Static assets caching
+    @static path /static/*
+    header @static Cache-Control "public, max-age=31536000, immutable"
+}
+```
+
+---
+
+## AI Agent Engineering Guidelines
+
+When developing features, fixing bugs, or writing tests for SeshHub, all AI coding agents **MUST** follow these rules:
+
+1. **Runtime Web Assets**:
+    - Keep templates (`.html`), styles (`.css`), scripts (`.js`), icons, and migration scripts (`.sql`) in their configured runtime folders. Do not embed them in the Go executable; this allows content and presentation changes without rebuilding the binary.
+2. **Database & Queries**:
+   - Write standard SQLite/libSQL-compatible SQL. Do not use PostgreSQL/MySQL-specific dialects (e.g. use `DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`, `INTEGER PRIMARY KEY AUTOINCREMENT`, or text UUIDs).
+   - Use parameterized queries exclusively (`?` placeholders) to prevent SQL injection.
+3. **HTML Sanitization**:
+   - When rendering user-submitted Markdown or HTML in articles or custom pages, always pass the rendered output through `bluemonday.UGCPolicy()` or equivalent strict sanitizer before marking as `template.HTML`.
+4. **HTMX & Alpine.js Pattern**:
+   - Prefer returning HTML partials for `hx-get`, `hx-post`, `hx-put`, `hx-delete` requests instead of full-page reloads.
+   - Use `HX-Trigger` headers for toasts, modal dismissals, and client-side notifications.
+5. **Cross-Platform Path Handling**:
+   - Always use standard Go `filepath` or `path` modules. Never hardcode backslashes (`\`) or forward slashes (`/`) into filesystem path builders.
+6. **Error Handling & Idiomatic Go**:
+   - Return errors explicitly up the call stack; wrap errors with context (`fmt.Errorf("reading article %s: %w", id, err)`).
+   - Never silence errors or panic in HTTP handlers. Use structured logging (`log/slog`).
+7. **Monaco Editor Integration**:
+    - Host Monaco editor scripts locally under `/web/static/monaco/` and serve them from the runtime web assets folder to ensure offline capability and zero CDN reliance.
+
+---
+
+## License
+
+Private repository & proprietary software for the **Sesh Sofa** community. All rights reserved.
+
+
+
