@@ -12,6 +12,7 @@ import (
 	"seshhub/internal/config"
 	"seshhub/internal/db"
 	"seshhub/internal/web"
+	"seshhub/internal/yt"
 )
 
 func main() {
@@ -29,12 +30,15 @@ func main() {
 		os.Exit(1)
 	}
 
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+	go yt.Loop(ctx, sqldb, yt.Client{Key: cfg.YouTubeAPIKey, Channel: cfg.YouTubeChannelID}, cfg.YouTubeSyncEvery)
+
 	srv := &http.Server{
 		Addr:              web.Addr(cfg.Port),
 		Handler:           web.New(cfg, sqldb),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
-
 	go func() {
 		slog.Info("listening", "addr", srv.Addr)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -42,11 +46,8 @@ func main() {
 			os.Exit(1)
 		}
 	}()
-
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
-	<-stop
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	<-ctx.Done()
+	shut, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	_ = srv.Shutdown(ctx)
+	_ = srv.Shutdown(shut)
 }

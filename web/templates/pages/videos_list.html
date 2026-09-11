@@ -1,4 +1,18 @@
 {{define "content"}}
 <h1>Videos</h1>
+{{if not .Videos}}
 <p>No videos yet.</p>
+{{else}}
+<ul class="grid">
+{{range .Videos}}
+<li>
+    <a href="https://www.youtube.com/watch?v={{.ID}}">
+        {{if .Thumb}}<img src="{{.Thumb}}" alt="" class="thumb">{{end}}
+        <strong>{{.Title}}</strong>
+    </a>
+    <span class="who">{{.Category}} · {{.Views}} views</span>
+</li>
+{{end}}
+</ul>
+{{end}}
 {{end}}

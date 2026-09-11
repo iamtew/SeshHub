@@ -1,0 +1,15 @@
+{{define "content"}}
+<h1>YouTube sync</h1>
+{{if .Enabled}}
+<form method="post" action="/admin/youtube/sync"><button type="submit">Sync now</button></form>
+{{else}}
+<p>Set YOUTUBE_API_KEY and YOUTUBE_CHANNEL_ID to enable the poller.</p>
+{{end}}
+{{if .Logs}}
+<ul class="queue">
+{{range .Logs}}
+<li><span class="who">{{.Started}}</span> {{.Status}} fetched {{.Fetched}} ins {{.Inserted}} upd {{.Updated}}{{if .Error}} — {{.Error}}{{end}}</li>
+{{end}}
+</ul>
+{{end}}
+{{end}}
