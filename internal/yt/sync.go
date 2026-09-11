@@ -140,7 +140,7 @@ type Result struct {
 	Fetched, Inserted, Updated int
 }
 
-// ponytail: first playlist page (50); page tokens if the channel outgrows that.
+// ponytail: cap at 20 playlist pages (1000 videos); raise if the channel outgrows that.
 func (c Client) Sync(ctx context.Context, db *sql.DB) (Result, error) {
 	if !runMu.TryLock() {
 		return Result{}, fmt.Errorf("sync already running")
@@ -185,33 +185,58 @@ func (c Client) sync(ctx context.Context, db *sql.DB) (Result, error) {
 		return out, fmt.Errorf("no uploads playlist")
 	}
 	uploads := ch.Items[0].ContentDetails.RelatedPlaylists.Uploads
-	pb, err := c.get(ctx, "/playlistItems", url.Values{"part": {"contentDetails"}, "playlistId": {uploads}, "maxResults": {"50"}})
-	if err != nil {
-		return out, err
-	}
-	var pl struct {
-		Items []struct {
-			ContentDetails struct {
-				VideoID string `json:"videoId"`
-			} `json:"contentDetails"`
-		} `json:"items"`
-	}
-	if err := json.Unmarshal(pb, &pl); err != nil {
-		return out, err
-	}
 	var ids []string
-	for _, it := range pl.Items {
-		if it.ContentDetails.VideoID != "" {
-			ids = append(ids, it.ContentDetails.VideoID)
+	token := ""
+	for page := 0; page < 20; page++ {
+		q := url.Values{"part": {"contentDetails"}, "playlistId": {uploads}, "maxResults": {"50"}}
+		if token != "" {
+			q.Set("pageToken", token)
 		}
+		pb, err := c.get(ctx, "/playlistItems", q)
+		if err != nil {
+			return out, err
+		}
+		var pl struct {
+			NextPageToken string `json:"nextPageToken"`
+			Items         []struct {
+				ContentDetails struct {
+					VideoID string `json:"videoId"`
+				} `json:"contentDetails"`
+			} `json:"items"`
+		}
+		if err := json.Unmarshal(pb, &pl); err != nil {
+			return out, err
+		}
+		for _, it := range pl.Items {
+			if it.ContentDetails.VideoID != "" {
+				ids = append(ids, it.ContentDetails.VideoID)
+			}
+		}
+		if pl.NextPageToken == "" {
+			break
+		}
+		token = pl.NextPageToken
 	}
 	out.Fetched = len(ids)
 	if len(ids) == 0 {
 		return out, nil
 	}
+	for i := 0; i < len(ids); i += 50 {
+		end := i + 50
+		if end > len(ids) {
+			end = len(ids)
+		}
+		if err := c.upsertChunk(ctx, db, ids[i:end], &out); err != nil {
+			return out, err
+		}
+	}
+	return out, nil
+}
+
+func (c Client) upsertChunk(ctx context.Context, db *sql.DB, ids []string, out *Result) error {
 	vb, err := c.get(ctx, "/videos", url.Values{"part": {"snippet,contentDetails,statistics"}, "id": {strings.Join(ids, ",")}})
 	if err != nil {
-		return out, err
+		return err
 	}
 	var vs struct {
 		Items []struct {
@@ -235,7 +260,7 @@ func (c Client) sync(ctx context.Context, db *sql.DB) (Result, error) {
 		} `json:"items"`
 	}
 	if err := json.Unmarshal(vb, &vs); err != nil {
-		return out, err
+		return err
 	}
 	for _, it := range vs.Items {
 		views, _ := strconv.Atoi(it.Statistics.ViewCount)
@@ -248,7 +273,7 @@ func (c Client) sync(ctx context.Context, db *sql.DB) (Result, error) {
 		}
 		ins, err := upsert(db, v)
 		if err != nil {
-			return out, err
+			return err
 		}
 		if ins {
 			out.Inserted++
@@ -256,7 +281,7 @@ func (c Client) sync(ctx context.Context, db *sql.DB) (Result, error) {
 			out.Updated++
 		}
 	}
-	return out, nil
+	return nil
 }
 
 func upsert(db *sql.DB, v Video) (inserted bool, err error) {
@@ -287,6 +312,16 @@ func ListPublic(db *sql.DB) ([]Video, error) {
 		out = append(out, v)
 	}
 	return out, rows.Err()
+}
+
+func Get(db *sql.DB, id string) (Video, error) {
+	var v Video
+	if id == "" {
+		return v, sql.ErrNoRows
+	}
+	err := db.QueryRow(`SELECT id, channel_id, title, IFNULL(description,''), published_at, thumbnail_url, duration_seconds, view_count, like_count, IFNULL(tags,''), IFNULL(category,'') FROM youtube_videos WHERE id = ? AND is_hidden = 0`, id).
+		Scan(&v.ID, &v.ChannelID, &v.Title, &v.Description, &v.PublishedAt, &v.Thumb, &v.Duration, &v.Views, &v.Likes, &v.Tags, &v.Category)
+	return v, err
 }
 
 func RecentLogs(db *sql.DB, n int) ([]Log, error) {

@@ -34,6 +34,16 @@
     <label>Social (one per line) <textarea name="social_links" rows="4">{{.P.SocialLinks}}</textarea></label>
     <label>Sponsors (one per line) <textarea name="sponsors" rows="3">{{.P.Sponsors}}</textarea></label>
     <label>Signature tricks (one per line) <textarea name="signature_tricks" rows="3">{{.P.SignatureTricks}}</textarea></label>
+    {{if .Videos}}
+    <label>Featured video
+        <select name="featured_video_id">
+            <option value="">None</option>
+            {{range .Videos}}
+            <option value="{{.ID}}" {{if eq $.P.FeaturedVideoID .ID}}selected{{end}}>{{.Title}}</option>
+            {{end}}
+        </select>
+    </label>
+    {{end}}
     <button type="submit">Save</button>
 </form>
 {{end}}

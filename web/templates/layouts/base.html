@@ -5,6 +5,11 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{if .Title}}{{.Title}} · {{end}}SeshHub</title>
+    {{if .OGTitle}}
+    <meta property="og:title" content="{{.OGTitle}}">
+    <meta property="og:description" content="{{.OGDesc}}">
+    {{if .OGImage}}<meta property="og:image" content="{{.OGImage}}">{{end}}
+    {{end}}
     <link rel="stylesheet" href="/static/css/app.css">
     {{if .Monaco}}<script src="/static/js/editor.js" defer></script>{{end}}
 </head>

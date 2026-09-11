@@ -47,6 +47,15 @@ func TestSaveUniqueSlug(t *testing.T) {
 	if a.Slug != "alex-flow" || b.Slug != "alex-flow-2" {
 		t.Fatalf("slugs %q %q", a.Slug, b.Slug)
 	}
+	a.FeaturedVideoID = "abc"
+	a, err = Save(sqldb, a)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := Get(sqldb, "slug", a.Slug)
+	if err != nil || got.FeaturedVideoID != "abc" {
+		t.Fatalf("featured %v %+v", err, got)
+	}
 	list, err := List(sqldb)
 	if err != nil || len(list) != 2 {
 		t.Fatalf("list %v %d", err, len(list))

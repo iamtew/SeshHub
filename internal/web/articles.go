@@ -55,6 +55,7 @@ func (s *Server) articleDetail(w http.ResponseWriter, r *http.Request) {
 	s.render(w, r, "article_detail.html", map[string]any{
 		"Title": a.Title, "Path": "/news", "A": a, "HTML": template.HTML(a.ContentHTML),
 		"Tags": skater.Lines(strings.ReplaceAll(a.Tags, ",", "\n")), "Minutes": article.ReadingMinutes(a.ContentRaw),
+		"OGTitle": a.Title, "OGDesc": a.Excerpt, "OGImage": a.ImageURL,
 	})
 }
 

@@ -7,6 +7,7 @@ import (
 
 	"seshhub/internal/auth"
 	"seshhub/internal/skater"
+	"seshhub/internal/yt"
 )
 
 func formProfile(r *http.Request) skater.Profile {
@@ -26,6 +27,7 @@ func formProfile(r *http.Request) skater.Profile {
 		Sponsors:        r.FormValue("sponsors"),
 		SocialLinks:     r.FormValue("social_links"),
 		SignatureTricks: r.FormValue("signature_tricks"),
+		FeaturedVideoID: strings.TrimSpace(r.FormValue("featured_video_id")),
 	}
 }
 
@@ -63,6 +65,14 @@ func (s *Server) skaterDetail(w http.ResponseWriter, r *http.Request) {
 	data := skaterView(p)
 	data["Title"] = p.SkaterName
 	data["Path"] = "/team"
+	data["OGTitle"] = p.SkaterName
+	data["OGDesc"] = p.Bio
+	if p.AvatarURL != "" {
+		data["OGImage"] = p.AvatarURL
+	}
+	if v, err := yt.Get(s.db, p.FeaturedVideoID); err == nil {
+		data["Featured"] = v
+	}
 	if u != nil {
 		data["CanEdit"] = skater.CanEdit(u.Role, u.ID, p.UserID)
 	}
@@ -119,7 +129,8 @@ func (s *Server) adminSkaterEdit(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/admin/skaters", http.StatusSeeOther)
 		return
 	}
-	s.render(w, r, "skater_form.html", map[string]any{"Title": "Edit " + p.SkaterName, "Path": "/admin/skaters", "P": p, "Action": "/admin/skaters/" + p.ID, "Admin": true})
+	vids, _ := yt.ListPublic(s.db)
+	s.render(w, r, "skater_form.html", map[string]any{"Title": "Edit " + p.SkaterName, "Path": "/admin/skaters", "P": p, "Action": "/admin/skaters/" + p.ID, "Admin": true, "Videos": vids})
 }
 
 func (s *Server) adminSkaterDelete(w http.ResponseWriter, r *http.Request) {
@@ -162,5 +173,6 @@ func (s *Server) dashboardProfile(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/team/"+p.Slug, http.StatusSeeOther)
 		return
 	}
-	s.render(w, r, "skater_form.html", map[string]any{"Title": "Your profile", "Path": "/dashboard/profile", "P": p, "Action": "/dashboard/profile", "Admin": u.Role == auth.RoleAdmin})
+	vids, _ := yt.ListPublic(s.db)
+	s.render(w, r, "skater_form.html", map[string]any{"Title": "Your profile", "Path": "/dashboard/profile", "P": p, "Action": "/dashboard/profile", "Admin": u.Role == auth.RoleAdmin, "Videos": vids})
 }

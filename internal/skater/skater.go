@@ -24,6 +24,7 @@ type Profile struct {
 	Sponsors         string
 	SocialLinks      string
 	SignatureTricks  string
+	FeaturedVideoID  string
 }
 
 func CanEdit(role, userID, profileUserID string) bool {
@@ -92,7 +93,8 @@ func List(db *sql.DB) ([]Profile, error) {
 	rows, err := db.Query(`
 		SELECT id, IFNULL(user_id,''), slug, skater_name, IFNULL(real_name,''), IFNULL(bio,''),
 			IFNULL(stance,'regular'), IFNULL(status,'active'), IFNULL(avatar_url,''), IFNULL(banner_url,''),
-			IFNULL(location,''), IFNULL(sponsors,''), IFNULL(social_links,''), IFNULL(signature_tricks,'')
+			IFNULL(location,''), IFNULL(sponsors,''), IFNULL(social_links,''), IFNULL(signature_tricks,''),
+			IFNULL(featured_video_id,'')
 		FROM skater_profiles ORDER BY skater_name`)
 	if err != nil {
 		return nil, err
@@ -102,7 +104,7 @@ func List(db *sql.DB) ([]Profile, error) {
 	for rows.Next() {
 		var p Profile
 		if err := rows.Scan(&p.ID, &p.UserID, &p.Slug, &p.SkaterName, &p.RealName, &p.Bio, &p.Stance, &p.Status,
-			&p.AvatarURL, &p.BannerURL, &p.Location, &p.Sponsors, &p.SocialLinks, &p.SignatureTricks); err != nil {
+			&p.AvatarURL, &p.BannerURL, &p.Location, &p.Sponsors, &p.SocialLinks, &p.SignatureTricks, &p.FeaturedVideoID); err != nil {
 			return nil, err
 		}
 		out = append(out, p)
@@ -122,10 +124,11 @@ func Get(db *sql.DB, by, val string) (Profile, error) {
 	err := db.QueryRow(`
 		SELECT id, IFNULL(user_id,''), slug, skater_name, IFNULL(real_name,''), IFNULL(bio,''),
 			IFNULL(stance,'regular'), IFNULL(status,'active'), IFNULL(avatar_url,''), IFNULL(banner_url,''),
-			IFNULL(location,''), IFNULL(sponsors,''), IFNULL(social_links,''), IFNULL(signature_tricks,'')
+			IFNULL(location,''), IFNULL(sponsors,''), IFNULL(social_links,''), IFNULL(signature_tricks,''),
+			IFNULL(featured_video_id,'')
 		FROM skater_profiles WHERE `+col+` = ?`, val).
 		Scan(&p.ID, &p.UserID, &p.Slug, &p.SkaterName, &p.RealName, &p.Bio, &p.Stance, &p.Status,
-			&p.AvatarURL, &p.BannerURL, &p.Location, &p.Sponsors, &p.SocialLinks, &p.SignatureTricks)
+			&p.AvatarURL, &p.BannerURL, &p.Location, &p.Sponsors, &p.SocialLinks, &p.SignatureTricks, &p.FeaturedVideoID)
 	return p, err
 }
 
@@ -157,16 +160,16 @@ func Save(db *sql.DB, p Profile) (Profile, error) {
 	}
 	if p.ID == "" {
 		p.ID = newID()
-		_, err = db.Exec(`INSERT INTO skater_profiles (id, user_id, slug, skater_name, real_name, bio, stance, status, avatar_url, banner_url, location, sponsors, social_links, signature_tricks)
-			VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+		_, err = db.Exec(`INSERT INTO skater_profiles (id, user_id, slug, skater_name, real_name, bio, stance, status, avatar_url, banner_url, location, sponsors, social_links, signature_tricks, featured_video_id)
+			VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 			p.ID, uid, p.Slug, p.SkaterName, nullEmpty(p.RealName), nullEmpty(p.Bio), p.Stance, p.Status,
 			nullEmpty(p.AvatarURL), nullEmpty(p.BannerURL), nullEmpty(p.Location), nullEmpty(p.Sponsors),
-			nullEmpty(p.SocialLinks), nullEmpty(p.SignatureTricks))
+			nullEmpty(p.SocialLinks), nullEmpty(p.SignatureTricks), nullEmpty(p.FeaturedVideoID))
 	} else {
-		_, err = db.Exec(`UPDATE skater_profiles SET user_id=?, slug=?, skater_name=?, real_name=?, bio=?, stance=?, status=?, avatar_url=?, banner_url=?, location=?, sponsors=?, social_links=?, signature_tricks=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`,
+		_, err = db.Exec(`UPDATE skater_profiles SET user_id=?, slug=?, skater_name=?, real_name=?, bio=?, stance=?, status=?, avatar_url=?, banner_url=?, location=?, sponsors=?, social_links=?, signature_tricks=?, featured_video_id=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`,
 			uid, p.Slug, p.SkaterName, nullEmpty(p.RealName), nullEmpty(p.Bio), p.Stance, p.Status,
 			nullEmpty(p.AvatarURL), nullEmpty(p.BannerURL), nullEmpty(p.Location), nullEmpty(p.Sponsors),
-			nullEmpty(p.SocialLinks), nullEmpty(p.SignatureTricks), p.ID)
+			nullEmpty(p.SocialLinks), nullEmpty(p.SignatureTricks), nullEmpty(p.FeaturedVideoID), p.ID)
 	}
 	if err != nil {
 		return p, err

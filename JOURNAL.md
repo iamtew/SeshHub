@@ -4,8 +4,8 @@ Status, not spec. Spec lives in `README.md`.
 
 ## Now
 
-- Public site, OAuth, access queue, roster, articles, YouTube poller, admin dashboard, custom pages.
-- Listen address is `PORT` or `-port` (`53054` or `127.0.0.1:53054`). `just dev -port 53054`. Default stays 53053 for the Meat Bag.
+- Public site, OAuth, access queue, roster, articles, YouTube poller, admin, custom pages, `-port`.
+- YouTube sync follows playlist page tokens (cap 1000 videos). Skater profiles can embed a featured synced video. Article/skater pages emit Open Graph tags.
 
 ## Next
 
@@ -22,3 +22,4 @@ Status, not spec. Spec lives in `README.md`.
 - 2026-09-12 — YouTube ingest poller and video gallery.
 - 2026-09-12 — Admin dashboard, custom pages, optional Monaco loader.
 - 2026-09-12 — `-port` / `-db` / `-web` flags. Tailwind and Turso parked.
+- 2026-09-12 — YouTube paging, featured skater video, Open Graph tags.
