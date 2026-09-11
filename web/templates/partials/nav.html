@@ -1,0 +1,15 @@
+{{define "nav.html"}}
+<header class="nav">
+    <a class="brand" href="/">Sesh Sofa</a>
+    <nav>
+        <a href="/" {{if eq .Path "/"}}aria-current="page"{{end}}>Home</a>
+        <a href="/team" {{if eq .Path "/team"}}aria-current="page"{{end}}>Team</a>
+        <a href="/news" {{if eq .Path "/news"}}aria-current="page"{{end}}>News</a>
+        <a href="/videos" {{if eq .Path "/videos"}}aria-current="page"{{end}}>Videos</a>
+    </nav>
+    <div class="signin">
+        <button type="button" disabled title="OAuth not wired">Discord</button>
+        <button type="button" disabled title="OAuth not wired">YouTube</button>
+    </div>
+</header>
+{{end}}

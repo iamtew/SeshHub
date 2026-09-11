@@ -1,0 +1,18 @@
+{{define "base.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{if .Title}}{{.Title}} · {{end}}SeshHub</title>
+    <link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+    {{template "nav.html" .}}
+    <main class="wrap">
+        {{template "content" .}}
+    </main>
+    {{template "footer.html" .}}
+</body>
+</html>
+{{end}}
