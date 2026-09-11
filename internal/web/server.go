@@ -1,6 +1,7 @@
 package web
 
 import (
+	"database/sql"
 	"fmt"
 	"html/template"
 	"log/slog"
@@ -11,23 +12,30 @@ import (
 )
 
 type Server struct {
+	cfg    config.Config
+	db     *sql.DB
 	webDir string
 	mux    *http.ServeMux
 }
 
-func New(cfg config.Config) *Server {
-	s := &Server{webDir: cfg.WebDir, mux: http.NewServeMux()}
+func New(cfg config.Config, db *sql.DB) *Server {
+	s := &Server{cfg: cfg, db: db, webDir: cfg.WebDir, mux: http.NewServeMux()}
 	s.mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir(filepath.Join(cfg.WebDir, "static")))))
 	s.mux.HandleFunc("GET /healthz", s.healthz)
 	s.mux.HandleFunc("GET /{$}", s.home)
 	s.mux.HandleFunc("GET /team", s.team)
 	s.mux.HandleFunc("GET /news", s.news)
 	s.mux.HandleFunc("GET /videos", s.videos)
+	s.mux.HandleFunc("GET /auth/discord", s.startOAuth("discord"))
+	s.mux.HandleFunc("GET /auth/youtube", s.startOAuth("youtube"))
+	s.mux.HandleFunc("GET /auth/discord/callback", s.callbackDiscord)
+	s.mux.HandleFunc("GET /auth/youtube/callback", s.callbackYouTube)
+	s.mux.HandleFunc("GET /auth/logout", s.logout)
 	return s
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	s.mux.ServeHTTP(w, r)
+	s.mux.ServeHTTP(w, s.injectUser(r))
 }
 
 func (s *Server) healthz(w http.ResponseWriter, _ *http.Request) {
@@ -35,10 +43,13 @@ func (s *Server) healthz(w http.ResponseWriter, _ *http.Request) {
 	_, _ = w.Write([]byte("ok\n"))
 }
 
-func (s *Server) render(w http.ResponseWriter, page string, data map[string]any) {
+func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, data map[string]any) {
 	if data == nil {
 		data = map[string]any{}
 	}
+	data["User"] = UserFrom(r)
+	data["DiscordLogin"] = s.cfg.DiscordEnabled()
+	data["YouTubeLogin"] = s.cfg.YouTubeEnabled()
 	files := []string{
 		filepath.Join(s.webDir, "templates", "layouts", "base.html"),
 		filepath.Join(s.webDir, "templates", "partials", "nav.html"),
@@ -57,20 +68,20 @@ func (s *Server) render(w http.ResponseWriter, page string, data map[string]any)
 	}
 }
 
-func (s *Server) home(w http.ResponseWriter, _ *http.Request) {
-	s.render(w, "index.html", map[string]any{"Title": "Sesh Sofa", "Path": "/"})
+func (s *Server) home(w http.ResponseWriter, r *http.Request) {
+	s.render(w, r, "index.html", map[string]any{"Title": "Sesh Sofa", "Path": "/"})
 }
 
-func (s *Server) team(w http.ResponseWriter, _ *http.Request) {
-	s.render(w, "skaters_list.html", map[string]any{"Title": "Team", "Path": "/team"})
+func (s *Server) team(w http.ResponseWriter, r *http.Request) {
+	s.render(w, r, "skaters_list.html", map[string]any{"Title": "Team", "Path": "/team"})
 }
 
-func (s *Server) news(w http.ResponseWriter, _ *http.Request) {
-	s.render(w, "articles_list.html", map[string]any{"Title": "News", "Path": "/news"})
+func (s *Server) news(w http.ResponseWriter, r *http.Request) {
+	s.render(w, r, "articles_list.html", map[string]any{"Title": "News", "Path": "/news"})
 }
 
-func (s *Server) videos(w http.ResponseWriter, _ *http.Request) {
-	s.render(w, "videos_list.html", map[string]any{"Title": "Videos", "Path": "/videos"})
+func (s *Server) videos(w http.ResponseWriter, r *http.Request) {
+	s.render(w, r, "videos_list.html", map[string]any{"Title": "Videos", "Path": "/videos"})
 }
 
 func Addr(port string) string {

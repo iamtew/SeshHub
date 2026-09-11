@@ -1,0 +1,166 @@
+package web
+
+import (
+	"context"
+	"fmt"
+	"log/slog"
+	"net/http"
+	"time"
+
+	"seshhub/internal/auth"
+)
+
+type ctxKey int
+
+const userKey ctxKey = 1
+
+func UserFrom(r *http.Request) *auth.User {
+	u, _ := r.Context().Value(userKey).(*auth.User)
+	return u
+}
+
+func (s *Server) injectUser(r *http.Request) *http.Request {
+	c, err := r.Cookie(auth.CookieName)
+	if err != nil || c.Value == "" {
+		return r
+	}
+	u, err := auth.UserByToken(s.db, c.Value)
+	if err != nil {
+		return r
+	}
+	return r.WithContext(context.WithValue(r.Context(), userKey, &u))
+}
+
+func (s *Server) startOAuth(provider string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if provider == "discord" && !s.cfg.DiscordEnabled() {
+			http.Error(w, "discord oauth not configured", http.StatusNotFound)
+			return
+		}
+		if provider == "youtube" && !s.cfg.YouTubeEnabled() {
+			http.Error(w, "youtube oauth not configured", http.StatusNotFound)
+			return
+		}
+		state := auth.RandomHex(16)
+		verifier, challenge := auth.PKCE()
+		http.SetCookie(w, s.oauthCookie(auth.FormatOAuthCookie(provider, state, verifier)))
+		var loc string
+		switch provider {
+		case "discord":
+			loc = auth.DiscordAuthorizeURL(s.cfg.DiscordClientID, s.cfg.BaseURL+"/auth/discord/callback", state, challenge)
+		default:
+			loc = auth.YouTubeAuthorizeURL(s.cfg.YouTubeClientID, s.cfg.BaseURL+"/auth/youtube/callback", state, challenge)
+		}
+		http.Redirect(w, r, loc, http.StatusFound)
+	}
+}
+
+func (s *Server) callbackDiscord(w http.ResponseWriter, r *http.Request) {
+	verifier, err := s.checkOAuth(r, "discord")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	redirect := s.cfg.BaseURL + "/auth/discord/callback"
+	token, err := auth.ExchangeDiscord(s.cfg.DiscordClientID, s.cfg.DiscordClientSecret, redirect, r.URL.Query().Get("code"), verifier)
+	if err != nil {
+		slog.Error("discord token", "err", err)
+		http.Error(w, "discord login failed", http.StatusBadGateway)
+		return
+	}
+	id, username, display, avatar, inGuild, roles, err := auth.FetchDiscord(token, s.cfg.DiscordGuildID)
+	if err != nil {
+		slog.Error("discord profile", "err", err)
+		http.Error(w, "discord login failed", http.StatusBadGateway)
+		return
+	}
+	role := auth.DiscordRole(id, inGuild, roles, s.cfg.SuperAdminIDs, s.cfg.DiscordAdminRoleID, s.cfg.DiscordSkaterRoleID)
+	u, err := auth.UpsertDiscord(s.db, id, username, display, avatar, role)
+	if err != nil {
+		slog.Error("upsert discord", "err", err)
+		http.Error(w, "login failed", http.StatusInternalServerError)
+		return
+	}
+	s.issueSession(w, r, u.ID)
+}
+
+func (s *Server) callbackYouTube(w http.ResponseWriter, r *http.Request) {
+	verifier, err := s.checkOAuth(r, "youtube")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	redirect := s.cfg.BaseURL + "/auth/youtube/callback"
+	token, err := auth.ExchangeGoogle(s.cfg.YouTubeClientID, s.cfg.YouTubeClientSecret, redirect, r.URL.Query().Get("code"), verifier)
+	if err != nil {
+		slog.Error("google token", "err", err)
+		http.Error(w, "youtube login failed", http.StatusBadGateway)
+		return
+	}
+	chID, title, avatar, err := auth.FetchYouTubeChannel(token)
+	if err != nil {
+		slog.Error("youtube channel", "err", err)
+		http.Error(w, "youtube login failed", http.StatusBadGateway)
+		return
+	}
+	u, err := auth.UpsertYouTube(s.db, chID, title, avatar)
+	if err != nil {
+		slog.Error("upsert youtube", "err", err)
+		http.Error(w, "login failed", http.StatusInternalServerError)
+		return
+	}
+	s.issueSession(w, r, u.ID)
+}
+
+func (s *Server) checkOAuth(r *http.Request, provider string) (string, error) {
+	c, err := r.Cookie(auth.OAuthCookieName())
+	if err != nil {
+		return "", fmt.Errorf("missing oauth cookie")
+	}
+	gotProvider, state, verifier, ok := auth.ParseOAuthCookie(c.Value)
+	if !ok || gotProvider != provider || state != r.URL.Query().Get("state") || r.URL.Query().Get("code") == "" {
+		return "", fmt.Errorf("invalid oauth state")
+	}
+	return verifier, nil
+}
+
+func (s *Server) issueSession(w http.ResponseWriter, r *http.Request, userID string) {
+	token, err := auth.CreateSession(s.db, userID, r.RemoteAddr, r.UserAgent())
+	if err != nil {
+		slog.Error("session", "err", err)
+		http.Error(w, "login failed", http.StatusInternalServerError)
+		return
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:     auth.CookieName,
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+		Secure:   s.cfg.CookieSecure(),
+		MaxAge:   30 * 24 * 60 * 60,
+	})
+	http.SetCookie(w, &http.Cookie{Name: auth.OAuthCookieName(), Path: "/", MaxAge: -1})
+	http.Redirect(w, r, "/", http.StatusFound)
+}
+
+func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
+	if c, err := r.Cookie(auth.CookieName); err == nil {
+		_ = auth.DeleteSession(s.db, c.Value)
+	}
+	http.SetCookie(w, &http.Cookie{Name: auth.CookieName, Path: "/", MaxAge: -1, HttpOnly: true})
+	http.Redirect(w, r, "/", http.StatusFound)
+}
+
+func (s *Server) oauthCookie(value string) *http.Cookie {
+	return &http.Cookie{
+		Name:     auth.OAuthCookieName(),
+		Value:    value,
+		Path:     "/",
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+		Secure:   s.cfg.CookieSecure(),
+		MaxAge:   int((10 * time.Minute).Seconds()),
+	}
+}
+

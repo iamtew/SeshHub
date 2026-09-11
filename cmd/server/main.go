@@ -31,7 +31,7 @@ func main() {
 
 	srv := &http.Server{
 		Addr:              web.Addr(cfg.Port),
-		Handler:           web.New(cfg),
+		Handler:           web.New(cfg, sqldb),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 

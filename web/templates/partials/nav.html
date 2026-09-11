@@ -8,8 +8,13 @@
         <a href="/videos" {{if eq .Path "/videos"}}aria-current="page"{{end}}>Videos</a>
     </nav>
     <div class="signin">
-        <button type="button" disabled title="OAuth not wired">Discord</button>
-        <button type="button" disabled title="OAuth not wired">YouTube</button>
+        {{if .User}}
+            <span class="who">{{.User.DisplayName}}</span>
+            <a href="/auth/logout">Log out</a>
+        {{else}}
+            {{if .DiscordLogin}}<a class="btn" href="/auth/discord">Discord</a>{{else}}<button type="button" disabled title="OAuth not configured">Discord</button>{{end}}
+            {{if .YouTubeLogin}}<a class="btn" href="/auth/youtube">YouTube</a>{{else}}<button type="button" disabled title="OAuth not configured">YouTube</button>{{end}}
+        {{end}}
     </div>
 </header>
 {{end}}
