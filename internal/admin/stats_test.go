@@ -19,7 +19,7 @@ func TestStatsFrom(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if s.Articles != 0 || s.LastSyncStatus != "" {
+	if s.Articles != 0 || s.Videos != 0 {
 		t.Fatalf("%+v", s)
 	}
 	_, err = sqldb.Exec(`INSERT INTO users (id, username, display_name, role) VALUES ('u','u','U','admin')`)

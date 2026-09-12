@@ -8,7 +8,9 @@ import (
 	"net/http"
 	"path/filepath"
 
+	"seshhub/internal/auth"
 	"seshhub/internal/config"
+	"seshhub/internal/yt"
 )
 
 type Server struct {
@@ -19,6 +21,7 @@ type Server struct {
 }
 
 func New(cfg config.Config, db *sql.DB) *Server {
+	yt.RefreshAccess = auth.RefreshGoogle
 	s := &Server{cfg: cfg, db: db, webDir: cfg.WebDir, mux: http.NewServeMux()}
 	s.mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir(filepath.Join(cfg.WebDir, "static")))))
 	s.mux.HandleFunc("GET /healthz", s.healthz)
@@ -34,6 +37,7 @@ func New(cfg config.Config, db *sql.DB) *Server {
 	s.mux.HandleFunc("GET /auth/discord/callback", s.callbackDiscord)
 	s.mux.HandleFunc("GET /auth/youtube/callback", s.callbackYouTube)
 	s.mux.HandleFunc("GET /auth/logout", s.logout)
+	s.mux.HandleFunc("GET /account", s.accountPage)
 	s.mux.HandleFunc("GET /access", s.accessPage)
 	s.mux.HandleFunc("POST /access/request", s.accessRequest)
 	s.mux.HandleFunc("GET /admin/access", s.adminAccess)
@@ -57,8 +61,6 @@ func New(cfg config.Config, db *sql.DB) *Server {
 	s.mux.HandleFunc("POST /dashboard/articles", s.articleCreate(false))
 	s.mux.HandleFunc("GET /dashboard/articles/{id}", s.articleEdit(false))
 	s.mux.HandleFunc("POST /dashboard/articles/{id}", s.articleEdit(false))
-	s.mux.HandleFunc("GET /admin/youtube", s.adminYouTube)
-	s.mux.HandleFunc("POST /admin/youtube/sync", s.adminYouTubeSync)
 	s.mux.HandleFunc("GET /admin", s.adminHome)
 	s.mux.HandleFunc("GET /admin/pages", s.adminPages)
 	s.mux.HandleFunc("GET /admin/pages/new", s.adminPageCreate)

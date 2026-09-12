@@ -1,7 +1,7 @@
 package web
 
 import (
-	"log/slog"
+	"database/sql"
 	"net/http"
 
 	"seshhub/internal/auth"
@@ -17,35 +17,25 @@ func (s *Server) videos(w http.ResponseWriter, r *http.Request) {
 	s.render(w, r, "videos_list.html", map[string]any{"Title": "Videos", "Path": "/videos", "Videos": list})
 }
 
-func (s *Server) adminYouTube(w http.ResponseWriter, r *http.Request) {
-	u := UserFrom(r)
-	if u == nil || u.Role != auth.RoleAdmin {
-		http.Error(w, "forbidden", http.StatusForbidden)
+func (s *Server) accountPage(w http.ResponseWriter, r *http.Request) {
+	if UserFrom(r) == nil {
+		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
-	logs, err := yt.RecentLogs(s.db, 8)
-	if err != nil {
-		http.Error(w, "db error", http.StatusInternalServerError)
-		return
-	}
-	s.render(w, r, "admin_youtube.html", map[string]any{
-		"Title": "YouTube sync", "Path": "/admin/youtube", "Logs": logs, "Enabled": s.cfg.YouTubeSyncEnabled(),
-	})
+	s.render(w, r, "account.html", map[string]any{"Title": "Account", "Path": "/account"})
 }
 
-func (s *Server) adminYouTubeSync(w http.ResponseWriter, r *http.Request) {
-	u := UserFrom(r)
-	if u == nil || u.Role != auth.RoleAdmin {
-		http.Error(w, "forbidden", http.StatusForbidden)
-		return
+func userChannelVideos(db *sql.DB, userID string, limit int) []yt.Video {
+	if userID == "" {
+		return nil
 	}
-	if !s.cfg.YouTubeSyncEnabled() {
-		http.Error(w, "youtube sync not configured", http.StatusBadRequest)
-		return
+	u, err := auth.GetUser(db, userID)
+	if err != nil || u.YouTubeChannelID == "" {
+		return nil
 	}
-	c := yt.Client{Key: s.cfg.YouTubeAPIKey, Channel: s.cfg.YouTubeChannelID}
-	if _, err := c.Sync(r.Context(), s.db); err != nil {
-		slog.Error("youtube sync", "err", err)
+	list, err := yt.ListByChannel(db, u.YouTubeChannelID, limit)
+	if err != nil {
+		return nil
 	}
-	http.Redirect(w, r, "/admin/youtube", http.StatusSeeOther)
+	return list
 }

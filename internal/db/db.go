@@ -50,5 +50,17 @@ func Migrate(sqldb *sql.DB, dir string) error {
 			return fmt.Errorf("applying %s: %w", name, err)
 		}
 	}
+	return ensureUserYouTubeCols(sqldb)
+}
+
+func ensureUserYouTubeCols(sqldb *sql.DB) error {
+	for _, stmt := range []string{
+		`ALTER TABLE users ADD COLUMN youtube_refresh_token TEXT`,
+		`ALTER TABLE users ADD COLUMN youtube_synced_at DATETIME`,
+	} {
+		if _, err := sqldb.Exec(stmt); err != nil && !strings.Contains(err.Error(), "duplicate column name") {
+			return fmt.Errorf("youtube user columns: %w", err)
+		}
+	}
 	return nil
 }

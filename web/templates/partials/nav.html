@@ -10,8 +10,9 @@
     <div class="signin">
         {{if .User}}
             {{if eq .User.Role "pending"}}<a href="/access" {{if eq .Path "/access"}}aria-current="page"{{end}}>Access</a>{{end}}
-            {{if eq .User.Role "admin"}}<a href="/admin" {{if eq .Path "/admin"}}aria-current="page"{{end}}>Admin</a><a href="/admin/access" {{if eq .Path "/admin/access"}}aria-current="page"{{end}}>Queue</a><a href="/admin/skaters" {{if eq .Path "/admin/skaters"}}aria-current="page"{{end}}>Roster</a><a href="/admin/articles" {{if eq .Path "/admin/articles"}}aria-current="page"{{end}}>Articles</a><a href="/admin/pages" {{if eq .Path "/admin/pages"}}aria-current="page"{{end}}>Pages</a><a href="/admin/youtube" {{if eq .Path "/admin/youtube"}}aria-current="page"{{end}}>YouTube</a>{{end}}
+            {{if eq .User.Role "admin"}}<a href="/admin" {{if eq .Path "/admin"}}aria-current="page"{{end}}>Admin</a><a href="/admin/access" {{if eq .Path "/admin/access"}}aria-current="page"{{end}}>Queue</a><a href="/admin/skaters" {{if eq .Path "/admin/skaters"}}aria-current="page"{{end}}>Roster</a><a href="/admin/articles" {{if eq .Path "/admin/articles"}}aria-current="page"{{end}}>Articles</a><a href="/admin/pages" {{if eq .Path "/admin/pages"}}aria-current="page"{{end}}>Pages</a>{{end}}
             {{if eq .User.Role "skater"}}<a href="/dashboard/profile" {{if eq .Path "/dashboard/profile"}}aria-current="page"{{end}}>Profile</a><a href="/dashboard/articles" {{if eq .Path "/dashboard/articles"}}aria-current="page"{{end}}>Drafts</a>{{end}}
+            <a href="/account" {{if eq .Path "/account"}}aria-current="page"{{end}}>Account</a>
             <span class="who">{{.User.DisplayName}}</span>
             <a href="/auth/logout">Log out</a>
         {{else}}

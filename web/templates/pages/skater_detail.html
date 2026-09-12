@@ -8,6 +8,17 @@
     {{if .Featured}}
     <div class="embed"><iframe src="https://www.youtube-nocookie.com/embed/{{.Featured.ID}}" title="{{.Featured.Title}}" allowfullscreen loading="lazy"></iframe></div>
     {{end}}
+    {{if .Clips}}
+    <h2>Videos</h2>
+    <ul class="grid">
+    {{range .Clips}}
+    <li>
+        <div class="embed"><iframe src="https://www.youtube-nocookie.com/embed/{{.ID}}" title="{{.Title}}" allowfullscreen loading="lazy"></iframe></div>
+        <strong>{{.Title}}</strong>
+    </li>
+    {{end}}
+    </ul>
+    {{end}}
     {{if .Social}}<h2>Links</h2><ul>{{range .Social}}<li>{{.}}</li>{{end}}</ul>{{end}}
     {{if .Sponsors}}<h2>Sponsors</h2><ul>{{range .Sponsors}}<li>{{.}}</li>{{end}}</ul>{{end}}
     {{if .Tricks}}<h2>Tricks</h2><ul>{{range .Tricks}}<li>{{.}}</li>{{end}}</ul>{{end}}

@@ -13,7 +13,7 @@ Local default listen address is **port 53053**. That port is yours. Don't let a 
 - [Go](https://go.dev/dl/) 1.22+ on `PATH`
 - [just](https://just.systems/) (optional; `go run` / `go test` work without it)
 - A Discord application if you want login
-- A Google Cloud project if you want YouTube login and/or the video poller
+- A Google Cloud OAuth client if you want YouTube login
 
 No Node, no C compiler, no Docker.
 
@@ -67,25 +67,21 @@ Set `BASE_URL` to the same origin you type in the browser (`http://localhost:530
 
 Scopes used: `identify`, `guilds.members.read`. Restart the server after saving `.env`. Sign in with Discord. Guild admin role or superadmin → **admin**. Skater role → **skater**. In the guild otherwise → **member**. Not in the guild → **pending** (request access at `/access`; approve at `/admin/access`).
 
-### YouTube login and video sync
+### YouTube login and skater videos
 
-Two different Google credentials. You can enable one, both, or neither.
-
-**Poller** (fills `/videos`, needs no user click):
+One Google OAuth client. That is login, linking a channel, and (for roster skaters) refreshing their latest public uploads onto their profile and `/videos`. There is no API key and no site-wide channel poller.
 
 1. [Google Cloud Console](https://console.cloud.google.com/) → new project (or reuse one).
-2. Enable **YouTube Data API v3**.
-3. Credentials → **API key** → `YOUTUBE_API_KEY`.
-4. Channel ID (the `UC…` id, not `@handle`) → `YOUTUBE_CHANNEL_ID`. [Find it](https://www.youtube.com/account_advanced) on the channel's advanced settings, or from a video URL via the Data API.
-5. Optional: `YOUTUBE_SYNC_INTERVAL_MINUTES` (default 60). First sync runs at process start, then on that interval, and from **Admin → YouTube → Sync now**.
+2. Enable **YouTube Data API v3** (OAuth calls it).
+3. Credentials → **OAuth client ID** → Web application.
+4. Authorized redirect URI: `http://localhost:53053/auth/youtube/callback`.
+5. Copy client id/secret → `YOUTUBE_CLIENT_ID` / `YOUTUBE_CLIENT_SECRET`.
+6. OAuth consent screen: add yourself as a test user while the app is in Testing.
+7. Scope: `https://www.googleapis.com/auth/youtube.readonly`. We ask offline access so we can refresh uploads while the skater is logged in.
 
-**Login** (Sign in with YouTube):
+YouTube-only accounts start as **pending**. After an admin approves (or Discord guild RBAC applies), open **Account** and connect the other provider. Discord-first users connect YouTube the same way. Re-using a Discord or YouTube identity already on another SeshHub user is rejected.
 
-1. Same project → Credentials → **OAuth client ID** → Web application.
-2. Authorized redirect URI: `http://localhost:53053/auth/youtube/callback`.
-3. Copy client id/secret → `YOUTUBE_CLIENT_ID` / `YOUTUBE_CLIENT_SECRET`.
-4. OAuth consent screen: add yourself as a test user while the app is in Testing.
-5. Scope: `https://www.googleapis.com/auth/youtube.readonly` (we read the user's channel). YouTube-only accounts start as **pending**.
+Roster skaters with a linked YouTube channel: while they are logged in, SeshHub pulls up to 50 latest uploads (at most once an hour) onto `/team/{slug}` and the public `/videos` list. Guests see the last snapshot. No sync until an admin links a skater profile to that user.
 
 Restart after `.env` changes. Production: add the live `https://…/auth/…/callback` URIs and set `APP_ENV=production`, `BASE_URL` to the public https origin, and a non-default `SESSION_SECRET`.
 
@@ -114,7 +110,7 @@ The rest of this file is the architecture spec (what the system is supposed to b
 4. [Authentication & Authorization (RBAC)](#authentication--authorization-rbac)
 5. [Core Functional Modules](#core-functional-modules)
    - [Skater Profiles & Team Roster](#1-skater-profiles--team-roster)
-   - [YouTube Media Ingestion Engine](#2-youtube-media-ingestion-engine)
+   - [YouTube clips from skaters](#2-youtube-clips-from-skaters)
    - [Articles, News & Blog CMS](#3-articles-news--blog-cms)
    - [Custom Static Pages](#4-custom-static-pages)
    - [Admin UI & Monaco Editor](#5-admin-ui--monaco-editor)
@@ -151,7 +147,7 @@ SeshHub is engineered around specific design principles:
 | **Styling** | [Tailwind CSS](https://tailwindcss.com/) | Modern utility-first CSS design system tailored for responsive dark/light skate aesthetic. |
 | **Content Editor** | [Monaco Editor](https://microsoft.github.io/monaco-editor/) | In-browser Markdown and HTML editor for rich article publishing and page formatting. |
 | **Identity & Auth** | Discord & YouTube OAuth 2.0 | Decentralized authentication with Discord Guild API role validation. |
-| **Media Ingestion** | YouTube Data API v3 | Periodic background sync worker for channel video tracking and metadata ingestion. |
+| **Media** | YouTube Data API v3 via skater OAuth | Latest uploads from linked skater channels while they are logged in. |
 
 ---
 
@@ -181,8 +177,8 @@ flowchart TD
             StaticFiles[Tailwind CSS / HTMX / Monaco]
         end
 
-        subgraph BackgroundService [Background Services]
-            YTWorker[YouTube Ingestion Worker - Ticker/Cron]
+        subgraph BackgroundService [On-request]
+            YTWorker[Skater YouTube refresh while logged in]
         end
 
         subgraph StorageLayer [Data Persistence]
@@ -202,7 +198,7 @@ flowchart TD
     AuthMiddleware --> Handlers
     Handlers --> TemplatesLayer
     Handlers --> DBDriver
-    YTWorker -->|Poll Uploads| YouTubeAPI
+    YTWorker -->|Latest uploads of linked skater| YouTubeAPI
     YTWorker --> DBDriver
     AuthHandlers -->|Exchange Token & Guild Roles| DiscordAPI
     AuthHandlers -->|Exchange Channel Token| YouTubeAPI
@@ -219,7 +215,7 @@ flowchart TD
 3. **OAuth Callback**:
    - For **Discord**: Exchange authorization code for token, fetch Discord user profile (`/users/@me`), and fetch guild member status (`/users/@me/guilds/{guild_id}/member`).
    - For **YouTube**: Exchange authorization code for Google token and retrieve Google/YouTube user and channel identity.
-4. **Account Upsert**: User is found or created in the `users` table, linking provider identifiers (`discord_id`, `youtube_channel_id`).
+4. **Account Upsert or Link**: Logged out → find or create in `users`. Logged in → attach the other provider to the current user (`discord_id` / `youtube_channel_id`) unless that identity is already on another row.
 5. **Session Generation**: A high-entropy session token is generated, stored in the `sessions` table (with expiration and user agent data), and returned to the browser in a secure, `HttpOnly`, `SameSite=Lax` cookie (`seshhub_session`).
 
 ### Role-Based Access Control (RBAC)
@@ -228,7 +224,7 @@ Users who do not match a Discord guild role, as well as users authenticated thro
 
 | Role | Hierarchy Level | Determination Logic | Capabilities |
 | :--- | :--- | :--- | :--- |
-| **Admin** | Level 3 | Discord user has configured `DISCORD_ADMIN_ROLE_ID` in the Sesh Sofa Discord guild, OR user ID matches `SUPERADMIN_DISCORD_IDS`. | Full system access: manage team roster, edit all articles/pages, trigger manual YouTube sync, configure site settings. |
+| **Admin** | Level 3 | Discord user has configured `DISCORD_ADMIN_ROLE_ID` in the Sesh Sofa Discord guild, OR user ID matches `SUPERADMIN_DISCORD_IDS`. | Full system access: manage team roster, edit all articles/pages, configure site settings. |
 | **Team Skater** | Level 2 | Discord user has configured `DISCORD_SKATER_ROLE_ID` in the guild, OR manually designated by an Admin. | Edit own skater profile, update personal links/sponsors/clips, draft articles. |
 | **Member** | Level 1 | A Discord guild member with the member role, or a user whose access request was individually approved by an Admin. | View member-exclusive media, comment/react (if enabled), link secondary OAuth accounts. |
 | **Access Pending** | N/A | A user who does not match Guild RBAC or is authenticated through YouTube and has submitted an access request. | View public content while awaiting an Admin decision; no member-only access. |
@@ -245,18 +241,13 @@ Users who do not match a Discord guild role, as well as users authenticated thro
   - Social media hub (Discord, YouTube, Instagram, TikTok, Twitch).
   - Sponsor & brand affiliations with logos/links.
   - Signature tricks and favorite fakeskate spots/maps.
-  - Video showcase: Curated list of video parts and highlights linked to synced YouTube videos.
+  - Video showcase: latest clips synced from the skater’s linked YouTube channel (optional featured pin).
 - **Self-Service Skater Dashboard (`/dashboard/profile`)**: Allows verified skaters to update their own bios, clips, and links without requiring admin intervention.
 
-### 2. YouTube Media Ingestion Engine
-- **Automated Ingestion**: In-process background worker running on a configurable interval (default: every 60 minutes) polling the official Sesh Sofa channel via YouTube Data API v3.
-- **Data Extracted & Tracked**:
-  - Video ID, URL, canonical Title, Description, and Publish Timestamp.
-  - Video duration, tags, and category classification.
-  - Highest resolution thumbnail URLs cached or referenced.
-  - View count, like count, comment count (refreshed periodically).
-- **Featured Playlists & Video Categorization**: Automatic tagging (e.g., `#FullLength`, `#StreetSession`, `#Contest`, `#SOTW`) based on titles, descriptions, or manual admin classification.
-- **Manual Trigger**: Admins can invoke `/admin/youtube/sync` via HTMX in the control panel to trigger an immediate channel sync.
+### 2. YouTube clips from skaters
+- **No site-wide poller**: `/videos` is the union of clips pulled from roster skaters who have connected YouTube.
+- **Logged-in refresh**: If the user has a `skater_profiles` row, a YouTube refresh token, and last sync is older than 60 minutes, a request while they are logged in refreshes up to 50 latest uploads.
+- **Manual pin**: Admins/skaters can still set `featured_video_id` from that channel’s synced rows.
 
 ### 3. Articles, News & Blog CMS
 - **Publishing Workflow**: Supports `Draft`, `Published`, and `Archived` statuses.
@@ -269,7 +260,7 @@ Users who do not match a Discord guild role, as well as users authenticated thro
 - **Custom Metadata**: Page title, custom navigation header/footer inclusion, and optional custom CSS injection per page for special campaign styling.
 
 ### 5. Admin UI & Monaco Editor
-- **Admin Control Center (`/admin`)**: Metric overviews (total articles, synced video count, active skaters, recent sync status) and a queue for reviewing, approving, or rejecting user access requests individually.
+- **Admin Control Center (`/admin`)**: Metric overviews (articles, video clips, skaters, pending access) and a queue for reviewing access requests.
 - **Monaco Editor Integration**: Embedded VS Code-grade Monaco Editor component on `/admin/articles/{id}/edit` and `/admin/pages/{id}/edit`.
   - Side-by-side live Markdown preview powered by Alpine.js/HTMX.
   - Syntax highlighting for Markdown, HTML, and YAML frontmatter.
@@ -291,6 +282,8 @@ CREATE TABLE IF NOT EXISTS users (
     discord_username TEXT,
     youtube_channel_id TEXT UNIQUE,
     youtube_channel_title TEXT,
+    youtube_refresh_token TEXT,
+    youtube_synced_at DATETIME,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -424,7 +417,7 @@ SeshHub/
 │   │   ├── article_service.go
 │   │   ├── markdown.go              # Goldmark / Bluemonday sanitizer pipeline
 │   │   ├── skater_service.go
-│   │   └── youtube_sync.go          # YouTube Data API v3 background ingest worker
+│   │   └── youtube_sync.go          # Skater channel ingest via OAuth
 │   └── web/                         # HTTP routing, middleware, and handler controllers
 │       ├── handlers/
 │       │   ├── admin.go             # Admin control panel and CRUD endpoints
@@ -462,7 +455,6 @@ SeshHub/
 │       │   ├── article_editor.html  # Monaco article editor with live preview
 │       │   ├── page_editor.html     # Monaco page editor
 │       │   ├── skater_editor.html   # Skater profile editor
-│       │   └── sync_status.html     # YouTube sync status and trigger
 │       └── partials/                # HTMX partials (modals, cards, sync toasts)
 │           ├── nav.html
 │           ├── footer.html
@@ -511,11 +503,8 @@ DISCORD_SKATER_ROLE_ID=your_team_skater_role_id
 SUPERADMIN_DISCORD_IDS=123456789012345678,987654321098765432
 
 # ==============================================================================
-# YouTube OAuth2 & Data API v3 Ingest
+# YouTube OAuth2 (login + link)
 # ==============================================================================
-YOUTUBE_API_KEY=your_google_youtube_data_api_v3_key
-YOUTUBE_CHANNEL_ID=your_sesh_sofa_youtube_channel_id
-YOUTUBE_SYNC_INTERVAL_MINUTES=60     # Background worker sync frequency
 YOUTUBE_CLIENT_ID=your_google_oauth_client_id
 YOUTUBE_CLIENT_SECRET=your_google_oauth_client_secret
 ```

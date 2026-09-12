@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"seshhub/internal/auth"
+	"seshhub/internal/yt"
 )
 
 type ctxKey int
@@ -28,7 +29,21 @@ func (s *Server) injectUser(r *http.Request) *http.Request {
 	if err != nil {
 		return r
 	}
+	s.maybeSyncSkater(u.ID)
 	return r.WithContext(context.WithValue(r.Context(), userKey, &u))
+}
+
+func (s *Server) maybeSyncSkater(userID string) {
+	if !s.cfg.YouTubeEnabled() {
+		return
+	}
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
+		defer cancel()
+		if err := yt.MaybeSyncUser(ctx, s.db, userID, s.cfg.YouTubeClientID, s.cfg.YouTubeClientSecret); err != nil {
+			slog.Error("skater youtube sync", "err", err, "user", userID)
+		}
+	}()
 }
 
 func (s *Server) startOAuth(provider string) http.HandlerFunc {
@@ -75,6 +90,15 @@ func (s *Server) callbackDiscord(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	role := auth.DiscordRole(id, inGuild, roles, s.cfg.SuperAdminIDs, s.cfg.DiscordAdminRoleID, s.cfg.DiscordSkaterRoleID)
+	if cur := UserFrom(r); cur != nil {
+		if _, err := auth.LinkDiscord(s.db, cur.ID, id, username, display, avatar, role); err != nil {
+			s.oauthLinkErr(w, err)
+			return
+		}
+		s.clearOAuthCookie(w)
+		http.Redirect(w, r, "/account", http.StatusFound)
+		return
+	}
 	u, err := auth.UpsertDiscord(s.db, id, username, display, avatar, role)
 	if err != nil {
 		slog.Error("upsert discord", "err", err)
@@ -91,7 +115,7 @@ func (s *Server) callbackYouTube(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	redirect := s.cfg.BaseURL + "/auth/youtube/callback"
-	token, err := auth.ExchangeGoogle(s.cfg.YouTubeClientID, s.cfg.YouTubeClientSecret, redirect, r.URL.Query().Get("code"), verifier)
+	token, refresh, err := auth.ExchangeGoogle(s.cfg.YouTubeClientID, s.cfg.YouTubeClientSecret, redirect, r.URL.Query().Get("code"), verifier)
 	if err != nil {
 		slog.Error("google token", "err", err)
 		http.Error(w, "youtube login failed", http.StatusBadGateway)
@@ -103,13 +127,38 @@ func (s *Server) callbackYouTube(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "youtube login failed", http.StatusBadGateway)
 		return
 	}
-	u, err := auth.UpsertYouTube(s.db, chID, title, avatar)
+	if cur := UserFrom(r); cur != nil {
+		u, err := auth.LinkYouTube(s.db, cur.ID, chID, title, avatar, refresh)
+		if err != nil {
+			s.oauthLinkErr(w, err)
+			return
+		}
+		s.clearOAuthCookie(w)
+		_ = yt.SyncWithToken(r.Context(), s.db, u.ID, token, chID)
+		http.Redirect(w, r, "/account", http.StatusFound)
+		return
+	}
+	u, err := auth.UpsertYouTube(s.db, chID, title, avatar, refresh)
 	if err != nil {
 		slog.Error("upsert youtube", "err", err)
 		http.Error(w, "login failed", http.StatusInternalServerError)
 		return
 	}
+	_ = yt.SyncWithToken(r.Context(), s.db, u.ID, token, chID)
 	s.issueSession(w, r, u.ID)
+}
+
+func (s *Server) oauthLinkErr(w http.ResponseWriter, err error) {
+	if err == auth.ErrTaken {
+		http.Error(w, "that account is already linked to another user", http.StatusConflict)
+		return
+	}
+	slog.Error("link oauth", "err", err)
+	http.Error(w, "link failed", http.StatusInternalServerError)
+}
+
+func (s *Server) clearOAuthCookie(w http.ResponseWriter) {
+	http.SetCookie(w, &http.Cookie{Name: auth.OAuthCookieName(), Path: "/", MaxAge: -1})
 }
 
 func (s *Server) checkOAuth(r *http.Request, provider string) (string, error) {
@@ -163,4 +212,3 @@ func (s *Server) oauthCookie(value string) *http.Cookie {
 		MaxAge:   int((10 * time.Minute).Seconds()),
 	}
 }
-

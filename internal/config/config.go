@@ -4,9 +4,7 @@ import (
 	"flag"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
-	"time"
 )
 
 type Config struct {
@@ -25,9 +23,6 @@ type Config struct {
 	SuperAdminIDs       []string
 	YouTubeClientID     string
 	YouTubeClientSecret string
-	YouTubeAPIKey       string
-	YouTubeChannelID    string
-	YouTubeSyncEvery    time.Duration
 }
 
 func Load() Config {
@@ -48,22 +43,7 @@ func Load() Config {
 		SuperAdminIDs:       splitCSV(getenv("SUPERADMIN_DISCORD_IDS", "")),
 		YouTubeClientID:     getenv("YOUTUBE_CLIENT_ID", ""),
 		YouTubeClientSecret: getenv("YOUTUBE_CLIENT_SECRET", ""),
-		YouTubeAPIKey:       getenv("YOUTUBE_API_KEY", ""),
-		YouTubeChannelID:    getenv("YOUTUBE_CHANNEL_ID", ""),
-		YouTubeSyncEvery:    minutes(getenv("YOUTUBE_SYNC_INTERVAL_MINUTES", "60")),
 	}
-}
-
-func (c Config) YouTubeSyncEnabled() bool {
-	return c.YouTubeAPIKey != "" && c.YouTubeChannelID != ""
-}
-
-func minutes(s string) time.Duration {
-	n, err := strconv.Atoi(s)
-	if err != nil || n < 1 {
-		n = 60
-	}
-	return time.Duration(n) * time.Minute
 }
 
 func (c Config) DiscordEnabled() bool {

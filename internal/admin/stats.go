@@ -4,8 +4,6 @@ import "database/sql"
 
 type Stats struct {
 	Articles, Videos, Skaters, Pending int
-	LastSyncStatus                     string
-	LastSyncAt                         string
 }
 
 func StatsFrom(db *sql.DB) (Stats, error) {
@@ -24,9 +22,5 @@ func StatsFrom(db *sql.DB) (Stats, error) {
 			return s, err
 		}
 	}
-	err := db.QueryRow(`SELECT status, started_at FROM sync_logs WHERE service = 'youtube' ORDER BY started_at DESC LIMIT 1`).Scan(&s.LastSyncStatus, &s.LastSyncAt)
-	if err == sql.ErrNoRows {
-		return s, nil
-	}
-	return s, err
+	return s, nil
 }

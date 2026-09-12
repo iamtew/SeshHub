@@ -73,6 +73,18 @@ func (s *Server) skaterDetail(w http.ResponseWriter, r *http.Request) {
 	if v, err := yt.Get(s.db, p.FeaturedVideoID); err == nil {
 		data["Featured"] = v
 	}
+	clips := userChannelVideos(s.db, p.UserID, 6)
+	if feat, ok := data["Featured"].(yt.Video); ok {
+		var rest []yt.Video
+		for _, c := range clips {
+			if c.ID != feat.ID {
+				rest = append(rest, c)
+			}
+		}
+		data["Clips"] = rest
+	} else {
+		data["Clips"] = clips
+	}
 	if u != nil {
 		data["CanEdit"] = skater.CanEdit(u.Role, u.ID, p.UserID)
 	}
@@ -129,7 +141,7 @@ func (s *Server) adminSkaterEdit(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/admin/skaters", http.StatusSeeOther)
 		return
 	}
-	vids, _ := yt.ListPublic(s.db)
+	vids := userChannelVideos(s.db, p.UserID, 50)
 	s.render(w, r, "skater_form.html", map[string]any{"Title": "Edit " + p.SkaterName, "Path": "/admin/skaters", "P": p, "Action": "/admin/skaters/" + p.ID, "Admin": true, "Videos": vids})
 }
 
@@ -173,6 +185,6 @@ func (s *Server) dashboardProfile(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/team/"+p.Slug, http.StatusSeeOther)
 		return
 	}
-	vids, _ := yt.ListPublic(s.db)
+	vids := userChannelVideos(s.db, u.ID, 50)
 	s.render(w, r, "skater_form.html", map[string]any{"Title": "Your profile", "Path": "/dashboard/profile", "P": p, "Action": "/dashboard/profile", "Admin": u.Role == auth.RoleAdmin, "Videos": vids})
 }

@@ -13,7 +13,6 @@ import (
 	"seshhub/internal/config"
 	"seshhub/internal/db"
 	"seshhub/internal/web"
-	"seshhub/internal/yt"
 )
 
 func main() {
@@ -36,7 +35,6 @@ func main() {
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
-	go yt.Loop(ctx, sqldb, yt.Client{Key: cfg.YouTubeAPIKey, Channel: cfg.YouTubeChannelID}, cfg.YouTubeSyncEvery)
 
 	srv := &http.Server{
 		Addr:              cfg.ListenAddr(),

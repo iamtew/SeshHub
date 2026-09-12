@@ -9,6 +9,8 @@ CREATE TABLE IF NOT EXISTS users (
     discord_username TEXT,
     youtube_channel_id TEXT UNIQUE,
     youtube_channel_title TEXT,
+    youtube_refresh_token TEXT,
+    youtube_synced_at DATETIME,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

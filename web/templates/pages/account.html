@@ -1,0 +1,12 @@
+{{define "content"}}
+<h1>Account</h1>
+<ul>
+    <li>Discord
+        {{if .User.DiscordID}}connected ({{.User.DiscordID}}){{else if .DiscordLogin}}<a class="btn" href="/auth/discord">Connect Discord</a>{{else}}not configured{{end}}
+    </li>
+    <li>YouTube
+        {{if .User.YouTubeChannelID}}connected ({{.User.YouTubeChannelTitle}}){{else if .YouTubeLogin}}<a class="btn" href="/auth/youtube">Connect YouTube</a>{{else}}not configured{{end}}
+    </li>
+</ul>
+<p class="who">Skater pages pick up latest YouTube uploads while you are logged in, after YouTube is connected and an admin has linked a roster profile to you.</p>
+{{end}}

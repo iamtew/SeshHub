@@ -2,9 +2,7 @@ package yt
 
 import (
 	"context"
-	"crypto/rand"
 	"database/sql"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -18,7 +16,7 @@ import (
 
 const apiDefault = "https://www.googleapis.com/youtube/v3"
 
-var runMu sync.Mutex
+var userMu sync.Map
 
 type Video struct {
 	ID          string
@@ -32,17 +30,6 @@ type Video struct {
 	Likes       int
 	Tags        string
 	Category    string
-}
-
-type Log struct {
-	ID        string
-	Status    string
-	Fetched   int
-	Inserted  int
-	Updated   int
-	Error     string
-	Started   string
-	Completed string
 }
 
 func DurationSeconds(iso string) int {
@@ -93,15 +80,9 @@ func thumbURL(thumbs map[string]struct {
 	return ""
 }
 
-func newID() string {
-	var b [16]byte
-	_, _ = rand.Read(b[:])
-	return hex.EncodeToString(b[:])
-}
-
 type Client struct {
-	Key, Channel, Base string
-	HTTP               *http.Client
+	Token, Channel, Base string
+	HTTP                 *http.Client
 }
 
 func (c Client) base() string {
@@ -119,10 +100,12 @@ func (c Client) http() *http.Client {
 }
 
 func (c Client) get(ctx context.Context, path string, q url.Values) ([]byte, error) {
-	q.Set("key", c.Key)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.base()+path+"?"+q.Encode(), nil)
 	if err != nil {
 		return nil, err
+	}
+	if c.Token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.Token)
 	}
 	resp, err := c.http().Do(req)
 	if err != nil {
@@ -140,23 +123,27 @@ type Result struct {
 	Fetched, Inserted, Updated int
 }
 
-// ponytail: cap at 20 playlist pages (1000 videos); raise if the channel outgrows that.
+func lockUser(id string) (*sync.Mutex, bool) {
+	v, _ := userMu.LoadOrStore(id, &sync.Mutex{})
+	mu := v.(*sync.Mutex)
+	if !mu.TryLock() {
+		return nil, false
+	}
+	return mu, true
+}
+
+// ponytail: one playlist page (50 videos) per skater; page further if a channel outgrows that.
 func (c Client) Sync(ctx context.Context, db *sql.DB) (Result, error) {
-	if !runMu.TryLock() {
+	key := c.Channel
+	if key == "" {
+		key = "sync"
+	}
+	mu, ok := lockUser(key)
+	if !ok {
 		return Result{}, fmt.Errorf("sync already running")
 	}
-	defer runMu.Unlock()
-
-	logID := newID()
-	_, _ = db.Exec(`INSERT INTO sync_logs (id, service, status) VALUES (?, 'youtube', 'running')`, logID)
-	res, err := c.sync(ctx, db)
-	st, msg := "success", ""
-	if err != nil {
-		st, msg = "error", err.Error()
-	}
-	_, _ = db.Exec(`UPDATE sync_logs SET status=?, videos_fetched=?, videos_inserted=?, videos_updated=?, error_message=?, completed_at=CURRENT_TIMESTAMP WHERE id=?`,
-		st, res.Fetched, res.Inserted, res.Updated, nullEmpty(msg), logID)
-	return res, err
+	defer mu.Unlock()
+	return c.sync(ctx, db)
 }
 
 func nullEmpty(s string) any {
@@ -185,52 +172,32 @@ func (c Client) sync(ctx context.Context, db *sql.DB) (Result, error) {
 		return out, fmt.Errorf("no uploads playlist")
 	}
 	uploads := ch.Items[0].ContentDetails.RelatedPlaylists.Uploads
+	q := url.Values{"part": {"contentDetails"}, "playlistId": {uploads}, "maxResults": {"50"}}
+	pb, err := c.get(ctx, "/playlistItems", q)
+	if err != nil {
+		return out, err
+	}
+	var pl struct {
+		Items []struct {
+			ContentDetails struct {
+				VideoID string `json:"videoId"`
+			} `json:"contentDetails"`
+		} `json:"items"`
+	}
+	if err := json.Unmarshal(pb, &pl); err != nil {
+		return out, err
+	}
 	var ids []string
-	token := ""
-	for page := 0; page < 20; page++ {
-		q := url.Values{"part": {"contentDetails"}, "playlistId": {uploads}, "maxResults": {"50"}}
-		if token != "" {
-			q.Set("pageToken", token)
+	for _, it := range pl.Items {
+		if it.ContentDetails.VideoID != "" {
+			ids = append(ids, it.ContentDetails.VideoID)
 		}
-		pb, err := c.get(ctx, "/playlistItems", q)
-		if err != nil {
-			return out, err
-		}
-		var pl struct {
-			NextPageToken string `json:"nextPageToken"`
-			Items         []struct {
-				ContentDetails struct {
-					VideoID string `json:"videoId"`
-				} `json:"contentDetails"`
-			} `json:"items"`
-		}
-		if err := json.Unmarshal(pb, &pl); err != nil {
-			return out, err
-		}
-		for _, it := range pl.Items {
-			if it.ContentDetails.VideoID != "" {
-				ids = append(ids, it.ContentDetails.VideoID)
-			}
-		}
-		if pl.NextPageToken == "" {
-			break
-		}
-		token = pl.NextPageToken
 	}
 	out.Fetched = len(ids)
 	if len(ids) == 0 {
 		return out, nil
 	}
-	for i := 0; i < len(ids); i += 50 {
-		end := i + 50
-		if end > len(ids) {
-			end = len(ids)
-		}
-		if err := c.upsertChunk(ctx, db, ids[i:end], &out); err != nil {
-			return out, err
-		}
-	}
-	return out, nil
+	return out, c.upsertChunk(ctx, db, ids, &out)
 }
 
 func (c Client) upsertChunk(ctx context.Context, db *sql.DB, ids []string, out *Result) error {
@@ -242,9 +209,9 @@ func (c Client) upsertChunk(ctx context.Context, db *sql.DB, ids []string, out *
 		Items []struct {
 			ID      string `json:"id"`
 			Snippet struct {
-				Title       string `json:"title"`
-				Description string `json:"description"`
-				PublishedAt string `json:"publishedAt"`
+				Title       string   `json:"title"`
+				Description string   `json:"description"`
+				PublishedAt string   `json:"publishedAt"`
 				Tags        []string `json:"tags"`
 				Thumbnails  map[string]struct {
 					URL string `json:"url"`
@@ -298,7 +265,29 @@ func upsert(db *sql.DB, v Video) (inserted bool, err error) {
 }
 
 func ListPublic(db *sql.DB) ([]Video, error) {
-	rows, err := db.Query(`SELECT id, channel_id, title, IFNULL(description,''), published_at, thumbnail_url, duration_seconds, view_count, like_count, IFNULL(tags,''), IFNULL(category,'') FROM youtube_videos WHERE is_hidden = 0 ORDER BY published_at DESC`)
+	return list(db, "", 0)
+}
+
+func ListByChannel(db *sql.DB, channelID string, limit int) ([]Video, error) {
+	if channelID == "" {
+		return nil, nil
+	}
+	return list(db, channelID, limit)
+}
+
+func list(db *sql.DB, channelID string, limit int) ([]Video, error) {
+	q := `SELECT id, channel_id, title, IFNULL(description,''), published_at, thumbnail_url, duration_seconds, view_count, like_count, IFNULL(tags,''), IFNULL(category,'') FROM youtube_videos WHERE is_hidden = 0`
+	var args []any
+	if channelID != "" {
+		q += ` AND channel_id = ?`
+		args = append(args, channelID)
+	}
+	q += ` ORDER BY published_at DESC`
+	if limit > 0 {
+		q += ` LIMIT ?`
+		args = append(args, limit)
+	}
+	rows, err := db.Query(q, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -324,44 +313,66 @@ func Get(db *sql.DB, id string) (Video, error) {
 	return v, err
 }
 
-func RecentLogs(db *sql.DB, n int) ([]Log, error) {
-	rows, err := db.Query(`SELECT id, status, videos_fetched, videos_inserted, videos_updated, IFNULL(error_message,''), started_at, IFNULL(completed_at,'') FROM sync_logs WHERE service='youtube' ORDER BY started_at DESC LIMIT ?`, n)
+func staleSync(s string) bool {
+	if s == "" {
+		return true
+	}
+	t, err := time.ParseInLocation("2006-01-02 15:04:05", s, time.UTC)
 	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var out []Log
-	for rows.Next() {
-		var l Log
-		if err := rows.Scan(&l.ID, &l.Status, &l.Fetched, &l.Inserted, &l.Updated, &l.Error, &l.Started, &l.Completed); err != nil {
-			return nil, err
+		t, err = time.Parse(time.RFC3339, s)
+		if err != nil {
+			return true
 		}
-		out = append(out, l)
 	}
-	return out, rows.Err()
+	return time.Since(t.UTC()) > time.Hour
 }
 
-func Loop(ctx context.Context, db *sql.DB, c Client, every time.Duration) {
-	if c.Key == "" || c.Channel == "" {
-		return
+// RefreshAccess is set from auth to avoid an import cycle.
+var RefreshAccess = func(clientID, clientSecret, refresh string) (access, newRefresh string, err error) {
+	return "", "", fmt.Errorf("refresh not configured")
+}
+
+func MaybeSyncUser(ctx context.Context, db *sql.DB, userID, clientID, clientSecret string) error {
+	if userID == "" || clientID == "" || clientSecret == "" {
+		return nil
 	}
-	if every <= 0 {
-		every = time.Hour
+	var n int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM skater_profiles WHERE user_id = ?`, userID).Scan(&n); err != nil || n == 0 {
+		return err
 	}
-	run := func() {
-		if _, err := c.Sync(ctx, db); err != nil {
-			// logged in sync_logs
-		}
+	var channel, refresh, synced string
+	err := db.QueryRow(`SELECT IFNULL(youtube_channel_id,''), IFNULL(youtube_refresh_token,''), IFNULL(youtube_synced_at,'') FROM users WHERE id = ?`, userID).
+		Scan(&channel, &refresh, &synced)
+	if err != nil || channel == "" || refresh == "" || !staleSync(synced) {
+		return err
 	}
-	run()
-	t := time.NewTicker(every)
-	defer t.Stop()
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-t.C:
-			run()
-		}
+	access, newRefresh, err := RefreshAccess(clientID, clientSecret, refresh)
+	if err != nil {
+		return err
 	}
+	if newRefresh != "" && newRefresh != refresh {
+		_, _ = db.Exec(`UPDATE users SET youtube_refresh_token=? WHERE id=?`, newRefresh, userID)
+	}
+	c := Client{Token: access, Channel: channel}
+	if _, err := c.Sync(ctx, db); err != nil {
+		return err
+	}
+	_, err = db.Exec(`UPDATE users SET youtube_synced_at=CURRENT_TIMESTAMP WHERE id=?`, userID)
+	return err
+}
+
+func SyncWithToken(ctx context.Context, db *sql.DB, userID, access, channel string) error {
+	if access == "" || channel == "" {
+		return nil
+	}
+	var n int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM skater_profiles WHERE user_id = ?`, userID).Scan(&n); err != nil || n == 0 {
+		return err
+	}
+	c := Client{Token: access, Channel: channel}
+	if _, err := c.Sync(ctx, db); err != nil {
+		return err
+	}
+	_, err := db.Exec(`UPDATE users SET youtube_synced_at=CURRENT_TIMESTAMP WHERE id=?`, userID)
+	return err
 }

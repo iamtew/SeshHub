@@ -43,7 +43,8 @@ func YouTubeAuthorizeURL(clientID, redirect, state, challenge string) string {
 		"state":                 {state},
 		"code_challenge":        {challenge},
 		"code_challenge_method": {"S256"},
-		"access_type":           {"online"},
+		"access_type":           {"offline"},
+		"prompt":                {"consent"},
 	}
 	return "https://accounts.google.com/o/oauth2/v2/auth?" + q.Encode()
 }
@@ -66,27 +67,28 @@ func discordAvatar(id, hash string) string {
 	return "https://cdn.discordapp.com/avatars/" + id + "/" + hash + ".png"
 }
 
-func tokenPOST(endpoint string, form url.Values) (string, error) {
+func tokenPOST(endpoint string, form url.Values) (access, refresh string, err error) {
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.PostForm(endpoint, form)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	defer resp.Body.Close()
 	body, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode >= 300 {
-		return "", fmt.Errorf("token exchange %s: %s", resp.Status, body)
+		return "", "", fmt.Errorf("token exchange %s: %s", resp.Status, body)
 	}
 	var out struct {
-		AccessToken string `json:"access_token"`
+		AccessToken  string `json:"access_token"`
+		RefreshToken string `json:"refresh_token"`
 	}
 	if err := json.Unmarshal(body, &out); err != nil {
-		return "", err
+		return "", "", err
 	}
 	if out.AccessToken == "" {
-		return "", fmt.Errorf("no access_token")
+		return "", "", fmt.Errorf("no access_token")
 	}
-	return out.AccessToken, nil
+	return out.AccessToken, out.RefreshToken, nil
 }
 
 func bearerGET(url, token string) ([]byte, int, error) {
@@ -106,7 +108,7 @@ func bearerGET(url, token string) ([]byte, int, error) {
 }
 
 func ExchangeDiscord(clientID, clientSecret, redirect, code, verifier string) (string, error) {
-	return tokenPOST("https://discord.com/api/oauth2/token", url.Values{
+	access, _, err := tokenPOST("https://discord.com/api/oauth2/token", url.Values{
 		"client_id":     {clientID},
 		"client_secret": {clientSecret},
 		"grant_type":    {"authorization_code"},
@@ -114,6 +116,7 @@ func ExchangeDiscord(clientID, clientSecret, redirect, code, verifier string) (s
 		"redirect_uri":  {redirect},
 		"code_verifier": {verifier},
 	})
+	return access, err
 }
 
 func FetchDiscord(token, guildID string) (discordID, username, display, avatar string, inGuild bool, roles []string, err error) {
@@ -158,7 +161,7 @@ func FetchDiscord(token, guildID string) (discordID, username, display, avatar s
 	return
 }
 
-func ExchangeGoogle(clientID, clientSecret, redirect, code, verifier string) (string, error) {
+func ExchangeGoogle(clientID, clientSecret, redirect, code, verifier string) (access, refresh string, err error) {
 	return tokenPOST("https://oauth2.googleapis.com/token", url.Values{
 		"client_id":     {clientID},
 		"client_secret": {clientSecret},
@@ -166,6 +169,15 @@ func ExchangeGoogle(clientID, clientSecret, redirect, code, verifier string) (st
 		"code":          {code},
 		"redirect_uri":  {redirect},
 		"code_verifier": {verifier},
+	})
+}
+
+func RefreshGoogle(clientID, clientSecret, refresh string) (access, newRefresh string, err error) {
+	return tokenPOST("https://oauth2.googleapis.com/token", url.Values{
+		"client_id":     {clientID},
+		"client_secret": {clientSecret},
+		"grant_type":    {"refresh_token"},
+		"refresh_token": {refresh},
 	})
 }
 
