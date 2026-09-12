@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"path/filepath"
+	"strings"
 
 	"seshhub/internal/auth"
 	"seshhub/internal/config"
@@ -92,6 +93,9 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, dat
 	data["User"] = UserFrom(r)
 	data["DiscordLogin"] = s.cfg.DiscordEnabled()
 	data["YouTubeLogin"] = s.cfg.YouTubeEnabled()
+	if path, _ := data["Path"].(string); publicHero(path) {
+		data["Hero"] = true
+	}
 	files := []string{
 		filepath.Join(s.webDir, "templates", "layouts", "base.html"),
 		filepath.Join(s.webDir, "templates", "partials", "nav.html"),
@@ -112,6 +116,16 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, dat
 
 func (s *Server) home(w http.ResponseWriter, r *http.Request) {
 	s.render(w, r, "index.html", map[string]any{"Title": "Sesh Sofa", "Path": "/"})
+}
+
+func publicHero(path string) bool {
+	if path == "" || path == "/account" || path == "/access" {
+		return false
+	}
+	if strings.HasPrefix(path, "/admin") || strings.HasPrefix(path, "/dashboard") {
+		return false
+	}
+	return true
 }
 
 func Addr(port string) string {

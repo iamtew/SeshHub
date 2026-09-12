@@ -25,6 +25,7 @@ body {
     background-color: var(--chartreuse);
     display: flex;
     flex-direction: column;
+    align-items: center;
     padding: 1.25rem 1rem 2rem;
 }
 body::before,
@@ -49,8 +50,46 @@ body::after {
 body > * { position: relative; z-index: 1; }
 a { color: var(--fg); text-decoration: none; font-weight: 600; }
 a:hover { text-shadow: 0 0 6px var(--red), 0 0 12px var(--chartreuse); color: var(--fg); }
-.nav, .wrap, .foot {
+.hero, .nav, .wrap, .foot {
     width: 100%;
+    max-width: 76rem;
+}
+.hero {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    margin-bottom: 1rem;
+    background: transparent;
+}
+.hero img, .hero video, .hero-play, .hero-vid {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: transparent;
+}
+.hero img { object-fit: contain; }
+.hero video { object-fit: contain; background: var(--black); }
+.hero-vid { opacity: 0; pointer-events: none; }
+.hero.playing .hero-vid { opacity: 1; pointer-events: auto; }
+.hero-play {
+    padding: 0;
+    background: transparent;
+    cursor: pointer;
+    border-radius: 0;
+    min-height: 0;
+}
+.hero-play:hover { box-shadow: none; filter: brightness(1.08); }
+.hero-close {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.6rem;
+    z-index: 2;
+    min-height: 2.2rem;
+    background: var(--black);
+    border: 1px solid var(--offwhite);
+}
+.nav, .wrap, .foot {
     background: var(--panel);
     padding-left: 1.5rem;
     padding-right: 1.5rem;
@@ -101,8 +140,12 @@ a:hover { text-shadow: 0 0 6px var(--red), 0 0 12px var(--chartreuse); color: va
     color: transparent;
     text-shadow: none;
 }
-.brand { display: flex; align-items: center; max-width: min(22rem, 70vw); }
-.brand img { width: 100%; height: auto; display: block; }
+.brand {
+    font-family: "Monster Chiller", "Pill Gothic 600mg", sans-serif;
+    font-size: clamp(1.6rem, 3vw, 2.4rem);
+    font-weight: 400;
+    color: var(--fg);
+}
 .signin .btn, .signin button {
     background: var(--violet); color: var(--fg); border: 0;
     padding: 0.45rem 1.1rem; font: inherit; min-height: 2.4rem; border-radius: 999px;

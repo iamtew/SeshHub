@@ -5,7 +5,7 @@ Status, not spec. Spec lives in `README.md`.
 ## Now
 
 - Public site, OAuth (login + link Discord/YouTube), access queue, Discord-role team + skater profiles, articles, per-skater YouTube clips, admin users (merge/unlink/delete), custom pages, `-port`.
-- Dark neon CSS in `web/static/css/app.css`. CSS-only mobile menu. Wide app chrome on the fire/halftone field (no 72rem postcard).
+- Dark neon CSS in `web/static/css/app.css`. Public menu pages share sofa hero + 76rem well; admin/dashboard stay chrome-light.
 - Halftone-over-gradient recipe in `halftone_background.md` for other agents.
 
 ## Next
@@ -46,3 +46,9 @@ Status, not spec. Spec lives in `README.md`.
 - 2026-09-12 — Wrote `halftone_background.md` (gradient + checker SVG multiply).
 - 2026-09-12 — Full-width app shell; fire/halftone frame unchanged.
 - 2026-09-12 — Header scrolls with the page (not sticky).
+- 2026-09-12 — Narrower 76rem well. Home hero overlay plays latest YouTube clip.
+- 2026-09-12 — Hero plays local `seshsofa.mp4` like the show site, not YouTube.
+- 2026-09-12 — Hero overlay is transparent; fire/halftone shows through the PNG.
+- 2026-09-12 — Track `web/static/vid/seshsofa.mp4` in git.
+- 2026-09-12 — Dropped sofa mark from the header; hero owns it.
+- 2026-09-12 — Hero on public menu pages (home/team/news/videos); not on admin/dashboard.
