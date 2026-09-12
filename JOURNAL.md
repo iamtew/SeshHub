@@ -5,11 +5,11 @@ Status, not spec. Spec lives in `README.md`.
 ## Now
 
 - Public site, OAuth (login + link Discord/YouTube), access queue, Discord-role team + skater profiles, articles, per-skater YouTube clips, admin users (merge/unlink/delete), custom pages, `-port`.
-- Skater profiles show latest synced clips from a linked YouTube channel while the skater is logged in. `/videos` is that aggregate. No site-wide API-key poller.
+- Dark neon CSS in `web/static/css/app.css`. CSS-only mobile menu. Look pulled toward seshsofa.nl (chartreuse field, dark well, brand mark).
 
 ## Next
 
-1. Tailwind / Turso only when a real need shows up.
+1. Turso only when a real need shows up.
 
 ## Log
 
@@ -29,3 +29,16 @@ Status, not spec. Spec lives in `README.md`.
 - 2026-09-12 — Team from Discord skater role; dropped roster CRUD; profile display name.
 - 2026-09-12 — Ensure skater profile on each request so an existing login still lands on /team.
 - 2026-09-12 — Own Skater profile vs admin Team Skaters (status only).
+- 2026-09-12 — Dark high-tech restyle: palette tokens, space, sticky nav, burger.
+- 2026-09-12 — Dropped Tailwind from the spec. Plain `app.css` is the styling layer.
+- 2026-09-12 — Restyle toward seshsofa.nl: fire field, dark rounded well, sofa mark, show fonts.
+- 2026-09-12 — Monster Chiller nav only; headings use Turbo Jungle (digits).
+- 2026-09-12 — Halftone dots slightly larger, grid rotated 45°.
+- 2026-09-12 — Halftone dots 4× size.
+- 2026-09-12 — Halftone: dot diameter = gap.
+- 2026-09-12 — Halftone: rounded squares, gap = half the cell.
+- 2026-09-12 — Halftone: checkerboard, not brick.
+- 2026-09-12 — Halftone checkerboard gutters tightened.
+- 2026-09-12 — Gradient −23°, halftone +58°, rounder cells.
+- 2026-09-12 — Halftone multiply-blend, slightly quieter.
+- 2026-09-12 — Halftone opacity a smidge lower.

@@ -132,7 +132,7 @@ SeshHub is engineered around specific design principles:
 - **No Passwords / Pure OAuth**: User identity is federated exclusively through **Discord** and **YouTube** OAuth 2.0. No password hashes, email verification loops, or reset tokens are stored.
 - **Discord Guild-Driven RBAC**: Permissions (Admin, Team Skater, Member) are dynamically resolved or validated against user membership and roles within the official Sesh Sofa Discord server. Users who do not match Guild RBAC, including YouTube-authenticated users, can request access for case-by-case approval by a site admin.
 - **Embedded libSQL Database**: Operates using embedded SQLite-compatible libSQL (file-backed locally, optionally synced to Turso Cloud in production) with zero external database server overhead.
-- **Server-Driven Dynamic UI**: Frontend powered by Go standard `html/template` enhanced with **HTMX**, **Alpine.js**, and **Tailwind CSS**, delivering reactive SPA-like interactions without the operational overhead of a heavy client-side JavaScript framework.
+- **Server-Driven Dynamic UI**: Frontend powered by Go standard `html/template` and a single hand-written stylesheet (`web/static/css/app.css`). HTMX / Alpine.js only if a page actually needs them.
 
 ---
 
@@ -144,7 +144,7 @@ SeshHub is engineered around specific design principles:
 | **Database** | [libSQL](https://github.com/tursodatabase/libsql) | Production-grade SQLite fork supporting embedded local files and Turso cloud replication. |
 | **Templating** | Go `html/template` | Standard library server-side rendered HTML with strict context-aware escaping. |
 | **Interactivity** | [HTMX](https://htmx.org/) + [Alpine.js](https://alpinejs.dev/) | Declarative AJAX swaps, inline element updates, modal dialogs, and UI toggles. |
-| **Styling** | [Tailwind CSS](https://tailwindcss.com/) | Modern utility-first CSS design system tailored for responsive dark/light skate aesthetic. |
+| **Styling** | Hand-written CSS | Dark neon palette in `web/static/css/app.css`. No CSS framework. |
 | **Content Editor** | [Monaco Editor](https://microsoft.github.io/monaco-editor/) | In-browser Markdown and HTML editor for rich article publishing and page formatting. |
 | **Identity & Auth** | Discord & YouTube OAuth 2.0 | Decentralized authentication with Discord Guild API role validation. |
 | **Media** | YouTube Data API v3 via skater OAuth | Latest uploads from linked skater channels while they are logged in. |
@@ -174,7 +174,7 @@ flowchart TD
         
         subgraph TemplatesLayer [Externally Hosted Web Assets]
             Templates[Go html/template]
-            StaticFiles[Tailwind CSS / HTMX / Monaco]
+            StaticFiles[app.css / optional JS / Monaco]
         end
 
         subgraph BackgroundService [On-request]
@@ -430,7 +430,7 @@ SeshHub/
 │           └── render.go            # Template rendering engine with layout support
 ├── web/                             # Runtime-loaded frontend assets served separately from the binary
 │   ├── static/
-│   │   ├── css/                     # Compiled Tailwind CSS
+│   │   ├── css/                     # Site CSS (app.css)
 │   │   ├── js/                      # HTMX, Alpine.js, Monaco initialization scripts
 │   │   ├── img/                     # Brand icons, placeholders, default avatars
 │   │   └── monaco/                  # Monaco Editor distribution assets
