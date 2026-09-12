@@ -25,7 +25,6 @@ body {
     background-color: var(--chartreuse);
     display: flex;
     flex-direction: column;
-    align-items: center;
     padding: 1.25rem 1rem 2rem;
 }
 body::before,
@@ -52,7 +51,6 @@ a { color: var(--fg); text-decoration: none; font-weight: 600; }
 a:hover { text-shadow: 0 0 6px var(--red), 0 0 12px var(--chartreuse); color: var(--fg); }
 .nav, .wrap, .foot {
     width: 100%;
-    max-width: 72rem;
     background: var(--panel);
     padding-left: 1.5rem;
     padding-right: 1.5rem;
@@ -64,14 +62,14 @@ a:hover { text-shadow: 0 0 6px var(--red), 0 0 12px var(--chartreuse); color: va
     align-items: center;
     padding-top: 1.25rem;
     padding-bottom: 1rem;
-    border-radius: 2em 2em 0 0;
+    border-radius: 0.75rem 0.75rem 0 0;
 }
 .wrap { padding-top: 1.5rem; padding-bottom: 2.5rem; flex: 1; }
 .foot {
     color: var(--muted);
     padding-top: 1rem;
     padding-bottom: 1.5rem;
-    border-radius: 0 0 2em 2em;
+    border-radius: 0 0 0.75rem 0.75rem;
     font-size: 0.95rem;
 }
 .nav-toggle { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }

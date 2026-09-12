@@ -5,7 +5,8 @@ Status, not spec. Spec lives in `README.md`.
 ## Now
 
 - Public site, OAuth (login + link Discord/YouTube), access queue, Discord-role team + skater profiles, articles, per-skater YouTube clips, admin users (merge/unlink/delete), custom pages, `-port`.
-- Dark neon CSS in `web/static/css/app.css`. CSS-only mobile menu. Look pulled toward seshsofa.nl (chartreuse field, dark well, brand mark).
+- Dark neon CSS in `web/static/css/app.css`. CSS-only mobile menu. Wide app chrome on the fire/halftone field (no 72rem postcard).
+- Halftone-over-gradient recipe in `halftone_background.md` for other agents.
 
 ## Next
 
@@ -42,3 +43,6 @@ Status, not spec. Spec lives in `README.md`.
 - 2026-09-12 — Gradient −23°, halftone +58°, rounder cells.
 - 2026-09-12 — Halftone multiply-blend, slightly quieter.
 - 2026-09-12 — Halftone opacity a smidge lower.
+- 2026-09-12 — Wrote `halftone_background.md` (gradient + checker SVG multiply).
+- 2026-09-12 — Full-width app shell; fire/halftone frame unchanged.
+- 2026-09-12 — Header scrolls with the page (not sticky).
