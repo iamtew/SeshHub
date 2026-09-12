@@ -23,3 +23,4 @@ Status, not spec. Spec lives in `README.md`.
 - 2026-09-12 — Admin dashboard, custom pages, optional Monaco loader.
 - 2026-09-12 — `-port` / `-db` / `-web` flags. Tailwind and Turso parked.
 - 2026-09-12 — YouTube paging, featured skater video, Open Graph tags.
+- 2026-09-12 — README: blurb, Meat Bag runbook (incl. OAuth), then spec.

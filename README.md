@@ -1,15 +1,113 @@
 # SeshHub
 
-> **Content Management System & Portal for Sesh Sofa and the Fakeskate Community**
+SeshHub is the website and CMS for **Sesh Sofa** and the fakeskate scene. One Go process, a SQLite file, templates on disk. Public roster, news, videos, custom pages. Login is Discord or YouTube only — no passwords. Discord guild roles (plus a superadmin list) decide who is admin, skater, or member; everyone else can request access.
 
-SeshHub is a lightweight, high-performance Content Management System (CMS) and community portal built with **Go** and **libSQL** (Turso's production-ready SQLite fork). It powers the public **Sesh Sofa** website, hosts skater team rosters and custom profiles, automatically synchronizes media from YouTube, and offers a web-based management suite featuring an embedded Monaco editor.
-
-This document serves as both human developer documentation and an exhaustive architectural specification for AI coding agents implementing features across the codebase.
+Local default listen address is **port 53053**. That port is yours. Don't let a Clanker steal it; they use `-port`.
 
 ---
 
+## Meat Bag: get it running
+
+### What you need
+
+- [Go](https://go.dev/dl/) 1.22+ on `PATH`
+- [just](https://just.systems/) (optional; `go run` / `go test` work without it)
+- A Discord application if you want login
+- A Google Cloud project if you want YouTube login and/or the video poller
+
+No Node, no C compiler, no Docker.
+
+### First boot
+
+From the repo root (PowerShell):
+
+```powershell
+copy .env.example .env
+just deps
+just test
+just dev
+```
+
+Without just:
+
+```powershell
+copy .env.example .env
+go mod tidy
+go test ./...
+go run ./cmd/server
+```
+
+Open [http://localhost:53053](http://localhost:53053). Schema is applied on start into `seshhub.db`. Login buttons stay disabled until OAuth client id **and** secret are set.
+
+Useful flags (override `.env`):
+
+```powershell
+just dev -port 127.0.0.1:53054 -db file:scratch.db
+```
+
+`-port` accepts `53054` or `host:port`. `-web` points at the `web/` folder if you moved it.
+
+Put a real secret in `.env`:
+
+```powershell
+# SESSION_SECRET — 32+ random bytes, hex is fine
+-join ((1..32) | ForEach-Object { '{0:x2}' -f (Get-Random -Max 256) })
+```
+
+Set `BASE_URL` to the same origin you type in the browser (`http://localhost:53053`). OAuth redirect URIs must match that origin exactly.
+
+### Discord login and roles
+
+1. [Discord Developer Portal](https://discord.com/developers/applications) → New Application.
+2. **OAuth2 → Redirects**: add `http://localhost:53053/auth/discord/callback` (and later the production URL).
+3. Copy **Client ID** and **Client Secret** into `DISCORD_CLIENT_ID` / `DISCORD_CLIENT_SECRET`.
+4. Enable **Developer Mode** in Discord (Settings → Advanced). Right-click the Sesh Sofa server → Copy Server ID → `DISCORD_GUILD_ID`.
+5. Server Settings → Roles → right-click the admin role and the skater role → Copy Role ID → `DISCORD_ADMIN_ROLE_ID` / `DISCORD_SKATER_ROLE_ID`.
+6. Right-click **your** user → Copy User ID → `SUPERADMIN_DISCORD_IDS` (comma-separated if more than one). That list is admin even without the guild admin role, so you can log in the first time.
+
+Scopes used: `identify`, `guilds.members.read`. Restart the server after saving `.env`. Sign in with Discord. Guild admin role or superadmin → **admin**. Skater role → **skater**. In the guild otherwise → **member**. Not in the guild → **pending** (request access at `/access`; approve at `/admin/access`).
+
+### YouTube login and video sync
+
+Two different Google credentials. You can enable one, both, or neither.
+
+**Poller** (fills `/videos`, needs no user click):
+
+1. [Google Cloud Console](https://console.cloud.google.com/) → new project (or reuse one).
+2. Enable **YouTube Data API v3**.
+3. Credentials → **API key** → `YOUTUBE_API_KEY`.
+4. Channel ID (the `UC…` id, not `@handle`) → `YOUTUBE_CHANNEL_ID`. [Find it](https://www.youtube.com/account_advanced) on the channel's advanced settings, or from a video URL via the Data API.
+5. Optional: `YOUTUBE_SYNC_INTERVAL_MINUTES` (default 60). First sync runs at process start, then on that interval, and from **Admin → YouTube → Sync now**.
+
+**Login** (Sign in with YouTube):
+
+1. Same project → Credentials → **OAuth client ID** → Web application.
+2. Authorized redirect URI: `http://localhost:53053/auth/youtube/callback`.
+3. Copy client id/secret → `YOUTUBE_CLIENT_ID` / `YOUTUBE_CLIENT_SECRET`.
+4. OAuth consent screen: add yourself as a test user while the app is in Testing.
+5. Scope: `https://www.googleapis.com/auth/youtube.readonly` (we read the user's channel). YouTube-only accounts start as **pending**.
+
+Restart after `.env` changes. Production: add the live `https://…/auth/…/callback` URIs and set `APP_ENV=production`, `BASE_URL` to the public https origin, and a non-default `SESSION_SECRET`.
+
+### Day-to-day
+
+| Want | Do |
+| :--- | :--- |
+| Run it | `just dev` (port **53053**) |
+| Tests | `just test` |
+| Linux binary from Windows | see [Cross-compilation](#cross-compilation) |
+| Status of the repo | [`JOURNAL.md`](JOURNAL.md) — what works now vs what's next |
+| Spec / schema / RBAC | everything below this section |
+
+---
+
+## Specification
+
+The rest of this file is the architecture spec (what the system is supposed to be). Code and [`JOURNAL.md`](JOURNAL.md) win when they disagree.
+
 ## Table of Contents
 
+0. [Meat Bag: get it running](#meat-bag-get-it-running)
 1. [Project Overview & Core Principles](#project-overview--core-principles)
 2. [Technology Stack](#technology-stack)
 3. [System Architecture](#system-architecture)
@@ -426,42 +524,7 @@ YOUTUBE_CLIENT_SECRET=your_google_oauth_client_secret
 
 ## Development & Build Workflows
 
-### Prerequisites
-- **Go**: 1.22+ installed and available in `PATH`.
-- **just**: The command runner used for project development and builds. See [just.systems](https://just.systems/) for installation instructions.
-- **GCC / MinGW**: (If compiling with CGO-dependent SQLite drivers; prefer pure-Go / modernc driver where possible for zero-dependency builds).
-- **Tailwind CLI / Node**: (Optional for template/CSS dev; pre-bundled CSS is checked into the repository or generated via a `Justfile` recipe).
-
-### Local Development (Windows / Linux)
-
-1. **Clone and Configure**:
-   ```bash
-   git clone https://github.com/your-org/SeshHub.git
-   cd SeshHub
-   cp .env.example .env
-   ```
-
-2. **Install dependencies**:
-   ```bash
-    just deps
-   ```
-
-3. **Run migrations and start the server**:
-   ```bash
-    just dev
-   ```
-
-4. **Run tests**:
-    ```bash
-    just test
-    ```
-
-5. **Live Reloading (Optional - via Air)**:
-   ```bash
-    just watch
-   ```
-
-The `Justfile` is the canonical interface for development, testing, asset generation, and builds. Run `just` to list all available recipes. Direct Go commands remain useful for troubleshooting or when `just` is unavailable.
+Day-to-day setup, OAuth, and `just` recipes are in [Meat Bag: get it running](#meat-bag-get-it-running). `just` lists recipes. `go run ./cmd/server` is the same as `just dev`.
 
 ### Cross-Compilation
 
