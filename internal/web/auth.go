@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"seshhub/internal/auth"
+	"seshhub/internal/skater"
 	"seshhub/internal/yt"
 )
 
@@ -29,8 +30,23 @@ func (s *Server) injectUser(r *http.Request) *http.Request {
 	if err != nil {
 		return r
 	}
+	s.maybeEnsureProfile(u)
 	s.maybeSyncSkater(u.ID)
 	return r.WithContext(context.WithValue(r.Context(), userKey, &u))
+}
+
+// ponytail: site role is admin-first, so Discord skater role is invisible after login. Admins with Discord show on /team; drop if a non-skater admin appears.
+func (s *Server) maybeEnsureProfile(u auth.User) {
+	if u.DiscordID == "" || (u.Role != auth.RoleSkater && u.Role != auth.RoleAdmin) {
+		return
+	}
+	name := u.Username
+	if name == "" {
+		name = u.DisplayName
+	}
+	if _, err := skater.EnsureForUser(s.db, u.ID, name); err != nil {
+		slog.Error("skater profile", "err", err, "user", u.ID)
+	}
 }
 
 func (s *Server) maybeSyncSkater(userID string) {
@@ -90,11 +106,20 @@ func (s *Server) callbackDiscord(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	role := auth.DiscordRole(id, inGuild, roles, s.cfg.SuperAdminIDs, s.cfg.DiscordAdminRoleID, s.cfg.DiscordSkaterRoleID)
+	ensure := func(userID string) {
+		if !auth.HasGuildRole(roles, s.cfg.DiscordSkaterRoleID) {
+			return
+		}
+		if _, err := skater.EnsureForUser(s.db, userID, username); err != nil {
+			slog.Error("skater profile", "err", err, "user", userID)
+		}
+	}
 	if cur := UserFrom(r); cur != nil {
 		if _, err := auth.LinkDiscord(s.db, cur.ID, id, username, display, avatar, role); err != nil {
 			s.oauthLinkErr(w, err)
 			return
 		}
+		ensure(cur.ID)
 		s.clearOAuthCookie(w)
 		http.Redirect(w, r, "/account", http.StatusFound)
 		return
@@ -105,6 +130,7 @@ func (s *Server) callbackDiscord(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "login failed", http.StatusInternalServerError)
 		return
 	}
+	ensure(u.ID)
 	s.issueSession(w, r, u.ID)
 }
 

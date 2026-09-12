@@ -1,6 +1,6 @@
 # SeshHub
 
-SeshHub is the website and CMS for **Sesh Sofa** and the fakeskate scene. One Go process, a SQLite file, templates on disk. Public roster, news, videos, custom pages. Login is Discord or YouTube only — no passwords. Discord guild roles (plus a superadmin list) decide who is admin, skater, or member; everyone else can request access.
+SeshHub is the website and CMS for **Sesh Sofa** and the fakeskate scene. One Go process, a SQLite file, templates on disk. Public team (Discord skater role), news, videos, custom pages. Login is Discord or YouTube only — no passwords. Discord guild roles (plus a superadmin list) decide who is admin, skater, or member; everyone else can request access.
 
 Local default listen address is **port 53053**. That port is yours. Don't let a Clanker steal it; they use `-port`.
 
@@ -65,11 +65,11 @@ Set `BASE_URL` to the same origin you type in the browser (`http://localhost:530
 5. Server Settings → Roles → right-click the admin role and the skater role → Copy Role ID → `DISCORD_ADMIN_ROLE_ID` / `DISCORD_SKATER_ROLE_ID`.
 6. Right-click **your** user → Copy User ID → `SUPERADMIN_DISCORD_IDS` (comma-separated if more than one). That list is admin even without the guild admin role, so you can log in the first time.
 
-Scopes used: `identify`, `guilds.members.read`. Restart the server after saving `.env`. Sign in with Discord. Guild admin role or superadmin → **admin**. Skater role → **skater**. In the guild otherwise → **member**. Not in the guild → **pending** (request access at `/access`; approve at `/admin/access`). Duplicate Discord/YouTube users: **Admin → Users** → merge into the Discord row.
+Scopes used: `identify`, `guilds.members.read`. Restart the server after saving `.env`. Sign in with Discord. Guild admin role or superadmin → **admin**. Skater role → **skater**, and a `/team` profile is created (Discord name, linked user id). In the guild otherwise → **member**. Not in the guild → **pending** (request access at `/access`; approve at `/admin/access`). Duplicate Discord/YouTube users: **Admin → Users** → merge into the Discord row.
 
 ### YouTube login and skater videos
 
-One Google OAuth client. That is login, linking a channel, and (for roster skaters) refreshing their latest public uploads onto their profile and `/videos`. There is no API key and no site-wide channel poller.
+One Google OAuth client. That is login, linking a channel, and (for team skaters) refreshing their latest public uploads onto their profile and `/videos`. There is no API key and no site-wide channel poller.
 
 1. [Google Cloud Console](https://console.cloud.google.com/) → new project (or reuse one).
 2. Enable **YouTube Data API v3** (OAuth calls it).
@@ -81,7 +81,7 @@ One Google OAuth client. That is login, linking a channel, and (for roster skate
 
 YouTube-only accounts start as **pending**. After an admin approves (or Discord guild RBAC applies), open **Account** and connect the other provider. Discord-first users connect YouTube the same way. Re-using a Discord or YouTube identity already on another SeshHub user is rejected.
 
-Roster skaters with a linked YouTube channel: while they are logged in, SeshHub pulls up to 50 latest uploads (at most once an hour) onto `/team/{slug}` and the public `/videos` list. Guests see the last snapshot. No sync until an admin links a skater profile to that user.
+Team skaters (Discord `DISCORD_SKATER_ROLE_ID`, after they log in) with a linked YouTube channel: while they are logged in, SeshHub pulls up to 50 latest uploads (at most once an hour) onto `/team/{slug}` and the public `/videos` list. Guests see the last snapshot. The skater profile row is created on Discord login.
 
 Restart after `.env` changes. Production: add the live `https://…/auth/…/callback` URIs and set `APP_ENV=production`, `BASE_URL` to the public https origin, and a non-default `SESSION_SECRET`.
 
@@ -224,28 +224,24 @@ Users who do not match a Discord guild role, as well as users authenticated thro
 
 | Role | Hierarchy Level | Determination Logic | Capabilities |
 | :--- | :--- | :--- | :--- |
-| **Admin** | Level 3 | Discord user has configured `DISCORD_ADMIN_ROLE_ID` in the Sesh Sofa Discord guild, OR user ID matches `SUPERADMIN_DISCORD_IDS`. | Full system access: manage team roster, edit all articles/pages, configure site settings. |
+| **Admin** | Level 3 | Discord user has configured `DISCORD_ADMIN_ROLE_ID` in the Sesh Sofa Discord guild, OR user ID matches `SUPERADMIN_DISCORD_IDS`. | Full system access: Team Skaters (status), edit all articles/pages, configure site settings. |
 | **Team Skater** | Level 2 | Discord user has configured `DISCORD_SKATER_ROLE_ID` in the guild, OR manually designated by an Admin. | Edit own skater profile, update personal links/sponsors/clips, draft articles. |
 | **Member** | Level 1 | A Discord guild member with the member role, or a user whose access request was individually approved by an Admin. | View member-exclusive media, comment/react (if enabled), link secondary OAuth accounts. |
 | **Access Pending** | N/A | A user who does not match Guild RBAC or is authenticated through YouTube and has submitted an access request. | View public content while awaiting an Admin decision; no member-only access. |
-| **Guest / Anonymous** | Level 0 | Unauthenticated public visitor. | View public pages, read published articles, browse skater roster, watch embedded videos. |
+| **Guest / Anonymous** | Level 0 | Unauthenticated public visitor. | View public pages, read published articles, browse the team, watch embedded videos. |
 
 ---
 
 ## Core Functional Modules
 
 ### 1. Skater Profiles & Team Roster
-- **Team Directory (`/team` / `/skaters`)**: Grid listing active and legacy skaters with avatar, stance, status (Pro, Am, Flow, Legend), and location.
-- **Skater Detail Page (`/team/{slug}`)**:
-  - Full bio, years active, preferred stance (Regular / Goofy / Mongo).
-  - Social media hub (Discord, YouTube, Instagram, TikTok, Twitch).
-  - Sponsor & brand affiliations with logos/links.
-  - Signature tricks and favorite fakeskate spots/maps.
-  - Video showcase: latest clips synced from the skater’s linked YouTube channel (optional featured pin).
-- **Self-Service Skater Dashboard (`/dashboard/profile`)**: Allows verified skaters to update their own bios, clips, and links without requiring admin intervention.
+- **Team Directory (`/team` / `/skaters`)**: People who hold `DISCORD_SKATER_ROLE_ID` in the guild and have logged in with Discord. Name comes from Discord; optional display name, stance, status, location, bio.
+- **Skater Detail Page (`/team/{slug}`)**: Bio, stance, status, location, Discord avatar, and clips from a linked YouTube channel (optional featured pin).
+- **Skater profile (`/dashboard/profile`)**: Own profile only — display name, stance, location, bio, featured clip.
+- **Team Skaters (`/admin/skaters`)**: Superadmin / Discord admin role only. Set another skater’s status. No add-skater form.
 
 ### 2. YouTube clips from skaters
-- **No site-wide poller**: `/videos` is the union of clips pulled from roster skaters who have connected YouTube.
+- **No site-wide poller**: `/videos` is the union of clips pulled from team skaters who have connected YouTube.
 - **Logged-in refresh**: If the user has a `skater_profiles` row, a YouTube refresh token, and last sync is older than 60 minutes, a request while they are logged in refreshes up to 50 latest uploads.
 - **Manual pin**: Admins/skaters can still set `featured_video_id` from that channel’s synced rows.
 
@@ -424,7 +420,7 @@ SeshHub/
 │       │   ├── auth.go              # OAuth callback endpoints
 │       │   ├── home.go              # Public home, news, and video gallery
 │       │   ├── pages.go             # Custom dynamic pages handler
-│       │   ├── skaters.go           # Skater roster and profile views
+│       │   ├── skaters.go           # Team list and skater profile views
 │       │   └── ws.go                # Optional WebSocket / SSE for live sync updates
 │       ├── middleware/
 │       │   ├── auth_middleware.go   # Session validation and context injection
@@ -446,7 +442,7 @@ SeshHub/
 │       │   ├── index.html           # Home page
 │       │   ├── articles_list.html   # News & articles index
 │       │   ├── article_detail.html  # Single article view
-│       │   ├── skaters_list.html    # Team roster grid
+│       │   ├── skaters_list.html    # Team grid
 │       │   ├── skater_detail.html   # Individual skater profile
 │       │   ├── videos_list.html     # YouTube video gallery
 │       │   └── custom_page.html     # Generic static page template

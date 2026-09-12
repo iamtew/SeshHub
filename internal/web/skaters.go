@@ -3,32 +3,22 @@ package web
 import (
 	"database/sql"
 	"net/http"
-	"strings"
 
 	"seshhub/internal/auth"
 	"seshhub/internal/skater"
 	"seshhub/internal/yt"
 )
 
-func formProfile(r *http.Request) skater.Profile {
+func formProfile(r *http.Request, existing skater.Profile) skater.Profile {
 	_ = r.ParseForm()
-	return skater.Profile{
-		ID:              r.FormValue("id"),
-		UserID:          strings.TrimSpace(r.FormValue("user_id")),
-		Slug:            r.FormValue("slug"),
-		SkaterName:      r.FormValue("skater_name"),
-		RealName:        r.FormValue("real_name"),
-		Bio:             r.FormValue("bio"),
-		Stance:          r.FormValue("stance"),
-		Status:          r.FormValue("status"),
-		AvatarURL:       r.FormValue("avatar_url"),
-		BannerURL:       r.FormValue("banner_url"),
-		Location:        r.FormValue("location"),
-		Sponsors:        r.FormValue("sponsors"),
-		SocialLinks:     r.FormValue("social_links"),
-		SignatureTricks: r.FormValue("signature_tricks"),
-		FeaturedVideoID: strings.TrimSpace(r.FormValue("featured_video_id")),
+	existing.RealName = r.FormValue("display_name")
+	existing.Bio = r.FormValue("bio")
+	existing.Stance = r.FormValue("stance")
+	existing.Location = r.FormValue("location")
+	if _, ok := r.PostForm["featured_video_id"]; ok {
+		existing.FeaturedVideoID = r.FormValue("featured_video_id")
 	}
+	return existing
 }
 
 func skaterView(p skater.Profile) map[string]any {
@@ -39,7 +29,7 @@ func skaterView(p skater.Profile) map[string]any {
 }
 
 func (s *Server) team(w http.ResponseWriter, r *http.Request) {
-	list, err := skater.List(s.db)
+	list, err := skater.ListTeam(s.db)
 	if err != nil {
 		http.Error(w, "db error", http.StatusInternalServerError)
 		return
@@ -53,7 +43,7 @@ func (s *Server) skatersAlias(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) skaterDetail(w http.ResponseWriter, r *http.Request) {
 	p, err := skater.Get(s.db, "slug", r.PathValue("slug"))
-	if err == sql.ErrNoRows {
+	if err == sql.ErrNoRows || (err == nil && p.UserID == "") {
 		http.NotFound(w, r)
 		return
 	}
@@ -62,10 +52,11 @@ func (s *Server) skaterDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	u := UserFrom(r)
+	name := p.PublicName()
 	data := skaterView(p)
-	data["Title"] = p.SkaterName
+	data["Title"] = name
 	data["Path"] = "/team"
-	data["OGTitle"] = p.SkaterName
+	data["OGTitle"] = name
 	data["OGDesc"] = p.Bio
 	if p.AvatarURL != "" {
 		data["OGImage"] = p.AvatarURL
@@ -102,22 +93,7 @@ func (s *Server) adminSkaters(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "db error", http.StatusInternalServerError)
 		return
 	}
-	s.render(w, r, "admin_skaters.html", map[string]any{"Title": "Roster", "Path": "/admin/skaters", "Skaters": list, "P": skater.Profile{Stance: "regular", Status: "active"}})
-}
-
-func (s *Server) adminSkaterCreate(w http.ResponseWriter, r *http.Request) {
-	u := UserFrom(r)
-	if u == nil || u.Role != auth.RoleAdmin {
-		http.Error(w, "forbidden", http.StatusForbidden)
-		return
-	}
-	p := formProfile(r)
-	p.ID = ""
-	if _, err := skater.Save(s.db, p); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	http.Redirect(w, r, "/admin/skaters", http.StatusSeeOther)
+	s.render(w, r, "admin_skaters.html", map[string]any{"Title": "Team Skaters", "Path": "/admin/skaters", "Skaters": list})
 }
 
 func (s *Server) adminSkaterEdit(w http.ResponseWriter, r *http.Request) {
@@ -126,23 +102,23 @@ func (s *Server) adminSkaterEdit(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}
+	if r.Method != http.MethodPost {
+		http.Redirect(w, r, "/admin/skaters", http.StatusSeeOther)
+		return
+	}
 	p, err := skater.Get(s.db, "id", r.PathValue("id"))
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
-	if r.Method == http.MethodPost {
-		np := formProfile(r)
-		np.ID = p.ID
-		if _, err := skater.Save(s.db, np); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		http.Redirect(w, r, "/admin/skaters", http.StatusSeeOther)
+	if st := r.FormValue("status"); st != "" {
+		p.Status = st
+	}
+	if _, err := skater.Save(s.db, p); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	vids := userChannelVideos(s.db, p.UserID, 50)
-	s.render(w, r, "skater_form.html", map[string]any{"Title": "Edit " + p.SkaterName, "Path": "/admin/skaters", "P": p, "Action": "/admin/skaters/" + p.ID, "Admin": true, "Videos": vids})
+	http.Redirect(w, r, "/admin/skaters", http.StatusSeeOther)
 }
 
 func (s *Server) adminSkaterDelete(w http.ResponseWriter, r *http.Request) {
@@ -163,6 +139,13 @@ func (s *Server) dashboardProfile(w http.ResponseWriter, r *http.Request) {
 	}
 	p, err := skater.Get(s.db, "user_id", u.ID)
 	if err == sql.ErrNoRows {
+		name := u.Username
+		if name == "" {
+			name = u.DisplayName
+		}
+		p, err = skater.EnsureForUser(s.db, u.ID, name)
+	}
+	if err == sql.ErrNoRows {
 		http.Error(w, "no profile linked", http.StatusNotFound)
 		return
 	}
@@ -171,14 +154,7 @@ func (s *Server) dashboardProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if r.Method == http.MethodPost {
-		np := formProfile(r)
-		np.ID = p.ID
-		np.UserID = p.UserID
-		if u.Role != auth.RoleAdmin {
-			np.Slug = p.Slug
-			np.Status = p.Status
-		}
-		if _, err := skater.Save(s.db, np); err != nil {
+		if _, err := skater.Save(s.db, formProfile(r, p)); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -186,5 +162,5 @@ func (s *Server) dashboardProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	vids := userChannelVideos(s.db, u.ID, 50)
-	s.render(w, r, "skater_form.html", map[string]any{"Title": "Your profile", "Path": "/dashboard/profile", "P": p, "Action": "/dashboard/profile", "Admin": u.Role == auth.RoleAdmin, "Videos": vids})
+	s.render(w, r, "skater_form.html", map[string]any{"Title": "Skater profile", "Path": "/dashboard/profile", "P": p, "Action": "/dashboard/profile", "Videos": vids})
 }

@@ -49,7 +49,6 @@ func New(cfg config.Config, db *sql.DB) *Server {
 	s.mux.HandleFunc("POST /admin/users/{id}/unlink/youtube", s.adminUserUnlink("youtube"))
 	s.mux.HandleFunc("POST /admin/users/{id}/delete", s.adminUserDelete)
 	s.mux.HandleFunc("GET /admin/skaters", s.adminSkaters)
-	s.mux.HandleFunc("POST /admin/skaters", s.adminSkaterCreate)
 	s.mux.HandleFunc("GET /admin/skaters/{id}", s.adminSkaterEdit)
 	s.mux.HandleFunc("POST /admin/skaters/{id}", s.adminSkaterEdit)
 	s.mux.HandleFunc("POST /admin/skaters/{id}/delete", s.adminSkaterDelete)

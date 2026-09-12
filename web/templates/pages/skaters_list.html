@@ -6,7 +6,8 @@
 <ul class="grid">
 {{range .Skaters}}
 <li>
-    <a href="/team/{{.Slug}}"><strong>{{.SkaterName}}</strong></a>
+    {{if .AvatarURL}}<img class="avatar" src="{{.AvatarURL}}" alt="">{{end}}
+    <a href="/team/{{.Slug}}"><strong>{{.PublicName}}</strong></a>
     <span class="who">{{.Stance}} · {{.Status}}{{if .Location}} · {{.Location}}{{end}}</span>
 </li>
 {{end}}

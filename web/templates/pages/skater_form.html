@@ -1,13 +1,8 @@
 {{define "content"}}
 <h1>{{.Title}}</h1>
 <form method="post" action="{{.Action}}" class="form">
-    <input type="hidden" name="id" value="{{.P.ID}}">
-    <label>Name <input name="skater_name" required value="{{.P.SkaterName}}"></label>
-    {{if .Admin}}
-    <label>Slug <input name="slug" value="{{.P.Slug}}" placeholder="auto"></label>
-    <label>Linked user id <input name="user_id" value="{{.P.UserID}}"></label>
-    {{end}}
-    <label>Real name <input name="real_name" value="{{.P.RealName}}"></label>
+    <p>Name {{.P.SkaterName}}</p>
+    <label>Display name <input name="display_name" value="{{.P.RealName}}" placeholder="optional"></label>
     <label>Location <input name="location" value="{{.P.Location}}"></label>
     <label>Stance
         <select name="stance">
@@ -16,24 +11,7 @@
             <option value="mongo" {{if eq .P.Stance "mongo"}}selected{{end}}>Mongo</option>
         </select>
     </label>
-    {{if .Admin}}
-    <label>Status
-        <select name="status">
-            <option value="active" {{if eq .P.Status "active"}}selected{{end}}>Active</option>
-            <option value="pro" {{if eq .P.Status "pro"}}selected{{end}}>Pro</option>
-            <option value="am" {{if eq .P.Status "am"}}selected{{end}}>Am</option>
-            <option value="flow" {{if eq .P.Status "flow"}}selected{{end}}>Flow</option>
-            <option value="legend" {{if eq .P.Status "legend"}}selected{{end}}>Legend</option>
-            <option value="inactive" {{if eq .P.Status "inactive"}}selected{{end}}>Inactive</option>
-        </select>
-    </label>
-    {{end}}
-    <label>Avatar URL <input name="avatar_url" value="{{.P.AvatarURL}}"></label>
-    <label>Banner URL <input name="banner_url" value="{{.P.BannerURL}}"></label>
     <label>Bio <textarea name="bio" rows="4">{{.P.Bio}}</textarea></label>
-    <label>Social (one per line) <textarea name="social_links" rows="4">{{.P.SocialLinks}}</textarea></label>
-    <label>Sponsors (one per line) <textarea name="sponsors" rows="3">{{.P.Sponsors}}</textarea></label>
-    <label>Signature tricks (one per line) <textarea name="signature_tricks" rows="3">{{.P.SignatureTricks}}</textarea></label>
     {{if .Videos}}
     <label>Featured video
         <select name="featured_video_id">

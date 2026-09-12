@@ -10,28 +10,35 @@ import (
 )
 
 type Profile struct {
-	ID               string
-	UserID           string
-	Slug             string
-	SkaterName       string
-	RealName         string
-	Bio              string
-	Stance           string
-	Status           string
-	AvatarURL        string
-	BannerURL        string
-	Location         string
-	Sponsors         string
-	SocialLinks      string
-	SignatureTricks  string
-	FeaturedVideoID  string
+	ID              string
+	UserID          string
+	Slug            string
+	SkaterName      string
+	RealName        string
+	Bio             string
+	Stance          string
+	Status          string
+	AvatarURL       string
+	BannerURL       string
+	Location        string
+	Sponsors        string
+	SocialLinks     string
+	SignatureTricks string
+	FeaturedVideoID string
+}
+
+func (p Profile) PublicName() string {
+	if s := strings.TrimSpace(p.RealName); s != "" {
+		return s
+	}
+	return p.SkaterName
 }
 
 func CanEdit(role, userID, profileUserID string) bool {
-	if role == "admin" {
-		return true
+	if userID == "" || userID != profileUserID {
+		return false
 	}
-	return role == "skater" && userID != "" && userID == profileUserID
+	return role == "skater" || role == "admin"
 }
 
 func Slugify(s string) string {
@@ -89,13 +96,27 @@ func uniqueSlug(db *sql.DB, base, exceptID string) (string, error) {
 	return "", fmt.Errorf("slug taken")
 }
 
+const profileSelect = `
+		SELECT p.id, IFNULL(p.user_id,''), p.slug, p.skater_name, IFNULL(p.real_name,''), IFNULL(p.bio,''),
+			IFNULL(p.stance,'regular'), IFNULL(p.status,'active'), IFNULL(NULLIF(p.avatar_url,''), IFNULL(u.avatar_url,'')), IFNULL(p.banner_url,''),
+			IFNULL(p.location,''), IFNULL(p.sponsors,''), IFNULL(p.social_links,''), IFNULL(p.signature_tricks,''),
+			IFNULL(p.featured_video_id,'')
+		FROM skater_profiles p LEFT JOIN users u ON u.id = p.user_id`
+
 func List(db *sql.DB) ([]Profile, error) {
-	rows, err := db.Query(`
-		SELECT id, IFNULL(user_id,''), slug, skater_name, IFNULL(real_name,''), IFNULL(bio,''),
-			IFNULL(stance,'regular'), IFNULL(status,'active'), IFNULL(avatar_url,''), IFNULL(banner_url,''),
-			IFNULL(location,''), IFNULL(sponsors,''), IFNULL(social_links,''), IFNULL(signature_tricks,''),
-			IFNULL(featured_video_id,'')
-		FROM skater_profiles ORDER BY skater_name`)
+	return list(db, false)
+}
+
+func ListTeam(db *sql.DB) ([]Profile, error) {
+	return list(db, true)
+}
+
+func list(db *sql.DB, linkedOnly bool) ([]Profile, error) {
+	q := profileSelect + ` ORDER BY COALESCE(NULLIF(p.real_name,''), p.skater_name)`
+	if linkedOnly {
+		q = profileSelect + ` WHERE p.user_id IS NOT NULL AND p.user_id != '' ORDER BY COALESCE(NULLIF(p.real_name,''), p.skater_name)`
+	}
+	rows, err := db.Query(q)
 	if err != nil {
 		return nil, err
 	}
@@ -113,23 +134,37 @@ func List(db *sql.DB) ([]Profile, error) {
 }
 
 func Get(db *sql.DB, by, val string) (Profile, error) {
-	col := "id"
+	col := "p.id"
 	switch by {
 	case "slug":
-		col = "slug"
+		col = "p.slug"
 	case "user_id":
-		col = "user_id"
+		col = "p.user_id"
 	}
 	var p Profile
-	err := db.QueryRow(`
-		SELECT id, IFNULL(user_id,''), slug, skater_name, IFNULL(real_name,''), IFNULL(bio,''),
-			IFNULL(stance,'regular'), IFNULL(status,'active'), IFNULL(avatar_url,''), IFNULL(banner_url,''),
-			IFNULL(location,''), IFNULL(sponsors,''), IFNULL(social_links,''), IFNULL(signature_tricks,''),
-			IFNULL(featured_video_id,'')
-		FROM skater_profiles WHERE `+col+` = ?`, val).
+	err := db.QueryRow(profileSelect+` WHERE `+col+` = ?`, val).
 		Scan(&p.ID, &p.UserID, &p.Slug, &p.SkaterName, &p.RealName, &p.Bio, &p.Stance, &p.Status,
 			&p.AvatarURL, &p.BannerURL, &p.Location, &p.Sponsors, &p.SocialLinks, &p.SignatureTricks, &p.FeaturedVideoID)
 	return p, err
+}
+
+func EnsureForUser(db *sql.DB, userID, discordName string) (Profile, error) {
+	discordName = strings.TrimSpace(discordName)
+	if userID == "" || discordName == "" {
+		return Profile{}, fmt.Errorf("user and name required")
+	}
+	p, err := Get(db, "user_id", userID)
+	if err == sql.ErrNoRows {
+		return Save(db, Profile{UserID: userID, SkaterName: discordName})
+	}
+	if err != nil {
+		return p, err
+	}
+	if p.SkaterName == discordName {
+		return p, nil
+	}
+	p.SkaterName = discordName
+	return Save(db, p)
 }
 
 func Save(db *sql.DB, p Profile) (Profile, error) {
@@ -173,9 +208,6 @@ func Save(db *sql.DB, p Profile) (Profile, error) {
 	}
 	if err != nil {
 		return p, err
-	}
-	if p.UserID != "" {
-		_, _ = db.Exec(`UPDATE users SET role='skater', updated_at=CURRENT_TIMESTAMP WHERE id=? AND role IN ('member','pending')`, p.UserID)
 	}
 	return p, nil
 }

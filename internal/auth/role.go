@@ -19,10 +19,14 @@ func DiscordRole(discordID string, inGuild bool, guildRoleIDs, superAdmins []str
 	if adminRoleID != "" && contains(guildRoleIDs, adminRoleID) {
 		return RoleAdmin
 	}
-	if skaterRoleID != "" && contains(guildRoleIDs, skaterRoleID) {
+	if HasGuildRole(guildRoleIDs, skaterRoleID) {
 		return RoleSkater
 	}
 	return RoleMember
+}
+
+func HasGuildRole(guildRoleIDs []string, roleID string) bool {
+	return roleID != "" && contains(guildRoleIDs, roleID)
 }
 
 // KeepRole stops a later Discord login from wiping an admin-approved member (or higher) back to pending.

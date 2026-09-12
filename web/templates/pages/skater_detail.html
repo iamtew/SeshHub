@@ -1,9 +1,8 @@
 {{define "content"}}
 <article>
     {{if .P.AvatarURL}}<img class="avatar" src="{{.P.AvatarURL}}" alt="">{{end}}
-    <h1>{{.P.SkaterName}}</h1>
+    <h1>{{.P.PublicName}}</h1>
     <p class="who">{{.P.Stance}} · {{.P.Status}}{{if .P.Location}} · {{.P.Location}}{{end}}</p>
-    {{if .P.RealName}}<p>{{.P.RealName}}</p>{{end}}
     {{if .P.Bio}}<p>{{.P.Bio}}</p>{{end}}
     {{if .Featured}}
     <div class="embed"><iframe src="https://www.youtube-nocookie.com/embed/{{.Featured.ID}}" title="{{.Featured.Title}}" allowfullscreen loading="lazy"></iframe></div>
@@ -22,8 +21,6 @@
     {{if .Social}}<h2>Links</h2><ul>{{range .Social}}<li>{{.}}</li>{{end}}</ul>{{end}}
     {{if .Sponsors}}<h2>Sponsors</h2><ul>{{range .Sponsors}}<li>{{.}}</li>{{end}}</ul>{{end}}
     {{if .Tricks}}<h2>Tricks</h2><ul>{{range .Tricks}}<li>{{.}}</li>{{end}}</ul>{{end}}
-    {{if .CanEdit}}
-        {{if eq $.User.Role "admin"}}<p><a href="/admin/skaters/{{.P.ID}}">Edit</a></p>{{else}}<p><a href="/dashboard/profile">Edit profile</a></p>{{end}}
-    {{end}}
+    {{if .CanEdit}}<p><a href="/dashboard/profile">Edit profile</a></p>{{end}}
 </article>
 {{end}}
