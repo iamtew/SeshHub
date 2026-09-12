@@ -37,6 +37,26 @@ func KeepRole(existing, computed string) string {
 	return RolePending
 }
 
+func roleRank(r string) int {
+	switch r {
+	case RoleAdmin:
+		return 3
+	case RoleSkater:
+		return 2
+	case RoleMember:
+		return 1
+	default:
+		return 0
+	}
+}
+
+func HigherRole(a, b string) string {
+	if roleRank(a) >= roleRank(b) {
+		return a
+	}
+	return b
+}
+
 func contains(ids []string, want string) bool {
 	for _, id := range ids {
 		if id == want {

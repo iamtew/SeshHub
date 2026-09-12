@@ -65,7 +65,7 @@ Set `BASE_URL` to the same origin you type in the browser (`http://localhost:530
 5. Server Settings → Roles → right-click the admin role and the skater role → Copy Role ID → `DISCORD_ADMIN_ROLE_ID` / `DISCORD_SKATER_ROLE_ID`.
 6. Right-click **your** user → Copy User ID → `SUPERADMIN_DISCORD_IDS` (comma-separated if more than one). That list is admin even without the guild admin role, so you can log in the first time.
 
-Scopes used: `identify`, `guilds.members.read`. Restart the server after saving `.env`. Sign in with Discord. Guild admin role or superadmin → **admin**. Skater role → **skater**. In the guild otherwise → **member**. Not in the guild → **pending** (request access at `/access`; approve at `/admin/access`).
+Scopes used: `identify`, `guilds.members.read`. Restart the server after saving `.env`. Sign in with Discord. Guild admin role or superadmin → **admin**. Skater role → **skater**. In the guild otherwise → **member**. Not in the guild → **pending** (request access at `/access`; approve at `/admin/access`). Duplicate Discord/YouTube users: **Admin → Users** → merge into the Discord row.
 
 ### YouTube login and skater videos
 
@@ -93,7 +93,7 @@ Restart after `.env` changes. Production: add the live `https://…/auth/…/cal
 | Tests | `just test` |
 | Linux binary from Windows | see [Cross-compilation](#cross-compilation) |
 | Status of the repo | [`JOURNAL.md`](JOURNAL.md) — what works now vs what's next |
-| Spec / schema / RBAC | everything below this section |
+| Duplicate Discord + YouTube accounts | **Admin → Users** → merge from the spare into the Discord user |
 
 ---
 
@@ -260,7 +260,7 @@ Users who do not match a Discord guild role, as well as users authenticated thro
 - **Custom Metadata**: Page title, custom navigation header/footer inclusion, and optional custom CSS injection per page for special campaign styling.
 
 ### 5. Admin UI & Monaco Editor
-- **Admin Control Center (`/admin`)**: Metric overviews (articles, video clips, skaters, pending access) and a queue for reviewing access requests.
+- **Admin Control Center (`/admin`)**: Metric overviews, access queue, and **Users** (see who has Discord/YouTube, merge duplicate accounts, unlink, delete).
 - **Monaco Editor Integration**: Embedded VS Code-grade Monaco Editor component on `/admin/articles/{id}/edit` and `/admin/pages/{id}/edit`.
   - Side-by-side live Markdown preview powered by Alpine.js/HTMX.
   - Syntax highlighting for Markdown, HTML, and YAML frontmatter.

@@ -4,7 +4,7 @@ Status, not spec. Spec lives in `README.md`.
 
 ## Now
 
-- Public site, OAuth (login + link Discord/YouTube), access queue, roster, articles, per-skater YouTube clips, admin, custom pages, `-port`.
+- Public site, OAuth (login + link Discord/YouTube), access queue, roster, articles, per-skater YouTube clips, admin users (merge/unlink/delete), custom pages, `-port`.
 - Skater profiles show latest synced clips from a linked YouTube channel while the skater is logged in. `/videos` is that aggregate. No site-wide API-key poller.
 
 ## Next
@@ -25,3 +25,4 @@ Status, not spec. Spec lives in `README.md`.
 - 2026-09-12 — YouTube paging, featured skater video, Open Graph tags.
 - 2026-09-12 — README: blurb, Meat Bag runbook (incl. OAuth), then spec.
 - 2026-09-12 — Dropped site-wide YouTube poller. Account linking + logged-in skater clip sync.
+- 2026-09-12 — Admin users list with merge, unlink, delete.

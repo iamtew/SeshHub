@@ -1,0 +1,38 @@
+{{define "content"}}
+<h1>Users</h1>
+<p class="who">Merge into the Discord account: on that row, choose the YouTube-only user in “from”. YouTube is copied over and the spare is deleted.</p>
+{{if not .Users}}
+<p>No users.</p>
+{{else}}
+<ul class="queue">
+{{range $u := .Users}}
+<li>
+    <strong>{{$u.DisplayName}}</strong>
+    <span class="who">{{$u.Username}} · {{$u.Role}}</span>
+    <span class="who">Discord {{if $u.DiscordID}}{{$u.DiscordID}}{{else}}—{{end}}</span>
+    <span class="who">YouTube {{if $u.YouTubeChannelTitle}}{{$u.YouTubeChannelTitle}}{{else if $u.YouTubeChannelID}}{{$u.YouTubeChannelID}}{{else}}—{{end}}</span>
+    {{if $u.DiscordID}}
+    <form method="post" action="/admin/users/{{$u.ID}}/unlink/discord"><button type="submit">Unlink Discord</button></form>
+    {{end}}
+    {{if $u.YouTubeChannelID}}
+    <form method="post" action="/admin/users/{{$u.ID}}/unlink/youtube"><button type="submit">Unlink YouTube</button></form>
+    {{end}}
+    <form method="post" action="/admin/users/{{$u.ID}}/merge">
+        <label>Merge from
+            <select name="from" required>
+                <option value="">—</option>
+                {{range $.Users}}
+                {{if ne .ID $u.ID}}<option value="{{.ID}}">{{.DisplayName}} ({{.Username}})</option>{{end}}
+                {{end}}
+            </select>
+        </label>
+        <button type="submit">Merge</button>
+    </form>
+    {{if ne $u.ID $.User.ID}}
+    <form method="post" action="/admin/users/{{$u.ID}}/delete"><button type="submit">Delete</button></form>
+    {{end}}
+</li>
+{{end}}
+</ul>
+{{end}}
+{{end}}
