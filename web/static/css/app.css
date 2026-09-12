@@ -220,6 +220,7 @@ input, select, textarea { accent-color: var(--green); }
     .nav nav, .signin { display: flex; grid-column: auto; flex: 1; }
     .signin { flex: 0 1 auto; justify-content: flex-end; }
     .nav nav { justify-content: flex-start; }
+    .signin:has(.who) { flex: 1 0 100%; justify-content: flex-start; }
 }
 @media (min-width: 960px) {
     .grid { grid-template-columns: repeat(3, 1fr); }

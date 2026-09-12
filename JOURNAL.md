@@ -52,3 +52,4 @@ Status, not spec. Spec lives in `README.md`.
 - 2026-09-12 — Track `web/static/vid/seshsofa.mp4` in git.
 - 2026-09-12 — Dropped sofa mark from the header; hero owns it.
 - 2026-09-12 — Hero on public menu pages (home/team/news/videos); not on admin/dashboard.
+- 2026-09-12 — Logged-in .signin sits on the row under the public menu.
