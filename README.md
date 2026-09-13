@@ -130,6 +130,7 @@ The rest of this file is the architecture spec (what the system is supposed to b
    - [YouTube clips from skaters](#2-youtube-clips-from-skaters)
    - [Articles, News & Blog CMS](#3-articles-news--blog-cms)
    - [Custom Static Pages](#4-custom-static-pages)
+   - [Special page: Spot](#special-page-spot)
    - [Admin UI & Monaco Editor](#5-admin-ui--monaco-editor)
 6. [Data Models & Database Schema (libSQL)](#data-models--database-schema-libsql)
 7. [Project Directory Layout](#project-directory-layout)
@@ -249,7 +250,7 @@ Users who do not match a Discord guild role, as well as users authenticated thro
 
 ### Chrome: visitor vs Sesh Hub
 
-Two header modes. Same public nav (Home / Team / News / Videos) in the dark well either way.
+Two header modes. Same public nav (Spot / Team / News / Videos) in the dark well either way.
 
 - **Visitor mode** (logged out): 16:9 sofa hero, click to play `seshsofa.mp4`, Close restores the poster. Header login is a Sesh Hub square that goes to `/login`.
 - **Sesh Hub mode** (logged in): hero folds into a translucent panel — `seshhub.png` (click plays the same intro; Close folds it back), then role links, **Account**, Discord avatar (also `/account`; name on hover). Display name is on the `/account` heading. **Log out** is at the bottom of `/account`. No 16:9 until the logo is clicked. `/login` redirects home.
@@ -278,6 +279,11 @@ Two header modes. Same public nav (Home / Team / News / Videos) in the dark well
 ### 4. Custom Static Pages
 - **Dynamic Slug Routing (`/{slug}`)**: Manage standalone pages such as `/about`, `/rules`, `/fakeskate-setup`, `/sponsors`, `/join-team`.
 - **Custom Metadata**: Page title, custom navigation header/footer inclusion, and optional custom CSS injection per page for special campaign styling.
+
+### Special page: Spot
+- **De-facto homepage (`/`)**: Nav label is **Spot**. Not a custom-page slug (reserved). No `/spot` route.
+- **Subotto JSON**: Fetches `https://subotto.seshsofa.nl/api/get/episode/sesh-sofa` (cached ~60s). Flattened keys (`episode_short`, `listeners.0.name`, …) fill `{{placeholders}}` in the markdown at request time. Missing keys / Subotto down → empty string.
+- **Admin (`/admin/spot`)**: Lists live JSON fields as copyable placeholders; one markdown box is the page.
 
 ### 5. Admin UI & Monaco Editor
 - **Admin Control Center (`/admin`)**: Metric overviews, access queue, and **Users** (see who has Discord/YouTube, merge duplicate accounts, unlink, delete).
@@ -463,7 +469,7 @@ SeshHub/
 │       │   ├── base.html            # Main public shell layout
 │       │   └── admin.html           # Admin dashboard shell layout
 │       ├── pages/
-│       │   ├── index.html           # Home page
+│       │   ├── index.html           # Spot (homepage)
 │       │   ├── articles_list.html   # News & articles index
 │       │   ├── article_detail.html  # Single article view
 │       │   ├── skaters_list.html    # Team grid

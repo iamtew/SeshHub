@@ -7,7 +7,7 @@ import (
 )
 
 func TestReservedAndSave(t *testing.T) {
-	if !Reserved("admin") || Reserved("about") {
+	if !Reserved("admin") || !Reserved("spot") || Reserved("about") {
 		t.Fatal("reserved")
 	}
 	sqldb, err := db.Open(":memory:")

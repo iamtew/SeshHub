@@ -68,6 +68,8 @@ func New(cfg config.Config, db *sql.DB) *Server {
 	s.mux.HandleFunc("GET /dashboard/articles/{id}", s.articleEdit(false))
 	s.mux.HandleFunc("POST /dashboard/articles/{id}", s.articleEdit(false))
 	s.mux.HandleFunc("GET /admin", s.adminHome)
+	s.mux.HandleFunc("GET /admin/spot", s.adminSpot)
+	s.mux.HandleFunc("POST /admin/spot", s.adminSpot)
 	s.mux.HandleFunc("GET /admin/pages", s.adminPages)
 	s.mux.HandleFunc("GET /admin/pages/new", s.adminPageCreate)
 	s.mux.HandleFunc("POST /admin/pages", s.adminPageCreate)
@@ -121,10 +123,6 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, dat
 	if err := t.ExecuteTemplate(w, "base.html", data); err != nil {
 		slog.Error("execute template", "err", err, "page", page)
 	}
-}
-
-func (s *Server) home(w http.ResponseWriter, r *http.Request) {
-	s.render(w, r, "index.html", map[string]any{"Title": "Sesh Sofa", "Path": "/"})
 }
 
 func publicHero(path string) bool {

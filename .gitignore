@@ -29,3 +29,6 @@ Thumbs.db
 
 # Monaco editor dist (drop min/vs here; textarea is the fallback)
 web/static/monaco/
+
+# Spot uploads
+web/static/uploads/

@@ -13,7 +13,7 @@ import (
 
 var reserved = map[string]bool{
 	"team": true, "skaters": true, "news": true, "videos": true, "auth": true,
-	"access": true, "admin": true, "dashboard": true, "static": true, "healthz": true,
+	"access": true, "admin": true, "dashboard": true, "static": true, "healthz": true, "spot": true,
 }
 
 type Page struct {

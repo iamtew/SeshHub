@@ -1,0 +1,15 @@
+{{define "content"}}
+<h1>Spot</h1>
+{{if .Items}}
+<p class="who">Subotto fields. Paste a placeholder into the markdown.</p>
+<ul class="queue">
+    {{range .Items}}<li><code>{{.Placeholder}}</code> <span class="who">{{.Val}}</span></li>{{end}}
+</ul>
+{{else}}
+<p class="who">Subotto did not answer. Markdown still saves; placeholders stay empty on the public page until it does.</p>
+{{end}}
+<form method="post" action="/admin/spot" class="form">
+    <label>Markdown <textarea name="content_raw" rows="16">{{.Cfg.ContentRaw}}</textarea></label>
+    <button type="submit">Save</button>
+</form>
+{{end}}

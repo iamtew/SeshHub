@@ -4,7 +4,7 @@ Status, not spec. Spec lives in `README.md`.
 
 ## Now
 
-- Public site, OAuth (login + link Discord/YouTube), access queue, Discord-role team + skater profiles, articles, per-skater YouTube clips, admin users (merge/unlink/delete), custom pages, `-port`.
+- Public site, OAuth (login + link Discord/YouTube), access queue, Discord-role team + skater profiles, articles, per-skater YouTube clips, admin users (merge/unlink/delete), custom pages, Spot (`/` markdown + Subotto `{{placeholders}}`), `-port`.
 - Dark neon CSS in `web/static/css/app.css`. Visitor: sofa hero. Sesh Hub (logged-in): folded bar + avatar. `/login` is the OAuth picker.
 - Halftone-over-gradient recipe in `sesh_halftone.md` (local lift-out; not always in git).
 
@@ -14,7 +14,7 @@ Status, not spec. Spec lives in `README.md`.
 
 ## Log
 
-- 2026-09-13 — Name on avatar hover; loud on `/account` heading.
+- 2026-09-14 — Spot markdown `{{placeholders}}` from Subotto JSON; dropped image uploads.
 - 2026-09-13 — Discord CDN avatars: no-referrer (stops 403).
 - 2026-09-13 — Log out lives at the bottom of `/account`.
 - 2026-09-13 — Fold PFP height = seshhub.png (12rem × 453/1280).
