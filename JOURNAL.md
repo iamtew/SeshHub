@@ -6,7 +6,7 @@ Status, not spec. Spec lives in `README.md`.
 
 - Public site, OAuth (login + link Discord/YouTube), access queue, Discord-role team + skater profiles, articles, per-skater YouTube clips, admin users (merge/unlink/delete), custom pages, `-port`.
 - Dark neon CSS in `web/static/css/app.css`. Public menu pages share sofa hero + 76rem well; admin/dashboard stay chrome-light.
-- Halftone-over-gradient recipe in `halftone_background.md` for other agents.
+- Halftone-over-gradient recipe in `sesh_halftone.md` (local lift-out; not always in git).
 
 ## Next
 
@@ -14,6 +14,8 @@ Status, not spec. Spec lives in `README.md`.
 
 ## Log
 
+- 2026-09-13 — Halftone checker restored (every-other); cells fill the slot, rx 9.
+- 2026-09-13 — Halftone checker: 1px gutters, rx 6→9.
 - 2026-09-13 — `just build` on Unix writes `bin/seshhub`; Windows still `dist/seshhub.exe`.
 - 2026-09-12 — Started journal. Project is docs-only.
 - 2026-09-12 — Bootable server: SQLite + public empty pages. `just test` / `just dev`.
