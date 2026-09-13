@@ -14,6 +14,7 @@ Status, not spec. Spec lives in `README.md`.
 
 ## Log
 
+- 2026-09-13 — `just build` on Unix writes `bin/seshhub`; Windows still `dist/seshhub.exe`.
 - 2026-09-12 — Started journal. Project is docs-only.
 - 2026-09-12 — Bootable server: SQLite + public empty pages. `just test` / `just dev`.
 - 2026-09-12 — Discord/YouTube OAuth + guild RBAC. Access-request UI still next.

@@ -28,10 +28,26 @@ just test
 just dev
 ```
 
+Linux / macOS:
+
+```sh
+cp .env.example .env
+just deps
+just test
+just dev
+```
+
 Without just:
 
 ```powershell
 copy .env.example .env
+go mod tidy
+go test ./...
+go run ./cmd/server
+```
+
+```sh
+cp .env.example .env
 go mod tidy
 go test ./...
 go run ./cmd/server
@@ -91,6 +107,7 @@ Restart after `.env` changes. Production: add the live `https://…/auth/…/cal
 | :--- | :--- |
 | Run it | `just dev` (port **53053**) |
 | Tests | `just test` |
+| Native binary | `just build` → `bin/seshhub` on Linux, `dist/seshhub.exe` on Windows |
 | Linux binary from Windows | see [Cross-compilation](#cross-compilation) |
 | Status of the repo | [`JOURNAL.md`](JOURNAL.md) — what works now vs what's next |
 | Duplicate Discord + YouTube accounts | **Admin → Users** → merge from the spare into the Discord user |
@@ -510,6 +527,15 @@ YOUTUBE_CLIENT_SECRET=your_google_oauth_client_secret
 ## Development & Build Workflows
 
 Day-to-day setup, OAuth, and `just` recipes are in [Meat Bag: get it running](#meat-bag-get-it-running). `just` lists recipes. `go run ./cmd/server` is the same as `just dev`.
+
+### Native build
+
+`just build` writes a host binary: `bin/seshhub` on Linux/macOS, `dist/seshhub.exe` on Windows.
+
+```sh
+just build
+./bin/seshhub
+```
 
 ### Cross-Compilation
 

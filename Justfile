@@ -10,5 +10,12 @@ dev *args:
 test:
     go test ./...
 
+[unix]
 build:
+    mkdir -p bin
+    go build -ldflags="-s -w" -o bin/seshhub ./cmd/server
+
+[windows]
+build:
+    if not exist dist mkdir dist
     go build -ldflags="-s -w" -o dist/seshhub.exe ./cmd/server
