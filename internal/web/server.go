@@ -33,6 +33,7 @@ func New(cfg config.Config, db *sql.DB) *Server {
 	s.mux.HandleFunc("GET /news", s.news)
 	s.mux.HandleFunc("GET /news/{slug}", s.articleDetail)
 	s.mux.HandleFunc("GET /videos", s.videos)
+	s.mux.HandleFunc("GET /login", s.loginPage)
 	s.mux.HandleFunc("GET /auth/discord", s.startOAuth("discord"))
 	s.mux.HandleFunc("GET /auth/youtube", s.startOAuth("youtube"))
 	s.mux.HandleFunc("GET /auth/discord/callback", s.callbackDiscord)
@@ -90,15 +91,23 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, dat
 	if data == nil {
 		data = map[string]any{}
 	}
-	data["User"] = UserFrom(r)
+	u := UserFrom(r)
+	data["User"] = u
 	data["DiscordLogin"] = s.cfg.DiscordEnabled()
 	data["YouTubeLogin"] = s.cfg.YouTubeEnabled()
-	if path, _ := data["Path"].(string); publicHero(path) {
-		data["Hero"] = true
+	authPage, _ := data["AuthPage"].(bool)
+	path, _ := data["Path"].(string)
+	if !authPage {
+		if u != nil {
+			data["Fold"] = true
+		} else if publicHero(path) {
+			data["Hero"] = true
+		}
 	}
 	files := []string{
 		filepath.Join(s.webDir, "templates", "layouts", "base.html"),
 		filepath.Join(s.webDir, "templates", "partials", "nav.html"),
+		filepath.Join(s.webDir, "templates", "partials", "signin.html"),
 		filepath.Join(s.webDir, "templates", "partials", "footer.html"),
 		filepath.Join(s.webDir, "templates", "pages", page),
 	}
@@ -119,7 +128,7 @@ func (s *Server) home(w http.ResponseWriter, r *http.Request) {
 }
 
 func publicHero(path string) bool {
-	if path == "" || path == "/account" || path == "/access" {
+	if path == "" || path == "/account" || path == "/access" || path == "/login" {
 		return false
 	}
 	if strings.HasPrefix(path, "/admin") || strings.HasPrefix(path, "/dashboard") {

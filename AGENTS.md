@@ -41,3 +41,7 @@ Not lazy about: understanding the problem (read it fully and trace the real flow
 ## Journal
 
 Read [`JOURNAL.md`](JOURNAL.md) before starting work. After work lands, update **Now**, **Next**, and one **Log** line. Do not invent a second tracker. README stays the spec.
+
+## Port 53053
+
+The Meat Bag's `just dev` owns **53053**. Never start another listener on that port, never kill theirs to steal it, never leave a stray `just dev` running. If a Go route needs a restart, tell them to bounce their own process.

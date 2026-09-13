@@ -1,0 +1,7 @@
+{{define "content"}}
+<img class="auth-mark" src="/static/img/seshhub.png" alt="Sesh Hub">
+<p class="auth-tag">Authenticate for the heshest sesh ever, meat bag!</p>
+{{if .DiscordLogin}}<a class="btn auth-discord" href="/auth/discord">Discord</a>{{else}}<button type="button" disabled title="OAuth not configured">Discord</button>{{end}}
+{{if .YouTubeLogin}}<a class="btn auth-youtube" href="/auth/youtube">YouTube</a>{{else}}<button type="button" disabled title="OAuth not configured">YouTube</button>{{end}}
+<a class="auth-back" href="/">Back to the sofa</a>
+{{end}}

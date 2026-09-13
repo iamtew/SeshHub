@@ -64,7 +64,11 @@ func discordAvatar(id, hash string) string {
 	if hash == "" {
 		return ""
 	}
-	return "https://cdn.discordapp.com/avatars/" + id + "/" + hash + ".png"
+	ext := ".png"
+	if strings.HasPrefix(hash, "a_") {
+		ext = ".gif"
+	}
+	return "https://cdn.discordapp.com/avatars/" + id + "/" + hash + ext + "?size=128"
 }
 
 func tokenPOST(endpoint string, form url.Values) (access, refresh string, err error) {

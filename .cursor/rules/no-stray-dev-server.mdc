@@ -1,0 +1,17 @@
+---
+description: Never bind the Meat Bag's SeshHub port or leave a stray just dev running.
+alwaysApply: true
+---
+
+# Port 53053 belongs to the Meat Bag
+
+Default listen address is **`:53053`**. That is the operator's `just dev`. Do not start a second one.
+
+- **Never** run `just dev`, `go run ./cmd/server`, or any listener on `53053` unless the operator explicitly asked you to start the server.
+- **Never** `Stop-Process` / kill whatever is already on `53053` to steal the port.
+- Templates and `/static` are read from disk per request. CSS/HTML changes do not need a restart. New Go routes need the **operator** to restart their own `just dev`.
+- If you started a server (other port, or they asked), **shut it down before the turn ends**. Do not leave `just dev` running in the background.
+- Verify with curl against their already-running instance. Bind conflict (`Only one usage of each socket address`) means you started a duplicate — kill **yours**, not theirs.
+
+Wrong: `Stop-Process` the listener on 53053, then `just dev` for a screenshot.
+Right: hit `http://localhost:53053`, then tell them to restart their `just dev` if a new Go route is needed.

@@ -62,6 +62,14 @@ func (s *Server) maybeSyncSkater(userID string) {
 	}()
 }
 
+func (s *Server) loginPage(w http.ResponseWriter, r *http.Request) {
+	if UserFrom(r) != nil {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	s.render(w, r, "login.html", map[string]any{"Title": "Sesh Hub", "Path": "/login", "AuthPage": true})
+}
+
 func (s *Server) startOAuth(provider string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if provider == "discord" && !s.cfg.DiscordEnabled() {

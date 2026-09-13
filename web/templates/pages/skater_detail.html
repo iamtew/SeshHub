@@ -1,6 +1,6 @@
 {{define "content"}}
 <article>
-    {{if .P.AvatarURL}}<img class="avatar" src="{{.P.AvatarURL}}" alt="">{{end}}
+    {{if .P.AvatarURL}}<img class="avatar" src="{{.P.AvatarURL}}" alt="" referrerpolicy="no-referrer">{{end}}
     <h1>{{.P.PublicName}}</h1>
     <p class="who">{{.P.Stance}} · {{.P.Status}}{{if .P.Location}} · {{.P.Location}}{{end}}</p>
     {{if .P.Bio}}<p>{{.P.Bio}}</p>{{end}}

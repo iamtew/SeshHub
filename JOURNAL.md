@@ -5,7 +5,7 @@ Status, not spec. Spec lives in `README.md`.
 ## Now
 
 - Public site, OAuth (login + link Discord/YouTube), access queue, Discord-role team + skater profiles, articles, per-skater YouTube clips, admin users (merge/unlink/delete), custom pages, `-port`.
-- Dark neon CSS in `web/static/css/app.css`. Public menu pages share sofa hero + 76rem well; admin/dashboard stay chrome-light.
+- Dark neon CSS in `web/static/css/app.css`. Visitor: sofa hero. Sesh Hub (logged-in): folded bar + avatar. `/login` is the OAuth picker.
 - Halftone-over-gradient recipe in `sesh_halftone.md` (local lift-out; not always in git).
 
 ## Next
@@ -14,6 +14,16 @@ Status, not spec. Spec lives in `README.md`.
 
 ## Log
 
+- 2026-09-13 — Name on avatar hover; loud on `/account` heading.
+- 2026-09-13 — Discord CDN avatars: no-referrer (stops 403).
+- 2026-09-13 — Log out lives at the bottom of `/account`.
+- 2026-09-13 — Fold PFP height = seshhub.png (12rem × 453/1280).
+- 2026-09-13 — Fold signin: links column + who column (no overlap).
+- 2026-09-13 — Fold avatar height matches seshhub.png.
+- 2026-09-13 — Visitor vs Sesh Hub chrome in README; fold menu: bigger type, avatar+name right.
+- 2026-09-13 — Folded bar: panel bg, seshhub.png only, click plays intro.
+- 2026-09-13 — `/login` picker; logged-in folded hero with sofa/hub crossfade.
+- 2026-09-13 — Well max-width 76rem → 68rem.
 - 2026-09-13 — Halftone checker restored (every-other); cells fill the slot, rx 9.
 - 2026-09-13 — Halftone checker: 1px gutters, rx 6→9.
 - 2026-09-13 — `just build` on Unix writes `bin/seshhub`; Windows still `dist/seshhub.exe`.

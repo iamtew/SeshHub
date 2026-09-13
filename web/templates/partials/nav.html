@@ -9,19 +9,10 @@
         <a href="/news" {{if eq .Path "/news"}}aria-current="page"{{end}}>News</a>
         <a href="/videos" {{if eq .Path "/videos"}}aria-current="page"{{end}}>Videos</a>
     </nav>
+    {{if not .User}}
     <div class="signin">
-        {{if .User}}
-            {{if eq .User.Role "pending"}}<a href="/access" {{if eq .Path "/access"}}aria-current="page"{{end}}>Access</a>{{end}}
-            {{if or (eq .User.Role "skater") (eq .User.Role "admin")}}<a href="/dashboard/profile" {{if eq .Path "/dashboard/profile"}}aria-current="page"{{end}}>Skater profile</a>{{end}}
-            {{if eq .User.Role "skater"}}<a href="/dashboard/articles" {{if eq .Path "/dashboard/articles"}}aria-current="page"{{end}}>Drafts</a>{{end}}
-            {{if eq .User.Role "admin"}}<a href="/admin" {{if eq .Path "/admin"}}aria-current="page"{{end}}>Admin</a><a href="/admin/access" {{if eq .Path "/admin/access"}}aria-current="page"{{end}}>Queue</a><a href="/admin/users" {{if eq .Path "/admin/users"}}aria-current="page"{{end}}>Users</a><a href="/admin/skaters" {{if eq .Path "/admin/skaters"}}aria-current="page"{{end}}>Team Skaters</a><a href="/admin/articles" {{if eq .Path "/admin/articles"}}aria-current="page"{{end}}>Articles</a><a href="/admin/pages" {{if eq .Path "/admin/pages"}}aria-current="page"{{end}}>Pages</a>{{end}}
-            <a href="/account" {{if eq .Path "/account"}}aria-current="page"{{end}}>Account</a>
-            <span class="who">{{.User.DisplayName}}</span>
-            <a href="/auth/logout">Log out</a>
-        {{else}}
-            {{if .DiscordLogin}}<a class="btn" href="/auth/discord">Discord</a>{{else}}<button type="button" disabled title="OAuth not configured">Discord</button>{{end}}
-            {{if .YouTubeLogin}}<a class="btn" href="/auth/youtube">YouTube</a>{{else}}<button type="button" disabled title="OAuth not configured">YouTube</button>{{end}}
-        {{end}}
+        <a class="hub-btn" href="/login" aria-label="Sesh Hub"><img src="/static/img/seshhub-square.png" alt=""></a>
     </div>
+    {{end}}
 </header>
 {{end}}

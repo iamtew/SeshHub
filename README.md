@@ -227,7 +227,7 @@ flowchart TD
 ## Authentication & Authorization (RBAC)
 
 ### Authentication Flow
-1. **Login Initiation**: User selects **Sign in with Discord** or **Sign in with YouTube**.
+1. **Login Initiation**: User opens `/login` (Sesh Hub button in the header) and selects **Discord** or **YouTube**.
 2. **State & PKCE**: A cryptographic `state` token is generated and stored in a short-lived, encrypted session cookie to prevent CSRF.
 3. **OAuth Callback**:
    - For **Discord**: Exchange authorization code for token, fetch Discord user profile (`/users/@me`), and fetch guild member status (`/users/@me/guilds/{guild_id}/member`).
@@ -246,6 +246,13 @@ Users who do not match a Discord guild role, as well as users authenticated thro
 | **Member** | Level 1 | A Discord guild member with the member role, or a user whose access request was individually approved by an Admin. | View member-exclusive media, comment/react (if enabled), link secondary OAuth accounts. |
 | **Access Pending** | N/A | A user who does not match Guild RBAC or is authenticated through YouTube and has submitted an access request. | View public content while awaiting an Admin decision; no member-only access. |
 | **Guest / Anonymous** | Level 0 | Unauthenticated public visitor. | View public pages, read published articles, browse the team, watch embedded videos. |
+
+### Chrome: visitor vs Sesh Hub
+
+Two header modes. Same public nav (Home / Team / News / Videos) in the dark well either way.
+
+- **Visitor mode** (logged out): 16:9 sofa hero, click to play `seshsofa.mp4`, Close restores the poster. Header login is a Sesh Hub square that goes to `/login`.
+- **Sesh Hub mode** (logged in): hero folds into a translucent panel — `seshhub.png` (click plays the same intro; Close folds it back), then role links, **Account**, Discord avatar (also `/account`; name on hover). Display name is on the `/account` heading. **Log out** is at the bottom of `/account`. No 16:9 until the logo is clicked. `/login` redirects home.
 
 ---
 

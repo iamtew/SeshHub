@@ -1,5 +1,5 @@
 {{define "content"}}
-<h1>Account</h1>
+<h1>Account {{or .User.DisplayName .User.Username}}</h1>
 <ul>
     <li>Discord
         {{if .User.DiscordID}}connected ({{.User.DiscordID}}){{else if .DiscordLogin}}<a class="btn" href="/auth/discord">Connect Discord</a>{{else}}not configured{{end}}
@@ -9,4 +9,5 @@
     </li>
 </ul>
 <p class="who">Skater pages pick up latest YouTube uploads while you are logged in, after YouTube is connected.</p>
+<p><a href="/auth/logout">Log out</a></p>
 {{end}}
