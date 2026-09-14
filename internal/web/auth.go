@@ -113,7 +113,8 @@ func (s *Server) callbackDiscord(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "discord login failed", http.StatusBadGateway)
 		return
 	}
-	role := auth.DiscordRole(id, inGuild, roles, s.cfg.SuperAdminIDs, s.cfg.DiscordAdminRoleID, s.cfg.DiscordSkaterRoleID)
+	role := auth.DiscordRole(id, inGuild, roles, s.cfg.SuperAdminIDs, s.cfg.DiscordHubAdminRoleID, s.cfg.DiscordSkaterRoleID)
+	host := auth.HasGuildRole(roles, s.cfg.DiscordHostsRoleID)
 	ensure := func(userID string) {
 		if !auth.HasGuildRole(roles, s.cfg.DiscordSkaterRoleID) {
 			return
@@ -123,7 +124,7 @@ func (s *Server) callbackDiscord(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if cur := UserFrom(r); cur != nil {
-		if _, err := auth.LinkDiscord(s.db, cur.ID, id, username, display, avatar, role); err != nil {
+		if _, err := auth.LinkDiscord(s.db, cur.ID, id, username, display, avatar, role, host); err != nil {
 			s.oauthLinkErr(w, err)
 			return
 		}
@@ -132,7 +133,7 @@ func (s *Server) callbackDiscord(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/account", http.StatusFound)
 		return
 	}
-	u, err := auth.UpsertDiscord(s.db, id, username, display, avatar, role)
+	u, err := auth.UpsertDiscord(s.db, id, username, display, avatar, role, host)
 	if err != nil {
 		slog.Error("upsert discord", "err", err)
 		http.Error(w, "login failed", http.StatusInternalServerError)

@@ -4,7 +4,7 @@ Status, not spec. Spec lives in `README.md`.
 
 ## Now
 
-- Public site, OAuth (login + link Discord/YouTube), access queue, Discord-role team + skater profiles, articles, per-skater YouTube clips, admin users (merge/unlink/delete), custom pages, Spot (`/` markdown + Subotto `{{placeholders}}`), Episodes (`/episodes` archive + Subotto stub + admin), `-port`.
+- Public site, OAuth (login + link Discord/YouTube), access queue, Discord-role team + skater profiles, articles, per-skater YouTube clips, admin users (merge/unlink/delete), custom pages, Spot (`/` markdown + Subotto `{{placeholders}}`), Episodes (`/episodes` archive + Subotto stub; hosts-role edit), `-port`. `DISCORD_HUB_ADMIN_ROLE_ID` + `DISCORD_HOSTS_ROLE_ID`.
 - Dark neon CSS in `web/static/css/app.css`. Visitor: sofa hero. Sesh Hub (logged-in): folded bar + avatar. `/login` is the OAuth picker.
 - Halftone-over-gradient recipe in `sesh_halftone.md` (local lift-out; not always in git).
 
@@ -14,6 +14,7 @@ Status, not spec. Spec lives in `README.md`.
 
 ## Log
 
+- 2026-09-15 — Spot/Episodes edit is `DISCORD_HOSTS_ROLE_ID`; hub admin renamed.
 - 2026-09-15 — Show-site gradient `<hr>` is site-wide.
 - 2026-09-15 — Episode sections split by the show-site gradient `<hr>`.
 - 2026-09-15 — YouTube cards: no purple border; episode links on one row.

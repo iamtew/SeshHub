@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"seshhub/internal/auth"
 	"seshhub/internal/episode"
 	"seshhub/internal/yt"
 )
@@ -67,9 +66,7 @@ func episodeCards(e episode.Episode, vids map[string]yt.Video) []epCard {
 }
 
 func (s *Server) adminEpisodes(w http.ResponseWriter, r *http.Request) {
-	u := UserFrom(r)
-	if u == nil || u.Role != auth.RoleAdmin {
-		http.Error(w, "forbidden", http.StatusForbidden)
+	if s.requireHost(w, r) == nil {
 		return
 	}
 	episode.EnsureCurrent(s.db)
@@ -82,9 +79,7 @@ func (s *Server) adminEpisodes(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) adminEpisodeCreate(w http.ResponseWriter, r *http.Request) {
-	u := UserFrom(r)
-	if u == nil || u.Role != auth.RoleAdmin {
-		http.Error(w, "forbidden", http.StatusForbidden)
+	if s.requireHost(w, r) == nil {
 		return
 	}
 	if r.Method != http.MethodPost {
@@ -112,9 +107,8 @@ func (s *Server) adminEpisodeCreate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) adminEpisodeEdit(w http.ResponseWriter, r *http.Request) {
-	u := UserFrom(r)
-	if u == nil || u.Role != auth.RoleAdmin {
-		http.Error(w, "forbidden", http.StatusForbidden)
+	u := s.requireHost(w, r)
+	if u == nil {
 		return
 	}
 	n, err := strconv.Atoi(r.PathValue("n"))
@@ -148,9 +142,7 @@ func (s *Server) adminEpisodeEdit(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) adminEpisodeDelete(w http.ResponseWriter, r *http.Request) {
-	u := UserFrom(r)
-	if u == nil || u.Role != auth.RoleAdmin {
-		http.Error(w, "forbidden", http.StatusForbidden)
+	if s.requireHost(w, r) == nil {
 		return
 	}
 	n, _ := strconv.Atoi(r.PathValue("n"))

@@ -15,6 +15,15 @@ func (s *Server) requireAdmin(w http.ResponseWriter, r *http.Request) *auth.User
 	return u
 }
 
+func (s *Server) requireHost(w http.ResponseWriter, r *http.Request) *auth.User {
+	u := UserFrom(r)
+	if u == nil || !u.Host {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return nil
+	}
+	return u
+}
+
 func (s *Server) adminUsers(w http.ResponseWriter, r *http.Request) {
 	if s.requireAdmin(w, r) == nil {
 		return

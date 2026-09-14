@@ -1,5 +1,6 @@
 {{define "content"}}
 <div class="episodes">
+{{if and .User .User.Host}}<p><a href="/admin/episodes">Edit episodes</a></p>{{end}}
 <h1>Episodes</h1>
 <table>
     <thead>

@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"seshhub/internal/article"
-	"seshhub/internal/auth"
 	"seshhub/internal/spot"
 )
 
@@ -23,9 +22,7 @@ func (s *Server) home(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) adminSpot(w http.ResponseWriter, r *http.Request) {
-	u := UserFrom(r)
-	if u == nil || u.Role != auth.RoleAdmin {
-		http.Error(w, "forbidden", http.StatusForbidden)
+	if s.requireHost(w, r) == nil {
 		return
 	}
 	cfg, err := spot.Get(s.db)

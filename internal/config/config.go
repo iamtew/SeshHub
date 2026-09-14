@@ -8,41 +8,43 @@ import (
 )
 
 type Config struct {
-	AppEnv              string
-	Port                string
-	BaseURL             string
-	SessionSecret       string
-	DatabaseURL         string
-	WebDir              string
-	MigrationsDir       string
-	DiscordClientID     string
-	DiscordClientSecret string
-	DiscordGuildID      string
-	DiscordAdminRoleID  string
-	DiscordSkaterRoleID string
-	SuperAdminIDs       []string
-	YouTubeClientID     string
-	YouTubeClientSecret string
+	AppEnv                string
+	Port                  string
+	BaseURL               string
+	SessionSecret         string
+	DatabaseURL           string
+	WebDir                string
+	MigrationsDir         string
+	DiscordClientID       string
+	DiscordClientSecret   string
+	DiscordGuildID        string
+	DiscordHubAdminRoleID string
+	DiscordHostsRoleID    string
+	DiscordSkaterRoleID   string
+	SuperAdminIDs         []string
+	YouTubeClientID       string
+	YouTubeClientSecret   string
 }
 
 func Load() Config {
 	loadDotEnv(".env")
 	return Config{
-		AppEnv:              getenv("APP_ENV", "development"),
-		Port:                getenv("PORT", "53053"),
-		BaseURL:             getenv("BASE_URL", "http://localhost:53053"),
-		SessionSecret:       getenv("SESSION_SECRET", "change-me-to-a-secure-random-32-byte-hex-string"),
-		DatabaseURL:         getenv("DATABASE_URL", "file:seshhub.db"),
-		WebDir:              getenv("WEB_DIR", "web"),
-		MigrationsDir:       getenv("MIGRATIONS_DIR", filepath.Join("internal", "db", "migrations")),
-		DiscordClientID:     getenv("DISCORD_CLIENT_ID", ""),
-		DiscordClientSecret: getenv("DISCORD_CLIENT_SECRET", ""),
-		DiscordGuildID:      getenv("DISCORD_GUILD_ID", ""),
-		DiscordAdminRoleID:  getenv("DISCORD_ADMIN_ROLE_ID", ""),
-		DiscordSkaterRoleID: getenv("DISCORD_SKATER_ROLE_ID", ""),
-		SuperAdminIDs:       splitCSV(getenv("SUPERADMIN_DISCORD_IDS", "")),
-		YouTubeClientID:     getenv("YOUTUBE_CLIENT_ID", ""),
-		YouTubeClientSecret: getenv("YOUTUBE_CLIENT_SECRET", ""),
+		AppEnv:                getenv("APP_ENV", "development"),
+		Port:                  getenv("PORT", "53053"),
+		BaseURL:               getenv("BASE_URL", "http://localhost:53053"),
+		SessionSecret:         getenv("SESSION_SECRET", "change-me-to-a-secure-random-32-byte-hex-string"),
+		DatabaseURL:           getenv("DATABASE_URL", "file:seshhub.db"),
+		WebDir:                getenv("WEB_DIR", "web"),
+		MigrationsDir:         getenv("MIGRATIONS_DIR", filepath.Join("internal", "db", "migrations")),
+		DiscordClientID:       getenv("DISCORD_CLIENT_ID", ""),
+		DiscordClientSecret:   getenv("DISCORD_CLIENT_SECRET", ""),
+		DiscordGuildID:        getenv("DISCORD_GUILD_ID", ""),
+		DiscordHubAdminRoleID: getenv("DISCORD_HUB_ADMIN_ROLE_ID", ""),
+		DiscordHostsRoleID:    getenv("DISCORD_HOSTS_ROLE_ID", ""),
+		DiscordSkaterRoleID:   getenv("DISCORD_SKATER_ROLE_ID", ""),
+		SuperAdminIDs:         splitCSV(getenv("SUPERADMIN_DISCORD_IDS", "")),
+		YouTubeClientID:       getenv("YOUTUBE_CLIENT_ID", ""),
+		YouTubeClientSecret:   getenv("YOUTUBE_CLIENT_SECRET", ""),
 	}
 }
 

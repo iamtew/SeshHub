@@ -78,10 +78,10 @@ Set `BASE_URL` to the same origin you type in the browser (`http://localhost:530
 2. **OAuth2 → Redirects**: add `http://localhost:53053/auth/discord/callback` (and later the production URL).
 3. Copy **Client ID** and **Client Secret** into `DISCORD_CLIENT_ID` / `DISCORD_CLIENT_SECRET`.
 4. Enable **Developer Mode** in Discord (Settings → Advanced). Right-click the Sesh Sofa server → Copy Server ID → `DISCORD_GUILD_ID`.
-5. Server Settings → Roles → right-click the admin role and the skater role → Copy Role ID → `DISCORD_ADMIN_ROLE_ID` / `DISCORD_SKATER_ROLE_ID`.
-6. Right-click **your** user → Copy User ID → `SUPERADMIN_DISCORD_IDS` (comma-separated if more than one). That list is admin even without the guild admin role, so you can log in the first time.
+5. Server Settings → Roles → right-click hub admin, hosts, and skater → Copy Role ID → `DISCORD_HUB_ADMIN_ROLE_ID` / `DISCORD_HOSTS_ROLE_ID` / `DISCORD_SKATER_ROLE_ID`.
+6. Right-click **your** user → Copy User ID → `SUPERADMIN_DISCORD_IDS` (comma-separated if more than one). That list is hub admin even without the guild hub-admin role, so you can log in the first time.
 
-Scopes used: `identify`, `guilds.members.read`. Restart the server after saving `.env`. Sign in with Discord. Guild admin role or superadmin → **admin**. Skater role → **skater**, and a `/team` profile is created (Discord name, linked user id). In the guild otherwise → **member**. Not in the guild → **pending** (request access at `/access`; approve at `/admin/access`). Duplicate Discord/YouTube users: **Admin → Users** → merge into the Discord row.
+Scopes used: `identify`, `guilds.members.read`. Restart the server after saving `.env`. Sign in with Discord. Guild hub-admin role or superadmin → **admin**. Hosts role → can edit Spot and Episodes (independent of admin). Skater role → **skater**, and a `/team` profile is created (Discord name, linked user id). In the guild otherwise → **member**. Not in the guild → **pending** (request access at `/access`; approve at `/admin/access`). Duplicate Discord/YouTube users: **Admin → Users** → merge into the Discord row. Re-login with Discord after a hosts-role change.
 
 ### YouTube login and skater videos
 
@@ -243,7 +243,8 @@ Users who do not match a Discord guild role, as well as users authenticated thro
 
 | Role | Hierarchy Level | Determination Logic | Capabilities |
 | :--- | :--- | :--- | :--- |
-| **Admin** | Level 3 | Discord user has configured `DISCORD_ADMIN_ROLE_ID` in the Sesh Sofa Discord guild, OR user ID matches `SUPERADMIN_DISCORD_IDS`. | Full system access: Team Skaters (status), edit all articles/pages, configure site settings. |
+| **Admin** | Level 3 | Discord user has configured `DISCORD_HUB_ADMIN_ROLE_ID` in the Sesh Sofa Discord guild, OR user ID matches `SUPERADMIN_DISCORD_IDS`. | Hub access: Team Skaters (status), edit articles/pages, users, access queue. Not Spot/Episodes. |
+| **Host** | (flag) | Discord user has `DISCORD_HOSTS_ROLE_ID` in the guild (checked on Discord login; not granted by superadmin). | Edit Spot (`/admin/spot`) and Episodes (`/admin/episodes`). Edit links only show for this flag. |
 | **Team Skater** | Level 2 | Discord user has configured `DISCORD_SKATER_ROLE_ID` in the guild, OR manually designated by an Admin. | Edit own skater profile, update personal links/sponsors/clips, draft articles. |
 | **Member** | Level 1 | A Discord guild member with the member role, or a user whose access request was individually approved by an Admin. | View member-exclusive media, comment/react (if enabled), link secondary OAuth accounts. |
 | **Access Pending** | N/A | A user who does not match Guild RBAC or is authenticated through YouTube and has submitted an access request. | View public content while awaiting an Admin decision; no member-only access. |
@@ -264,7 +265,7 @@ Two header modes. Same public nav (Spot / Episodes / Team / News / Videos) in th
 - **Team Directory (`/team` / `/skaters`)**: People who hold `DISCORD_SKATER_ROLE_ID` in the guild and have logged in with Discord. Name comes from Discord; optional display name, stance, status, location, bio.
 - **Skater Detail Page (`/team/{slug}`)**: Bio, stance, status, location, Discord avatar, and clips from a linked YouTube channel (optional featured pin).
 - **Skater profile (`/dashboard/profile`)**: Own profile only — display name, stance, location, bio, featured clip.
-- **Team Skaters (`/admin/skaters`)**: Superadmin / Discord admin role only. Set another skater’s status. No add-skater form.
+- **Team Skaters (`/admin/skaters`)**: Superadmin / Discord hub-admin role only. Set another skater’s status. No add-skater form.
 
 ### 2. YouTube clips from skaters
 - **No site-wide poller**: `/videos` is the union of clips pulled from team skaters who have connected YouTube.
@@ -284,12 +285,12 @@ Two header modes. Same public nav (Spot / Episodes / Team / News / Videos) in th
 ### Special page: Spot
 - **De-facto homepage (`/`)**: Nav label is **Spot**. Not a custom-page slug (reserved). No `/spot` route.
 - **Subotto JSON**: Fetches `https://subotto.seshsofa.nl/api/get/episode/sesh-sofa` (cached ~60s). Flattened keys (`episode_short`, `listeners.0.name`, …) fill `{{placeholders}}` in the markdown at request time. Missing keys / Subotto down → empty string.
-- **Admin (`/admin/spot`)**: Lists live JSON fields as copyable placeholders; one markdown box is the page. Date tags `[date_count:…]` `[date_local:…]` `[date_24h:…]` `[date_12h:…]` wrap an RFC3339 time (usually `{{air_datetime}}`); countdown ticks in the browser.
+- **Edit (`/admin/spot`)**: Hosts role only. Lists live JSON fields as copyable placeholders; one markdown box is the page. Date tags `[date_count:…]` `[date_local:…]` `[date_24h:…]` `[date_12h:…]` wrap an RFC3339 time (usually `{{air_datetime}}`); countdown ticks in the browser.
 
 ### Special page: Episodes
 - **Archive (`/episodes`)**: Auto table (Episode / Submissions / Winner / Spot) with `#epN` anchors, then one heading plus configurable link rows per show (full VOD, playlists, winner, trick of the show). Winner and trick stay hidden until set. YouTube thumbs use the Videos-page `<img class="thumb">` pattern plus the heartbeat hover from the old show-site CSS. Reserved slug (not a custom page).
 - **Live stub**: Same Subotto JSON as Spot. If the current episode number is missing, insert a row with content-listener playlists; `sesh-sofa-spot-challenge` is the winner-picker playlist only. Existing rows are not overwritten (blank challenge playlist / missing playlist rows can still fill).
-- **Admin (`/admin/episodes`)**: Edit title, counts, rows, trick URL, winner (pick from the challenge playlist when the admin has YouTube linked, or paste a watch URL; empty winner name fills from the video’s channel and can be overwritten).
+- **Edit (`/admin/episodes`)**: Hosts role only. Edit title, counts, rows, trick URL, winner (pick from the challenge playlist when the editor has YouTube linked, or paste a watch URL; empty winner name fills from the video’s channel and can be overwritten).
 
 ### 5. Admin UI & Monaco Editor
 - **Admin Control Center (`/admin`)**: Metric overviews, access queue, and **Users** (see who has Discord/YouTube, merge duplicate accounts, unlink, delete).
@@ -542,7 +543,8 @@ DATABASE_AUTH_TOKEN=                 # Required only if connecting to Turso Clou
 DISCORD_CLIENT_ID=your_discord_client_id
 DISCORD_CLIENT_SECRET=your_discord_client_secret
 DISCORD_GUILD_ID=your_sesh_sofa_discord_guild_id
-DISCORD_ADMIN_ROLE_ID=your_admin_role_id
+DISCORD_HUB_ADMIN_ROLE_ID=your_hub_admin_role_id
+DISCORD_HOSTS_ROLE_ID=your_hosts_role_id
 DISCORD_SKATER_ROLE_ID=your_team_skater_role_id
 SUPERADMIN_DISCORD_IDS=123456789012345678,987654321098765432
 

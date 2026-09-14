@@ -22,9 +22,27 @@ type User struct {
 	DisplayName         string
 	AvatarURL           string
 	Role                string
+	Host                bool
 	DiscordID           string
 	YouTubeChannelID    string
 	YouTubeChannelTitle string
+}
+
+const userCols = `id, username, display_name, IFNULL(avatar_url,''), role, host, IFNULL(discord_id,''), IFNULL(youtube_channel_id,''), IFNULL(youtube_channel_title,'')`
+
+func scanUser(sc interface{ Scan(dest ...any) error }) (User, error) {
+	var u User
+	var host int
+	err := sc.Scan(&u.ID, &u.Username, &u.DisplayName, &u.AvatarURL, &u.Role, &host, &u.DiscordID, &u.YouTubeChannelID, &u.YouTubeChannelTitle)
+	u.Host = host != 0
+	return u, err
+}
+
+func hostInt(h bool) int {
+	if h {
+		return 1
+	}
+	return 0
 }
 
 func newID() string {
@@ -38,30 +56,26 @@ func hashToken(token string) string {
 	return hex.EncodeToString(sum[:])
 }
 
-func UpsertDiscord(db *sql.DB, discordID, username, display, avatar, role string) (User, error) {
-	var u User
-	err := db.QueryRow(`SELECT id, username, display_name, IFNULL(avatar_url,''), role, IFNULL(discord_id,''), IFNULL(youtube_channel_id,''), IFNULL(youtube_channel_title,'') FROM users WHERE discord_id = ?`, discordID).
-		Scan(&u.ID, &u.Username, &u.DisplayName, &u.AvatarURL, &u.Role, &u.DiscordID, &u.YouTubeChannelID, &u.YouTubeChannelTitle)
+func UpsertDiscord(db *sql.DB, discordID, username, display, avatar, role string, host bool) (User, error) {
+	u, err := scanUser(db.QueryRow(`SELECT `+userCols+` FROM users WHERE discord_id = ?`, discordID))
 	if err == sql.ErrNoRows {
-		u = User{ID: newID(), Username: username, DisplayName: display, AvatarURL: avatar, Role: role, DiscordID: discordID}
-		_, err = db.Exec(`INSERT INTO users (id, username, display_name, avatar_url, role, discord_id, discord_username) VALUES (?,?,?,?,?,?,?)`,
-			u.ID, u.Username, u.DisplayName, nullIfEmpty(avatar), role, discordID, username)
+		u = User{ID: newID(), Username: username, DisplayName: display, AvatarURL: avatar, Role: role, Host: host, DiscordID: discordID}
+		_, err = db.Exec(`INSERT INTO users (id, username, display_name, avatar_url, role, host, discord_id, discord_username) VALUES (?,?,?,?,?,?,?,?)`,
+			u.ID, u.Username, u.DisplayName, nullIfEmpty(avatar), role, hostInt(host), discordID, username)
 		return u, err
 	}
 	if err != nil {
 		return u, err
 	}
 	role = KeepRole(u.Role, role)
-	u.Username, u.DisplayName, u.AvatarURL, u.Role = username, display, avatar, role
-	_, err = db.Exec(`UPDATE users SET username=?, display_name=?, avatar_url=?, role=?, discord_username=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`,
-		username, display, nullIfEmpty(avatar), role, username, u.ID)
+	u.Username, u.DisplayName, u.AvatarURL, u.Role, u.Host = username, display, avatar, role, host
+	_, err = db.Exec(`UPDATE users SET username=?, display_name=?, avatar_url=?, role=?, host=?, discord_username=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`,
+		username, display, nullIfEmpty(avatar), role, hostInt(host), username, u.ID)
 	return u, err
 }
 
 func UpsertYouTube(db *sql.DB, channelID, title, avatar, refresh string) (User, error) {
-	var u User
-	err := db.QueryRow(`SELECT id, username, display_name, IFNULL(avatar_url,''), role, IFNULL(discord_id,''), IFNULL(youtube_channel_id,''), IFNULL(youtube_channel_title,'') FROM users WHERE youtube_channel_id = ?`, channelID).
-		Scan(&u.ID, &u.Username, &u.DisplayName, &u.AvatarURL, &u.Role, &u.DiscordID, &u.YouTubeChannelID, &u.YouTubeChannelTitle)
+	u, err := scanUser(db.QueryRow(`SELECT `+userCols+` FROM users WHERE youtube_channel_id = ?`, channelID))
 	if err == sql.ErrNoRows {
 		u = User{ID: newID(), Username: title, DisplayName: title, AvatarURL: avatar, Role: RolePending, YouTubeChannelID: channelID, YouTubeChannelTitle: title}
 		_, err = db.Exec(`INSERT INTO users (id, username, display_name, avatar_url, role, youtube_channel_id, youtube_channel_title, youtube_refresh_token) VALUES (?,?,?,?,?,?,?,?)`,
@@ -83,7 +97,7 @@ func idTaken(db *sql.DB, col, val, exceptID string) (bool, error) {
 	return n > 0, err
 }
 
-func LinkDiscord(db *sql.DB, userID, discordID, username, display, avatar, role string) (User, error) {
+func LinkDiscord(db *sql.DB, userID, discordID, username, display, avatar, role string, host bool) (User, error) {
 	taken, err := idTaken(db, "discord_id", discordID, userID)
 	if err != nil {
 		return User{}, err
@@ -96,8 +110,8 @@ func LinkDiscord(db *sql.DB, userID, discordID, username, display, avatar, role 
 		return u, err
 	}
 	role = KeepRole(u.Role, role)
-	_, err = db.Exec(`UPDATE users SET discord_id=?, discord_username=?, username=?, display_name=?, avatar_url=?, role=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`,
-		discordID, username, username, display, nullIfEmpty(avatar), role, userID)
+	_, err = db.Exec(`UPDATE users SET discord_id=?, discord_username=?, username=?, display_name=?, avatar_url=?, role=?, host=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`,
+		discordID, username, username, display, nullIfEmpty(avatar), role, hostInt(host), userID)
 	if err != nil {
 		return u, err
 	}
@@ -121,22 +135,19 @@ func LinkYouTube(db *sql.DB, userID, channelID, title, avatar, refresh string) (
 }
 
 func GetUser(db *sql.DB, id string) (User, error) {
-	var u User
-	err := db.QueryRow(`SELECT id, username, display_name, IFNULL(avatar_url,''), role, IFNULL(discord_id,''), IFNULL(youtube_channel_id,''), IFNULL(youtube_channel_title,'') FROM users WHERE id = ?`, id).
-		Scan(&u.ID, &u.Username, &u.DisplayName, &u.AvatarURL, &u.Role, &u.DiscordID, &u.YouTubeChannelID, &u.YouTubeChannelTitle)
-	return u, err
+	return scanUser(db.QueryRow(`SELECT `+userCols+` FROM users WHERE id = ?`, id))
 }
 
 func ListUsers(db *sql.DB) ([]User, error) {
-	rows, err := db.Query(`SELECT id, username, display_name, IFNULL(avatar_url,''), role, IFNULL(discord_id,''), IFNULL(youtube_channel_id,''), IFNULL(youtube_channel_title,'') FROM users ORDER BY created_at`)
+	rows, err := db.Query(`SELECT ` + userCols + ` FROM users ORDER BY created_at`)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 	var out []User
 	for rows.Next() {
-		var u User
-		if err := rows.Scan(&u.ID, &u.Username, &u.DisplayName, &u.AvatarURL, &u.Role, &u.DiscordID, &u.YouTubeChannelID, &u.YouTubeChannelTitle); err != nil {
+		u, err := scanUser(rows)
+		if err != nil {
 			return nil, err
 		}
 		out = append(out, u)
@@ -145,7 +156,7 @@ func ListUsers(db *sql.DB) ([]User, error) {
 }
 
 func UnlinkDiscord(db *sql.DB, userID string) error {
-	_, err := db.Exec(`UPDATE users SET discord_id=NULL, discord_username=NULL, updated_at=CURRENT_TIMESTAMP WHERE id=?`, userID)
+	_, err := db.Exec(`UPDATE users SET discord_id=NULL, discord_username=NULL, host=0, updated_at=CURRENT_TIMESTAMP WHERE id=?`, userID)
 	return err
 }
 
@@ -190,11 +201,12 @@ func MergeUsers(db *sql.DB, keepID, fromID string) error {
 
 	type row struct {
 		role, discordID, discordUser, ytID, ytTitle, ytRefresh, ytSynced string
+		host                                                             int
 	}
 	load := func(id string) (row, error) {
 		var r row
-		err := tx.QueryRow(`SELECT role, IFNULL(discord_id,''), IFNULL(discord_username,''), IFNULL(youtube_channel_id,''), IFNULL(youtube_channel_title,''), IFNULL(youtube_refresh_token,''), IFNULL(youtube_synced_at,'') FROM users WHERE id=?`, id).
-			Scan(&r.role, &r.discordID, &r.discordUser, &r.ytID, &r.ytTitle, &r.ytRefresh, &r.ytSynced)
+		err := tx.QueryRow(`SELECT role, host, IFNULL(discord_id,''), IFNULL(discord_username,''), IFNULL(youtube_channel_id,''), IFNULL(youtube_channel_title,''), IFNULL(youtube_refresh_token,''), IFNULL(youtube_synced_at,'') FROM users WHERE id=?`, id).
+			Scan(&r.role, &r.host, &r.discordID, &r.discordUser, &r.ytID, &r.ytTitle, &r.ytRefresh, &r.ytSynced)
 		return r, err
 	}
 	keep, err := load(keepID)
@@ -218,12 +230,16 @@ func MergeUsers(db *sql.DB, keepID, fromID string) error {
 		keep.ytID, keep.ytTitle, keep.ytRefresh, keep.ytSynced = from.ytID, from.ytTitle, from.ytRefresh, from.ytSynced
 	}
 	role := HigherRole(keep.role, from.role)
-	_, err = tx.Exec(`UPDATE users SET discord_id=NULL, discord_username=NULL, youtube_channel_id=NULL, youtube_channel_title=NULL, youtube_refresh_token=NULL, youtube_synced_at=NULL WHERE id=?`, fromID)
+	host := keep.host
+	if from.host != 0 {
+		host = 1
+	}
+	_, err = tx.Exec(`UPDATE users SET discord_id=NULL, discord_username=NULL, youtube_channel_id=NULL, youtube_channel_title=NULL, youtube_refresh_token=NULL, youtube_synced_at=NULL, host=0 WHERE id=?`, fromID)
 	if err != nil {
 		return err
 	}
-	_, err = tx.Exec(`UPDATE users SET discord_id=?, discord_username=?, youtube_channel_id=?, youtube_channel_title=?, youtube_refresh_token=?, youtube_synced_at=?, role=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`,
-		nullIfEmpty(keep.discordID), nullIfEmpty(keep.discordUser), nullIfEmpty(keep.ytID), nullIfEmpty(keep.ytTitle), nullIfEmpty(keep.ytRefresh), nullIfEmpty(keep.ytSynced), role, keepID)
+	_, err = tx.Exec(`UPDATE users SET discord_id=?, discord_username=?, youtube_channel_id=?, youtube_channel_title=?, youtube_refresh_token=?, youtube_synced_at=?, role=?, host=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`,
+		nullIfEmpty(keep.discordID), nullIfEmpty(keep.discordUser), nullIfEmpty(keep.ytID), nullIfEmpty(keep.ytTitle), nullIfEmpty(keep.ytRefresh), nullIfEmpty(keep.ytSynced), role, host, keepID)
 	if err != nil {
 		return err
 	}
@@ -271,17 +287,11 @@ func CreateSession(db *sql.DB, userID, ip, ua string) (string, error) {
 }
 
 func UserByToken(db *sql.DB, token string) (User, error) {
-	var u User
-	err := db.QueryRow(`
-		SELECT u.id, u.username, u.display_name, IFNULL(u.avatar_url,''), u.role,
+	return scanUser(db.QueryRow(`
+		SELECT u.id, u.username, u.display_name, IFNULL(u.avatar_url,''), u.role, u.host,
 			IFNULL(u.discord_id,''), IFNULL(u.youtube_channel_id,''), IFNULL(u.youtube_channel_title,'')
 		FROM sessions s JOIN users u ON u.id = s.user_id
-		WHERE s.id = ? AND s.expires_at > datetime('now')`, hashToken(token)).
-		Scan(&u.ID, &u.Username, &u.DisplayName, &u.AvatarURL, &u.Role, &u.DiscordID, &u.YouTubeChannelID, &u.YouTubeChannelTitle)
-	if err != nil {
-		return u, err
-	}
-	return u, nil
+		WHERE s.id = ? AND s.expires_at > datetime('now')`, hashToken(token)))
 }
 
 func DeleteSession(db *sql.DB, token string) error {
