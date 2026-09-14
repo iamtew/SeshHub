@@ -14,7 +14,7 @@ Status, not spec. Spec lives in `README.md`.
 
 ## Log
 
-- 2026-09-14 — Spot markdown `{{placeholders}}` from Subotto JSON; dropped image uploads.
+- 2026-09-14 — Markdown images: goldmark WithUnsafe + relative src; still not marked.js.
 - 2026-09-13 — Discord CDN avatars: no-referrer (stops 403).
 - 2026-09-13 — Log out lives at the bottom of `/account`.
 - 2026-09-13 — Fold PFP height = seshhub.png (12rem × 453/1280).

@@ -7,6 +7,21 @@ import (
 	"seshhub/internal/db"
 )
 
+func TestRenderImages(t *testing.T) {
+	md := Render("![x](https://example.com/a.png)")
+	if !strings.Contains(md, `src="https://example.com/a.png"`) {
+		t.Fatalf("https image: %s", md)
+	}
+	rel := Render("![x](/static/img/seshsofa.png)")
+	if !strings.Contains(rel, `src="/static/img/seshsofa.png"`) {
+		t.Fatalf("relative image: %s", rel)
+	}
+	raw := Render(`<img src="https://example.com/a.png" alt="x">`)
+	if !strings.Contains(raw, `src="https://example.com/a.png"`) {
+		t.Fatalf("html image: %s", raw)
+	}
+}
+
 func TestRenderStripsScript(t *testing.T) {
 	html := Render("hi <script>alert(1)</script> **x**")
 	if strings.Contains(html, "<script") {

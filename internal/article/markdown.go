@@ -6,14 +6,25 @@ import (
 
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/renderer/html"
 )
+
+// goldmark + bluemonday, not marked.js. WithUnsafe lets <img> through; the sanitizer is the XSS gate.
+// ponytail: UGCPolicy strips relative src unless AllowRelativeURLs; /static/... images need it.
+var md = goldmark.New(goldmark.WithRendererOptions(html.WithUnsafe()))
+
+var policy = func() *bluemonday.Policy {
+	p := bluemonday.UGCPolicy()
+	p.AllowRelativeURLs(true)
+	return p
+}()
 
 func Render(raw string) string {
 	var buf bytes.Buffer
-	if err := goldmark.Convert([]byte(raw), &buf); err != nil {
-		return bluemonday.UGCPolicy().Sanitize(raw)
+	if err := md.Convert([]byte(raw), &buf); err != nil {
+		return policy.Sanitize(raw)
 	}
-	return bluemonday.UGCPolicy().Sanitize(buf.String())
+	return policy.Sanitize(buf.String())
 }
 
 func Excerpt(raw, given string) string {
