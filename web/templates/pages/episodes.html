@@ -17,7 +17,8 @@
     </tbody>
 </table>
 <p><a href="https://www.youtube.com/playlist?list=PLf1sSxWZR8BUh0Hk44BdEynNPATBCfmx0">All previous Sesh Sofa episodes available RIGHT HERE on YouTube!</a></p>
-{{range .Episodes}}
+{{range $i, $e := .Episodes}}
+{{if $i}}<hr>{{end}}
 <section id="{{.Anchor}}">
     <h2>{{.H2}}</h2>
     {{if .Note}}<p><em>{{.Note}}</em></p>{{end}}

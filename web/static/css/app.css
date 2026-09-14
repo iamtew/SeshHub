@@ -304,6 +304,13 @@ form[action*="/unlink/"] button { background: var(--magenta); }
 }
 .avatar { max-width: 8rem; }
 .thumb { width: 100%; max-width: none; display: block; border-radius: 0.5rem; }
+hr {
+    border: none;
+    height: 4px;
+    background: linear-gradient(to right, #E5F20D, #F20D0D, #E5F20D);
+    box-shadow: 0 0 6px #E5F20D, 0 0 12px #F20D0D, 0 0 18px rgba(242, 13, 13, 0.6), 0 0 24px rgba(229, 242, 13, 0.5);
+    margin: 1.3em;
+}
 .episodes table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; }
 .episodes th, .episodes td { text-align: left; padding: 0.45rem 0.6rem; border-bottom: 1px solid color-mix(in srgb, var(--violet) 50%, var(--gray)); }
 .episodes .ep-rows { list-style: none; padding: 0; margin: 0.75rem 0 1rem; display: flex; flex-wrap: wrap; gap: 0.5rem 1.25rem; }

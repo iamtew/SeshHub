@@ -14,6 +14,8 @@ Status, not spec. Spec lives in `README.md`.
 
 ## Log
 
+- 2026-09-15 — Show-site gradient `<hr>` is site-wide.
+- 2026-09-15 — Episode sections split by the show-site gradient `<hr>`.
 - 2026-09-15 — YouTube cards: no purple border; episode links on one row.
 - 2026-09-15 — Episode thumbs are two-up Videos-style cards.
 - 2026-09-14 — `/episodes` archive: auto TOC, configurable rows, Subotto stub, EP1–19 backfill.
