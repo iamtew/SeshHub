@@ -6,21 +6,85 @@
     return String(n).padStart(2, "0");
   }
 
-  function utcOffset(d) {
-    var min = -d.getTimezoneOffset();
+  function isoOffsetMin(iso) {
+    if (!iso) return null;
+    iso = String(iso).trim();
+    if (/Z$/i.test(iso)) return 0;
+    var m = iso.match(/([+-])(\d{2}):(\d{2})$/);
+    if (!m) return null;
+    return (m[1] === "-" ? -1 : 1) * (parseInt(m[2], 10) * 60 + parseInt(m[3], 10));
+  }
+
+  function utcLabel(min) {
     var sign = min >= 0 ? "+" : "-";
     var abs = Math.abs(min);
     return "UTC" + sign + pad(Math.floor(abs / 60)) + ":" + pad(abs % 60);
   }
 
-  function tzShort(d) {
-    var parts = new Intl.DateTimeFormat(undefined, { timeZoneName: "short" }).formatToParts(d);
-    var name = "";
+  function zoneOffsetMin(d, tz) {
+    var p = {};
+    new Intl.DateTimeFormat("en-US", {
+      timeZone: tz,
+      hourCycle: "h23",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit"
+    }).formatToParts(d).forEach(function (x) {
+      p[x.type] = x.value;
+    });
+    return (Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second) - d.getTime()) / 60000;
+  }
+
+  function zoneShort(d, tz) {
+    var parts = new Intl.DateTimeFormat("en-GB", {
+      timeZone: tz,
+      timeZoneName: "short",
+      hour: "numeric"
+    }).formatToParts(d);
     for (var i = 0; i < parts.length; i++) {
-      if (parts[i].type === "timeZoneName") name = parts[i].value;
+      if (parts[i].type === "timeZoneName" && /^[A-Za-z]{2,5}$/.test(parts[i].value)) {
+        return parts[i].value;
+      }
     }
-    if (/^[A-Za-z]{2,5}$/.test(name)) return name;
-    return utcOffset(d);
+    return "";
+  }
+
+  var prefer = ["Europe/Amsterdam", "Europe/Berlin", "Europe/Paris", "Europe/London", "Europe/Lisbon", "Europe/Helsinki"];
+  var zoneList;
+  function allZones() {
+    if (zoneList) return zoneList;
+    zoneList = prefer.slice();
+    if (typeof Intl.supportedValuesOf === "function") {
+      var all = Intl.supportedValuesOf("timeZone");
+      for (var i = 0; i < all.length; i++) {
+        if (zoneList.indexOf(all[i]) < 0) zoneList.push(all[i]);
+      }
+    }
+    return zoneList;
+  }
+
+  var foundCache = {};
+  function zoneFor(d, iso) {
+    var want = isoOffsetMin(iso);
+    if (want == null) return { tz: undefined, name: "" };
+    var key = want + "@" + d.getTime();
+    if (foundCache[key]) return foundCache[key];
+    var list = allZones();
+    var fallback = null;
+    for (var i = 0; i < list.length; i++) {
+      if (zoneOffsetMin(d, list[i]) !== want) continue;
+      var n = zoneShort(d, list[i]);
+      if (n) {
+        foundCache[key] = { tz: list[i], name: n };
+        return foundCache[key];
+      }
+      if (!fallback) fallback = { tz: list[i], name: utcLabel(want) };
+    }
+    foundCache[key] = fallback || { tz: undefined, name: utcLabel(want) };
+    return foundCache[key];
   }
 
   function countParts(from, to) {
@@ -43,8 +107,8 @@
       mo++;
     }
     var ms = to - cursor;
-    var d = Math.floor(ms / 86400000);
-    ms -= d * 86400000;
+    var day = Math.floor(ms / 86400000);
+    ms -= day * 86400000;
     var h = Math.floor(ms / 3600000);
     ms -= h * 3600000;
     var mi = Math.floor(ms / 60000);
@@ -53,7 +117,7 @@
     var bits = [];
     if (y) bits.push(y + "y");
     if (mo) bits.push(mo + "m");
-    bits.push(d + "d", pad(h) + "h", pad(mi) + "m", pad(s) + "s");
+    bits.push(day + "d", pad(h) + "h", pad(mi) + "m", pad(s) + "s");
     return bits.join(" ");
   }
 
@@ -67,18 +131,23 @@
     var now = new Date();
     for (var i = 0; i < nodes.length; i++) {
       var el = nodes[i];
-      var d = new Date(el.getAttribute("datetime"));
+      var iso = el.getAttribute("datetime");
+      var d = new Date(iso);
       if (isNaN(d.getTime())) continue;
       var kind = el.getAttribute("data-fmt");
       if (kind === "count") {
         el.textContent = countParts(now, d) || "now";
         continue;
       }
-      if (pretty[kind]) {
-        var text = d.toLocaleString(undefined, pretty[kind]);
-        if (kind === "24h" || kind === "12h") text += " " + tzShort(d);
-        el.textContent = text;
+      if (!pretty[kind]) continue;
+      var opts = pretty[kind];
+      if (kind === "24h" || kind === "12h") {
+        var z = zoneFor(d, iso);
+        if (z.tz) opts = Object.assign({ timeZone: z.tz }, pretty[kind]);
+        el.textContent = d.toLocaleString("en-GB", opts) + " " + z.name;
+        continue;
       }
+      el.textContent = d.toLocaleString(undefined, opts);
     }
   }
 
