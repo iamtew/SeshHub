@@ -1,0 +1,45 @@
+{{define "content"}}
+<div class="episodes">
+<h1>Episodes</h1>
+<table>
+    <thead>
+        <tr><th>Episode</th><th>Submissions</th><th>Winner</th><th>Spot</th></tr>
+    </thead>
+    <tbody>
+    {{range .Episodes}}
+        <tr>
+            <td><a href="#{{.Anchor}}">EP{{.Number}}</a></td>
+            <td>{{if .SubmissionsCount}}{{.SubmissionsCount}}{{end}}</td>
+            <td>{{if .ShowWinner}}{{if .WinnerWatch}}<a href="{{.WinnerWatch}}">{{.WinnerName}}</a>{{else}}{{.WinnerName}}{{end}}{{end}}</td>
+            <td>{{if .Title}}<a href="#{{.Anchor}}">{{.Title}}</a>{{end}}</td>
+        </tr>
+    {{end}}
+    </tbody>
+</table>
+<p><a href="https://www.youtube.com/playlist?list=PLf1sSxWZR8BUh0Hk44BdEynNPATBCfmx0">All previous Sesh Sofa episodes available RIGHT HERE on YouTube!</a></p>
+{{range .Episodes}}
+<section id="{{.Anchor}}">
+    <h2>{{.H2}}</h2>
+    {{if .Note}}<p><em>{{.Note}}</em></p>{{end}}
+    <ul class="ep-rows">
+    {{range .VisibleRows}}
+        <li>{{.Emoji}} {{if .URL}}<a href="{{.URL}}">{{.Label}}</a>{{else}}{{.Label}}{{end}}</li>
+    {{end}}
+    </ul>
+    {{if .Cards}}
+    <ul class="grid">
+    {{range .Cards}}
+    <li>
+        <a href="{{.URL}}">
+            {{if .Thumb}}<img src="{{.Thumb}}" alt="" class="thumb">{{end}}
+            <strong>{{.Title}}</strong>
+        </a>
+        {{if .Meta}}<span class="who">{{.Meta}}</span>{{end}}
+    </li>
+    {{end}}
+    </ul>
+    {{end}}
+</section>
+{{end}}
+</div>
+{{end}}

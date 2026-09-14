@@ -313,6 +313,40 @@ func Get(db *sql.DB, id string) (Video, error) {
 	return v, err
 }
 
+func GetMany(db *sql.DB, ids []string) map[string]Video {
+	seen := map[string]bool{}
+	var uniq []string
+	for _, id := range ids {
+		if id == "" || seen[id] {
+			continue
+		}
+		seen[id] = true
+		uniq = append(uniq, id)
+	}
+	if len(uniq) == 0 {
+		return nil
+	}
+	q := `SELECT id, channel_id, title, IFNULL(description,''), published_at, thumbnail_url, duration_seconds, view_count, like_count, IFNULL(tags,''), IFNULL(category,'') FROM youtube_videos WHERE is_hidden = 0 AND id IN (` + strings.Repeat("?,", len(uniq)-1) + `?)`
+	args := make([]any, len(uniq))
+	for i, id := range uniq {
+		args[i] = id
+	}
+	rows, err := db.Query(q, args...)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+	out := map[string]Video{}
+	for rows.Next() {
+		var v Video
+		if err := rows.Scan(&v.ID, &v.ChannelID, &v.Title, &v.Description, &v.PublishedAt, &v.Thumb, &v.Duration, &v.Views, &v.Likes, &v.Tags, &v.Category); err != nil {
+			return out
+		}
+		out[v.ID] = v
+	}
+	return out
+}
+
 func staleSync(s string) bool {
 	if s == "" {
 		return true

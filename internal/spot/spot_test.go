@@ -1,6 +1,7 @@
 package spot
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -41,5 +42,13 @@ func TestFlattenFill(t *testing.T) {
 	gotCfg, err := Get(sqldb)
 	if err != nil || gotCfg.ContentRaw != "hi {{name}}" {
 		t.Fatalf("%+v %v", gotCfg, err)
+	}
+
+	var sh Show
+	if err := json.Unmarshal([]byte(`{"episode":20,"name":"Creature Park","listeners":[{"kind":"content","name":"Spot","channel":"sesh-sofa-spot-challenge","playlist_id":"PLX"}]}`), &sh); err != nil {
+		t.Fatal(err)
+	}
+	if sh.Episode != 20 || sh.Listeners[0].Channel != "sesh-sofa-spot-challenge" {
+		t.Fatalf("%+v", sh)
 	}
 }

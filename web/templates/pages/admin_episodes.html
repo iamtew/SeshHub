@@ -1,0 +1,18 @@
+{{define "content"}}
+<h1>Episodes</h1>
+<p><a class="btn" href="/admin/episodes/new">New episode</a></p>
+{{if not .Episodes}}
+<p>None yet.</p>
+{{else}}
+<ul class="queue">
+{{range .Episodes}}
+<li>
+    <a href="/admin/episodes/{{.Number}}">EP{{.Number}} {{.Title}}</a>
+    <span class="who">{{if .ShowWinner}}{{.WinnerName}}{{else}}no winner{{end}}</span>
+    <a class="btn" href="/admin/episodes/{{.Number}}">Edit</a>
+    <form method="post" action="/admin/episodes/{{.Number}}/delete"><button type="submit">Delete</button></form>
+</li>
+{{end}}
+</ul>
+{{end}}
+{{end}}

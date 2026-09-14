@@ -4,7 +4,7 @@ Status, not spec. Spec lives in `README.md`.
 
 ## Now
 
-- Public site, OAuth (login + link Discord/YouTube), access queue, Discord-role team + skater profiles, articles, per-skater YouTube clips, admin users (merge/unlink/delete), custom pages, Spot (`/` markdown + Subotto `{{placeholders}}`), `-port`.
+- Public site, OAuth (login + link Discord/YouTube), access queue, Discord-role team + skater profiles, articles, per-skater YouTube clips, admin users (merge/unlink/delete), custom pages, Spot (`/` markdown + Subotto `{{placeholders}}`), Episodes (`/episodes` archive + Subotto stub + admin), `-port`.
 - Dark neon CSS in `web/static/css/app.css`. Visitor: sofa hero. Sesh Hub (logged-in): folded bar + avatar. `/login` is the OAuth picker.
 - Halftone-over-gradient recipe in `sesh_halftone.md` (local lift-out; not always in git).
 
@@ -14,6 +14,10 @@ Status, not spec. Spec lives in `README.md`.
 
 ## Log
 
+- 2026-09-15 — YouTube cards: no purple border; episode links on one row.
+- 2026-09-15 — Episode thumbs are two-up Videos-style cards.
+- 2026-09-14 — `/episodes` archive: auto TOC, configurable rows, Subotto stub, EP1–19 backfill.
+- 2026-09-14 — Fire-field top color sine-cycles red↔violet, 30s.
 - 2026-09-14 — 12h/24h TZ label from the timestamp offset (CET), not the browser.
 - 2026-09-13 — Discord CDN avatars: no-referrer (stops 403).
 - 2026-09-13 — Log out lives at the bottom of `/account`.

@@ -1,0 +1,47 @@
+{{define "content"}}
+<h1>{{.Title}}</h1>
+<form method="post" action="{{.Action}}" class="form">
+    {{if .New}}
+    <label>Number <input name="number" type="number" min="1" required value="{{if .E.Number}}{{.E.Number}}{{end}}"></label>
+    {{end}}
+    <label>Spot / title <input name="title" value="{{.E.Title}}"></label>
+    <label>Heading override <input name="heading" value="{{.E.Heading}}" placeholder="EP14 Pyramid Hangover"></label>
+    <label>Submissions count <input name="submissions_count" type="number" min="0" value="{{if .E.SubmissionsCount}}{{.E.SubmissionsCount}}{{end}}"></label>
+    <label>Note <input name="note" value="{{.E.Note}}" placeholder="Spot challenge not yet launched."></label>
+    <label>Challenge playlist (winner picker) <input name="challenge_playlist_id" value="{{.E.ChallengePlaylistID}}" placeholder="PL…"></label>
+    <label>Winner name <input name="winner_name" value="{{.E.WinnerName}}" placeholder="channel, overridable"></label>
+    {{if .Picks}}
+    <label>Winner from challenge playlist
+        <select name="winner_video_id">
+            <option value="">— none —</option>
+            {{range .Picks}}
+            <option value="{{.VideoID}}" {{if eq $.E.WinnerVideoID .VideoID}}selected{{end}}>{{.Title}} · {{.ChannelTitle}}</option>
+            {{end}}
+        </select>
+    </label>
+    {{else}}
+    <input type="hidden" name="winner_video_id" value="{{.E.WinnerVideoID}}">
+    {{end}}
+    <label>Winner video URL <input name="winner_url" value="{{if not .Picks}}{{.E.WinnerWatch}}{{end}}" placeholder="https://www.youtube.com/watch?v=…"></label>
+    <p class="who">Rows (empty slots ignored). Winner and trick stay hidden on the public page until filled.</p>
+    {{range .FormRows}}
+    <fieldset class="ep-row">
+        <label>Kind
+            <select name="row_kind">
+                <option value="" {{if eq .Kind ""}}selected{{end}}>—</option>
+                <option value="full" {{if eq .Kind "full"}}selected{{end}}>Full episode</option>
+                <option value="playlist" {{if eq .Kind "playlist"}}selected{{end}}>Playlist</option>
+                <option value="winner" {{if eq .Kind "winner"}}selected{{end}}>Winner</option>
+                <option value="trick" {{if eq .Kind "trick"}}selected{{end}}>Trick of the show</option>
+            </select>
+        </label>
+        <label>Label <input name="row_label" value="{{.Label}}"></label>
+        <label>URL <input name="row_url" value="{{.URL}}"></label>
+    </fieldset>
+    {{end}}
+    <button type="submit">Save</button>
+</form>
+{{if not .New}}
+<form method="post" action="/admin/episodes/{{.E.Number}}/delete"><button type="submit">Delete</button></form>
+{{end}}
+{{end}}

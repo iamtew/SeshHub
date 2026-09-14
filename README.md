@@ -131,6 +131,7 @@ The rest of this file is the architecture spec (what the system is supposed to b
    - [Articles, News & Blog CMS](#3-articles-news--blog-cms)
    - [Custom Static Pages](#4-custom-static-pages)
    - [Special page: Spot](#special-page-spot)
+   - [Special page: Episodes](#special-page-episodes)
    - [Admin UI & Monaco Editor](#5-admin-ui--monaco-editor)
 6. [Data Models & Database Schema (libSQL)](#data-models--database-schema-libsql)
 7. [Project Directory Layout](#project-directory-layout)
@@ -250,7 +251,7 @@ Users who do not match a Discord guild role, as well as users authenticated thro
 
 ### Chrome: visitor vs Sesh Hub
 
-Two header modes. Same public nav (Spot / Team / News / Videos) in the dark well either way.
+Two header modes. Same public nav (Spot / Episodes / Team / News / Videos) in the dark well either way.
 
 - **Visitor mode** (logged out): 16:9 sofa hero, click to play `seshsofa.mp4`, Close restores the poster. Header login is a Sesh Hub square that goes to `/login`.
 - **Sesh Hub mode** (logged in): hero folds into a translucent panel — `seshhub.png` (click plays the same intro; Close folds it back), then role links, **Account**, Discord avatar (also `/account`; name on hover). Display name is on the `/account` heading. **Log out** is at the bottom of `/account`. No 16:9 until the logo is clicked. `/login` redirects home.
@@ -284,6 +285,11 @@ Two header modes. Same public nav (Spot / Team / News / Videos) in the dark well
 - **De-facto homepage (`/`)**: Nav label is **Spot**. Not a custom-page slug (reserved). No `/spot` route.
 - **Subotto JSON**: Fetches `https://subotto.seshsofa.nl/api/get/episode/sesh-sofa` (cached ~60s). Flattened keys (`episode_short`, `listeners.0.name`, …) fill `{{placeholders}}` in the markdown at request time. Missing keys / Subotto down → empty string.
 - **Admin (`/admin/spot`)**: Lists live JSON fields as copyable placeholders; one markdown box is the page. Date tags `[date_count:…]` `[date_local:…]` `[date_24h:…]` `[date_12h:…]` wrap an RFC3339 time (usually `{{air_datetime}}`); countdown ticks in the browser.
+
+### Special page: Episodes
+- **Archive (`/episodes`)**: Auto table (Episode / Submissions / Winner / Spot) with `#epN` anchors, then one heading plus configurable link rows per show (full VOD, playlists, winner, trick of the show). Winner and trick stay hidden until set. YouTube thumbs use the Videos-page `<img class="thumb">` pattern plus the heartbeat hover from the old show-site CSS. Reserved slug (not a custom page).
+- **Live stub**: Same Subotto JSON as Spot. If the current episode number is missing, insert a row with content-listener playlists; `sesh-sofa-spot-challenge` is the winner-picker playlist only. Existing rows are not overwritten (blank challenge playlist / missing playlist rows can still fill).
+- **Admin (`/admin/episodes`)**: Edit title, counts, rows, trick URL, winner (pick from the challenge playlist when the admin has YouTube linked, or paste a watch URL; empty winner name fills from the video’s channel and can be overwritten).
 
 ### 5. Admin UI & Monaco Editor
 - **Admin Control Center (`/admin`)**: Metric overviews, access queue, and **Users** (see who has Discord/YouTube, merge duplicate accounts, unlink, delete).
@@ -390,6 +396,18 @@ CREATE TABLE IF NOT EXISTS youtube_videos (
     is_featured BOOLEAN NOT NULL DEFAULT 0,
     is_hidden BOOLEAN NOT NULL DEFAULT 0,
     synced_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS episodes (
+    number INTEGER PRIMARY KEY,
+    title TEXT NOT NULL DEFAULT '',
+    heading TEXT NOT NULL DEFAULT '',
+    submissions_count INTEGER,
+    winner_name TEXT NOT NULL DEFAULT '',
+    winner_video_id TEXT NOT NULL DEFAULT '',
+    challenge_playlist_id TEXT NOT NULL DEFAULT '',
+    note TEXT NOT NULL DEFAULT '',
+    rows TEXT NOT NULL DEFAULT '[]'
 );
 
 CREATE TABLE IF NOT EXISTS sync_logs (

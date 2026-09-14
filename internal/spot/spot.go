@@ -31,6 +31,19 @@ type Item struct {
 	Key, Placeholder, Val string
 }
 
+type Listener struct {
+	Kind       string `json:"kind"`
+	Name       string `json:"name"`
+	Channel    string `json:"channel"`
+	PlaylistID string `json:"playlist_id"`
+}
+
+type Show struct {
+	Episode   int        `json:"episode"`
+	Name      string     `json:"name"`
+	Listeners []Listener `json:"listeners"`
+}
+
 func Get(db *sql.DB) (Config, error) {
 	var c Config
 	err := db.QueryRow(`SELECT content_raw FROM spot WHERE id=?`, rowID).Scan(&c.ContentRaw)
@@ -100,17 +113,23 @@ func Items(vals map[string]string) []Item {
 
 var (
 	cacheMu sync.Mutex
-	cached  map[string]string
+	cached  []byte
 	cacheAt time.Time
 	cacheOK bool
 )
 
-func Latest() (map[string]string, bool) {
+func ClearCache() {
+	cacheMu.Lock()
+	cached, cacheOK = nil, false
+	cacheMu.Unlock()
+}
+
+func LatestRaw() ([]byte, bool) {
 	cacheMu.Lock()
 	if cacheOK && time.Since(cacheAt) < cacheTTL {
-		vals := cached
+		b := cached
 		cacheMu.Unlock()
-		return vals, true
+		return b, true
 	}
 	cacheMu.Unlock()
 
@@ -127,15 +146,35 @@ func Latest() (map[string]string, bool) {
 		return nil, false
 	}
 	body, err := io.ReadAll(io.LimitReader(res.Body, 1<<20))
-	if err != nil {
+	if err != nil || len(body) == 0 {
+		return nil, false
+	}
+	cacheMu.Lock()
+	cached, cacheAt, cacheOK = body, time.Now(), true
+	cacheMu.Unlock()
+	return body, true
+}
+
+func Latest() (map[string]string, bool) {
+	body, ok := LatestRaw()
+	if !ok {
 		return nil, false
 	}
 	vals, err := FlattenJSON(body)
 	if err != nil || len(vals) == 0 {
 		return nil, false
 	}
-	cacheMu.Lock()
-	cached, cacheAt, cacheOK = vals, time.Now(), true
-	cacheMu.Unlock()
 	return vals, true
+}
+
+func Current() (Show, bool) {
+	body, ok := LatestRaw()
+	if !ok {
+		return Show{}, false
+	}
+	var s Show
+	if err := json.Unmarshal(body, &s); err != nil || s.Episode == 0 {
+		return Show{}, false
+	}
+	return s, true
 }

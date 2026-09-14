@@ -78,6 +78,10 @@ func TestSyncUpsertBearer(t *testing.T) {
 	if err != nil || len(list) != 1 || list[0].Duration != 253 {
 		t.Fatalf("list %v %#v", err, list)
 	}
+	got := GetMany(sqldb, []string{"vid1", "nope", "vid1"})
+	if len(got) != 1 || got["vid1"].Views != 10 {
+		t.Fatalf("getmany %#v", got)
+	}
 }
 
 func TestMaybeSyncUserNeedsProfile(t *testing.T) {
@@ -108,5 +112,24 @@ func TestMaybeSyncUserNeedsProfile(t *testing.T) {
 	}
 	if called {
 		t.Fatal("sync without roster profile")
+	}
+}
+
+func TestPlaylistItemsOwnerChannel(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/playlistItems", func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"items": []any{map[string]any{"snippet": map[string]any{
+				"title": "clip", "channelTitle": "PlaylistOwner", "videoOwnerChannelTitle": "Smolin",
+				"resourceId": map[string]any{"videoId": "abc"},
+			}}},
+		})
+	})
+	ts := httptest.NewServer(mux)
+	t.Cleanup(ts.Close)
+	c := Client{Token: "tok", Base: ts.URL, HTTP: ts.Client()}
+	items, err := c.PlaylistItems(context.Background(), "PLx")
+	if err != nil || len(items) != 1 || items[0].ChannelTitle != "Smolin" || ChannelOf(items, "abc") != "Smolin" {
+		t.Fatalf("%+v %v", items, err)
 	}
 }
