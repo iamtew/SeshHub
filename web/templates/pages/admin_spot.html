@@ -8,6 +8,7 @@
 {{else}}
 <p class="who">Subotto did not answer. Markdown still saves; placeholders stay empty on the public page until it does.</p>
 {{end}}
+<p class="who">Date tags (ISO after placeholders fill): <code>[date_count:{{"{{air_datetime}}"}}]</code> <code>[date_local:{{"{{air_datetime}}"}}]</code> <code>[date_24h:{{"{{air_datetime}}"}}]</code> <code>[date_12h:{{"{{air_datetime}}"}}]</code></p>
 <form method="post" action="/admin/spot" class="form">
     <label>Markdown <textarea name="content_raw" rows="16">{{.Cfg.ContentRaw}}</textarea></label>
     <button type="submit">Save</button>

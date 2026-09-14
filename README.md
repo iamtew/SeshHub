@@ -283,7 +283,7 @@ Two header modes. Same public nav (Spot / Team / News / Videos) in the dark well
 ### Special page: Spot
 - **De-facto homepage (`/`)**: Nav label is **Spot**. Not a custom-page slug (reserved). No `/spot` route.
 - **Subotto JSON**: Fetches `https://subotto.seshsofa.nl/api/get/episode/sesh-sofa` (cached ~60s). Flattened keys (`episode_short`, `listeners.0.name`, …) fill `{{placeholders}}` in the markdown at request time. Missing keys / Subotto down → empty string.
-- **Admin (`/admin/spot`)**: Lists live JSON fields as copyable placeholders; one markdown box is the page.
+- **Admin (`/admin/spot`)**: Lists live JSON fields as copyable placeholders; one markdown box is the page. Date tags `[date_count:…]` `[date_local:…]` `[date_24h:…]` `[date_12h:…]` wrap an RFC3339 time (usually `{{air_datetime}}`); countdown ticks in the browser.
 
 ### 5. Admin UI & Monaco Editor
 - **Admin Control Center (`/admin`)**: Metric overviews, access queue, and **Users** (see who has Discord/YouTube, merge duplicate accounts, unlink, delete).

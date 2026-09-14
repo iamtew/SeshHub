@@ -7,6 +7,16 @@ import (
 	"seshhub/internal/db"
 )
 
+func TestRenderDateTags(t *testing.T) {
+	html := Render("- [date_24h:2026-09-20T20:00:00+02:00]")
+	if !strings.Contains(html, `data-fmt="24h"`) || !strings.Contains(html, `datetime="2026-09-20T20:00:00+02:00"`) {
+		t.Fatalf("date tag: %s", html)
+	}
+	if strings.Contains(Render("[date_count:nope]"), `data-fmt="count"`) {
+		t.Fatal("bad timestamp should stay put")
+	}
+}
+
 func TestRenderImages(t *testing.T) {
 	md := Render("![x](https://example.com/a.png)")
 	if !strings.Contains(md, `src="https://example.com/a.png"`) {
