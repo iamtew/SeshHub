@@ -529,6 +529,7 @@ PORT=53053                           # HTTP port to listen on
 BASE_URL=http://localhost:53053      # Public base URL for OAuth callbacks
 SESSION_SECRET=change-me-to-a-secure-random-32-byte-hex-string
 SUBOTTO_INSTANCE=subotto.seshsofa.nl # Subotto host for Spot/Episodes JSON
+GTAG_ID=                             # GA4 measurement ID; empty = no tag
 
 # ==============================================================================
 # Database (libSQL / Turso)
@@ -555,6 +556,8 @@ SUPERADMIN_DISCORD_IDS=123456789012345678,987654321098765432
 # ==============================================================================
 YOUTUBE_CLIENT_ID=your_google_oauth_client_id
 YOUTUBE_CLIENT_SECRET=your_google_oauth_client_secret
+
+GTAG_ID=                             # GA4 measurement ID; empty = no tag
 ```
 
 ---

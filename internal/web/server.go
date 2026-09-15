@@ -104,6 +104,7 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, dat
 	data["User"] = u
 	data["DiscordLogin"] = s.cfg.DiscordEnabled()
 	data["YouTubeLogin"] = s.cfg.YouTubeEnabled()
+	data["GTag"] = s.cfg.GTagID
 	authPage, _ := data["AuthPage"].(bool)
 	path, _ := data["Path"].(string)
 	data["NavAbout"] = path == "/about" || strings.HasPrefix(path, "/about/")

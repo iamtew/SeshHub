@@ -18,6 +18,16 @@
     <script src="/static/js/dates.js" defer></script>
     {{if or .Hero .Fold}}<script src="/static/js/hero.js" defer></script>{{end}}
     {{if .Monaco}}<script src="/static/js/editor.js" defer></script>{{end}}
+    {{if .GTag}}
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{.GTag}}"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+        gtag('config', '{{.GTag}}');
+    </script>
+    {{end}}
 </head>
 <body>
     {{if or .Fold .Hero}}

@@ -14,6 +14,7 @@ Status, not spec. Spec lives in `README.md`.
 
 ## Log
 
+- 2026-09-15 — Google tag from `GTAG_ID` env (empty = omit).
 - 2026-09-15 — `just clean` drops `bin/` and `dist/`.
 - 2026-09-15 — Markdown GFM tables (goldmark Table); CMS pages render from raw.
 - 2026-09-15 — About CMS pages (`/about`, `/about/privacy`, `/about/tos`); nested page slugs; footer copyright.
