@@ -19,3 +19,12 @@ build:
 build:
     if not exist dist mkdir dist
     go build -ldflags="-s -w" -o dist/seshhub.exe ./cmd/server
+
+[unix]
+clean:
+    rm -rf bin dist
+
+[windows]
+clean:
+    if exist bin rmdir /s /q bin
+    if exist dist rmdir /s /q dist

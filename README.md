@@ -108,6 +108,7 @@ Restart after `.env` changes. Production: add the live `https://…/auth/…/cal
 | Run it | `just dev` (port **53053**) |
 | Tests | `just test` |
 | Native binary | `just build` → `bin/seshhub` on Linux, `dist/seshhub.exe` on Windows |
+| Clean binaries | `just clean` → drops `bin/` and `dist/` |
 | Linux binary from Windows | see [Cross-compilation](#cross-compilation) |
 | Status of the repo | [`JOURNAL.md`](JOURNAL.md) — what works now vs what's next |
 | Duplicate Discord + YouTube accounts | **Admin → Users** → merge from the spare into the Discord user |
