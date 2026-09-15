@@ -11,11 +11,11 @@ Status, not spec. Spec lives in `README.md`.
 
 ## Next
 
-- Paste `docs/privacy-policy.md` into `/admin/pages` for `/about/privacy`. Bounce `just dev` so `POST /consent` and `/account` routes exist.
 - Turso only when a real need shows up.
 
 ## Log
 
+- 2026-09-16 — `GoatOps@stupid.systems` confirmed live; Meat Bag pastes the policy into `/admin/pages`.
 - 2026-09-16 — Privacy contact mailbox is `GoatOps@stupid.systems`.
 - 2026-09-16 — Privacy P0–P3: consent before gtag, session IP/UA gone, DeleteUser in a tx with tombstone + profile/clips, `/account` unlink/export/delete, logout all sessions, drop `SESSION_SECRET`. Fonts stay remote (Pill Gothic is commercial). Paste the policy into the CMS.
 - 2026-09-15 — Docs moved to `docs/`; added `docs/privacy-remediation.md` (P0-P3 fix plan for the §9 gaps).
