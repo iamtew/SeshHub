@@ -16,53 +16,19 @@
     --line: var(--violet);
     --fire: linear-gradient(to bottom, var(--red), var(--chartreuse));
 }
-@property --fire-top {
-    syntax: "<color>";
-    inherits: true;
-    initial-value: #F20D0D;
-}
-@keyframes fire-top-cycle {
-    0%, 100% { --fire-top: #F20D0D; }
-    50% { --fire-top: #8600DF; }
-}
 * { box-sizing: border-box; }
 html { color-scheme: dark; }
 html, body { margin: 0; min-height: 100dvh; }
 body {
     color: var(--fg);
     font: 18px/1.35 "Pill Gothic 600mg", system-ui, sans-serif;
+    background: url("/static/img/background.png") center / cover no-repeat fixed;
     background-color: var(--chartreuse);
     display: flex;
     flex-direction: column;
     align-items: center;
     padding: 1.25rem 1rem 2rem;
 }
-body::before,
-body::after {
-    content: "";
-    position: fixed;
-    inset: -50%;
-    pointer-events: none;
-}
-body::before {
-    z-index: 0;
-    background-image: linear-gradient(to bottom, var(--fire-top) 0%, var(--chartreuse) 100%);
-    transform: rotate(-23deg);
-    animation: fire-top-cycle 30s ease-in-out infinite;
-}
-body::after {
-    z-index: 0;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='32' height='32' rx='9' fill='%23000' fill-opacity='0.16'/%3E%3Crect x='32' y='32' width='32' height='32' rx='9' fill='%23000' fill-opacity='0.16'/%3E%3C/svg%3E");
-    background-size: 64px 64px;
-    transform: rotate(58deg);
-    mix-blend-mode: multiply;
-}
-body.guest {
-    background: url("/static/img/background.png") center / cover no-repeat fixed;
-}
-body.guest::before,
-body.guest::after { display: none; }
-body > * { position: relative; z-index: 1; }
 a { color: var(--fg); text-decoration: none; font-weight: 600; }
 a:hover { text-shadow: 0 0 6px var(--red), 0 0 12px var(--chartreuse); color: var(--fg); }
 .hero, .nav, .wrap, .foot {

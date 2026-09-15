@@ -19,7 +19,7 @@
     {{if or .Hero .Fold}}<script src="/static/js/hero.js" defer></script>{{end}}
     {{if .Monaco}}<script src="/static/js/editor.js" defer></script>{{end}}
 </head>
-<body{{if not .User}} class="guest"{{end}}>
+<body>
     {{if or .Fold .Hero}}
     <section class="hero{{if .Fold}} fold{{end}}">
         {{if .Fold}}
