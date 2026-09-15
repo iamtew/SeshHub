@@ -243,7 +243,7 @@ Users who do not match a Discord guild role, as well as users authenticated thro
 
 | Role | Hierarchy Level | Determination Logic | Capabilities |
 | :--- | :--- | :--- | :--- |
-| **Admin** | Level 3 | Discord user has configured `DISCORD_HUB_ADMIN_ROLE_ID` in the Sesh Sofa Discord guild, OR user ID matches `SUPERADMIN_DISCORD_IDS`. | Hub access: Team Skaters (status), edit articles/pages, users, access queue. Not Spot/Episodes. |
+| **Admin** | Level 3 | Discord user has configured `DISCORD_HUB_ADMIN_ROLE_ID` in the Sesh Sofa Discord guild, OR user ID matches `SUPERADMIN_DISCORD_IDS`. | Hub access: FS Team (status), edit articles/pages, users, access queue. Not Spot/Episodes. |
 | **Host** | (flag) | Discord user has `DISCORD_HOSTS_ROLE_ID` in the guild (checked on Discord login; not granted by superadmin). | Edit Spot (`/admin/spot`) and Episodes (`/admin/episodes`). Edit links only show for this flag. |
 | **Team Skater** | Level 2 | Discord user has configured `DISCORD_SKATER_ROLE_ID` in the guild, OR manually designated by an Admin. | Edit own skater profile, update personal links/sponsors/clips, draft articles. |
 | **Member** | Level 1 | A Discord guild member with the member role, or a user whose access request was individually approved by an Admin. | View member-exclusive media, comment/react (if enabled), link secondary OAuth accounts. |
@@ -252,7 +252,7 @@ Users who do not match a Discord guild role, as well as users authenticated thro
 
 ### Chrome: visitor vs Sesh Hub
 
-Two header modes. Same public nav (Spot / Episodes / Team / News / Videos) in the dark well either way.
+Two header modes. Same public nav (Spot / Episodes / FS Team / News / Videos) in the dark well either way.
 
 - **Visitor mode** (logged out): 16:9 sofa hero, click to play `seshsofa.mp4` (local `web/static/vid/`, not in git), Close restores the poster. Header: Discord / Twitch / YouTube icons then a Sesh Hub square to `/login`.
 - **Sesh Hub mode** (logged in): same `background.png`. Hero folds into a translucent panel — `seshhub.png` (click plays the same intro; Close folds it back), then role links, **Account**, Discord avatar (also `/account`; name on hover). Display name is on the `/account` heading. **Log out** is at the bottom of `/account`. Public nav still has Discord / Twitch / YouTube icons, not the Hub square. No 16:9 until the logo is clicked. `/login` redirects home.
@@ -265,7 +265,7 @@ Two header modes. Same public nav (Spot / Episodes / Team / News / Videos) in th
 - **Team Directory (`/team` / `/skaters`)**: People who hold `DISCORD_SKATER_ROLE_ID` in the guild and have logged in with Discord. Name comes from Discord; optional display name, stance, status, location, bio.
 - **Skater Detail Page (`/team/{slug}`)**: Bio, stance, status, location, Discord avatar, and clips from a linked YouTube channel (optional featured pin).
 - **Skater profile (`/dashboard/profile`)**: Own profile only — display name, stance, location, bio, featured clip.
-- **Team Skaters (`/admin/skaters`)**: Superadmin / Discord hub-admin role only. Set another skater’s status. No add-skater form.
+- **FS Team (`/admin/skaters`)**: Superadmin / Discord hub-admin role only. Set another skater’s status. No add-skater form.
 
 ### 2. YouTube clips from skaters
 - **No site-wide poller**: `/videos` is the union of clips pulled from team skaters who have connected YouTube.

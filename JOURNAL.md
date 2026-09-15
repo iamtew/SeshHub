@@ -5,7 +5,7 @@ Status, not spec. Spec lives in `README.md`.
 ## Now
 
 - Public site, OAuth (login + link Discord/YouTube), access queue, Discord-role team + skater profiles, articles, per-skater YouTube clips, admin users (merge/unlink/delete), custom pages, Spot (`/` markdown + Subotto `{{placeholders}}`), Episodes (`/episodes` archive + Subotto stub; hosts-role edit), `-port`. `DISCORD_HUB_ADMIN_ROLE_ID` + `DISCORD_HOSTS_ROLE_ID`. `SUBOTTO_INSTANCE` (Core env) is the Subotto host.
-- Dark neon CSS in `web/static/css/app.css`. Site-wide `background.png`. Visitor: sofa hero + Discord/Twitch/YouTube + Hub square. Sesh Hub (logged-in): folded bar + avatar; same three social icons, no Hub square. `/login` is the OAuth picker. Well is 70% / min 720px. Queue list actions sit on the right.
+- Dark neon CSS in `web/static/css/app.css`. Site-wide `background.png`. Visitor: sofa hero + Discord/Twitch/YouTube + Hub square. Sesh Hub (logged-in): folded bar + avatar; same three social icons, no Hub square. `/login` is the OAuth picker. Well is 70% / min 720px. Queue list actions sit on the right. Public nav and admin skaters link are **FS Team**.
 - Halftone-over-gradient recipe in `sesh_halftone.md` (local lift-out; not always in git).
 
 ## Next
@@ -14,6 +14,7 @@ Status, not spec. Spec lives in `README.md`.
 
 ## Log
 
+- 2026-09-15 — Nav Team and admin Team Skaters renamed FS Team.
 - 2026-09-15 — Queue list Edit/Save/Delete sit on the right.
 - 2026-09-15 — Stop tracking `seshsofa.mp4`; copy it onto the VPS by hand.
 - 2026-09-15 — Discord/Twitch/YouTube icons stay in nav when logged in.

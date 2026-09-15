@@ -34,7 +34,7 @@ func (s *Server) team(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "db error", http.StatusInternalServerError)
 		return
 	}
-	s.render(w, r, "skaters_list.html", map[string]any{"Title": "Team", "Path": "/team", "Skaters": list})
+	s.render(w, r, "skaters_list.html", map[string]any{"Title": "FS Team", "Path": "/team", "Skaters": list})
 }
 
 func (s *Server) skatersAlias(w http.ResponseWriter, r *http.Request) {
@@ -93,7 +93,7 @@ func (s *Server) adminSkaters(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "db error", http.StatusInternalServerError)
 		return
 	}
-	s.render(w, r, "admin_skaters.html", map[string]any{"Title": "Team Skaters", "Path": "/admin/skaters", "Skaters": list})
+	s.render(w, r, "admin_skaters.html", map[string]any{"Title": "FS Team", "Path": "/admin/skaters", "Skaters": list})
 }
 
 func (s *Server) adminSkaterEdit(w http.ResponseWriter, r *http.Request) {
