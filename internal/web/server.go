@@ -41,6 +41,11 @@ func New(cfg config.Config, db *sql.DB) *Server {
 	s.mux.HandleFunc("GET /auth/youtube/callback", s.callbackYouTube)
 	s.mux.HandleFunc("GET /auth/logout", s.logout)
 	s.mux.HandleFunc("GET /account", s.accountPage)
+	s.mux.HandleFunc("POST /account/unlink/discord", s.accountUnlink("discord"))
+	s.mux.HandleFunc("POST /account/unlink/youtube", s.accountUnlink("youtube"))
+	s.mux.HandleFunc("POST /account/delete", s.accountDelete)
+	s.mux.HandleFunc("GET /account/export", s.accountExport)
+	s.mux.HandleFunc("POST /consent", s.consent)
 	s.mux.HandleFunc("GET /access", s.accessPage)
 	s.mux.HandleFunc("POST /access/request", s.accessRequest)
 	s.mux.HandleFunc("GET /admin/access", s.adminAccess)
@@ -104,7 +109,14 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, dat
 	data["User"] = u
 	data["DiscordLogin"] = s.cfg.DiscordEnabled()
 	data["YouTubeLogin"] = s.cfg.YouTubeEnabled()
-	data["GTag"] = s.cfg.GTagID
+	if s.cfg.GTagID != "" {
+		switch consentFrom(r) {
+		case "yes":
+			data["GTag"] = s.cfg.GTagID
+		case "":
+			data["ConsentAsk"] = true
+		}
+	}
 	authPage, _ := data["AuthPage"].(bool)
 	path, _ := data["Path"].(string)
 	data["NavAbout"] = path == "/about" || strings.HasPrefix(path, "/about/")
@@ -120,6 +132,7 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, dat
 		filepath.Join(s.webDir, "templates", "partials", "nav.html"),
 		filepath.Join(s.webDir, "templates", "partials", "signin.html"),
 		filepath.Join(s.webDir, "templates", "partials", "footer.html"),
+		filepath.Join(s.webDir, "templates", "partials", "consent.html"),
 		filepath.Join(s.webDir, "templates", "pages", page),
 	}
 	t, err := template.ParseFiles(files...)

@@ -10,10 +10,10 @@ import (
 )
 
 const CookieName = "seshhub_session"
+const TombstoneID = "deleted-user"
 
 var ErrTaken = fmt.Errorf("already linked to another account")
 var ErrMerge = fmt.Errorf("cannot merge")
-var ErrHasArticles = fmt.Errorf("user authored articles")
 var ErrDeleteSelf = fmt.Errorf("cannot delete yourself")
 
 type User struct {
@@ -139,7 +139,7 @@ func GetUser(db *sql.DB, id string) (User, error) {
 }
 
 func ListUsers(db *sql.DB) ([]User, error) {
-	rows, err := db.Query(`SELECT ` + userCols + ` FROM users ORDER BY created_at`)
+	rows, err := db.Query(`SELECT `+userCols+` FROM users WHERE id != ? ORDER BY created_at`, TombstoneID)
 	if err != nil {
 		return nil, err
 	}
@@ -169,28 +169,48 @@ func DeleteUser(db *sql.DB, id, actorID string) error {
 	if id == actorID {
 		return ErrDeleteSelf
 	}
-	var n int
-	if err := db.QueryRow(`SELECT COUNT(*) FROM articles WHERE author_id = ?`, id).Scan(&n); err != nil {
+	if id == TombstoneID {
+		return fmt.Errorf("reserved account")
+	}
+	tx, err := db.Begin()
+	if err != nil {
 		return err
 	}
-	if n > 0 {
-		return ErrHasArticles
-	}
-	if _, err := db.Exec(`UPDATE access_requests SET reviewed_by=NULL WHERE reviewed_by=?`, id); err != nil {
+	defer tx.Rollback()
+
+	var channel string
+	if err := tx.QueryRow(`SELECT IFNULL(youtube_channel_id,'') FROM users WHERE id=?`, id).Scan(&channel); err != nil {
 		return err
 	}
-	if _, err := db.Exec(`DELETE FROM access_requests WHERE user_id=?`, id); err != nil {
+
+	if _, err := tx.Exec(`UPDATE articles SET author_id=? WHERE author_id=?`, TombstoneID, id); err != nil {
 		return err
 	}
-	if _, err := db.Exec(`DELETE FROM sessions WHERE user_id=?`, id); err != nil {
+	if _, err := tx.Exec(`DELETE FROM skater_profiles WHERE user_id=?`, id); err != nil {
 		return err
 	}
-	_, err := db.Exec(`DELETE FROM users WHERE id=?`, id)
-	return err
+	if _, err := tx.Exec(`UPDATE access_requests SET reviewed_by=NULL WHERE reviewed_by=?`, id); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(`DELETE FROM access_requests WHERE user_id=?`, id); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(`DELETE FROM sessions WHERE user_id=?`, id); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(`DELETE FROM users WHERE id=?`, id); err != nil {
+		return err
+	}
+	if channel != "" {
+		if _, err := tx.Exec(`DELETE FROM youtube_videos WHERE channel_id=?`, channel); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
 }
 
 func MergeUsers(db *sql.DB, keepID, fromID string) error {
-	if keepID == "" || fromID == "" || keepID == fromID {
+	if keepID == "" || fromID == "" || keepID == fromID || keepID == TombstoneID || fromID == TombstoneID {
 		return ErrMerge
 	}
 	tx, err := db.Begin()
@@ -274,15 +294,15 @@ func MergeUsers(db *sql.DB, keepID, fromID string) error {
 	return tx.Commit()
 }
 
-func CreateSession(db *sql.DB, userID, ip, ua string) (string, error) {
+func CreateSession(db *sql.DB, userID string) (string, error) {
 	var raw [32]byte
 	if _, err := rand.Read(raw[:]); err != nil {
 		return "", err
 	}
 	token := hex.EncodeToString(raw[:])
 	exp := time.Now().UTC().Add(30 * 24 * time.Hour).Format("2006-01-02 15:04:05")
-	_, err := db.Exec(`INSERT INTO sessions (id, user_id, ip_address, user_agent, expires_at) VALUES (?,?,?,?,?)`,
-		hashToken(token), userID, ip, ua, exp)
+	_, err := db.Exec(`INSERT INTO sessions (id, user_id, expires_at) VALUES (?,?,?)`,
+		hashToken(token), userID, exp)
 	return token, err
 }
 
@@ -296,6 +316,18 @@ func UserByToken(db *sql.DB, token string) (User, error) {
 
 func DeleteSession(db *sql.DB, token string) error {
 	_, err := db.Exec(`DELETE FROM sessions WHERE id = ?`, hashToken(token))
+	return err
+}
+
+func DeleteSessionsForUser(db *sql.DB, userID string) error {
+	_, err := db.Exec(`DELETE FROM sessions WHERE user_id=?`, userID)
+	return err
+}
+
+// ponytail: boot-time only. If uptime ever exceeds the 30-day session window,
+// add a 24h ticker; until then a deploy is the purge.
+func PurgeExpiredSessions(db *sql.DB) error {
+	_, err := db.Exec(`DELETE FROM sessions WHERE expires_at <= datetime('now')`)
 	return err
 }
 

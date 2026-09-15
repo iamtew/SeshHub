@@ -57,6 +57,7 @@
         {{template "content" .}}
     </main>
     {{if not .AuthPage}}{{template "footer.html" .}}{{end}}
+    {{template "consent.html" .}}
 </body>
 </html>
 {{end}}

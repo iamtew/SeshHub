@@ -133,3 +133,72 @@ func TestHostFlag(t *testing.T) {
 		t.Fatalf("unlink must drop host %+v %v", got, err)
 	}
 }
+
+func TestDeleteUserErasure(t *testing.T) {
+	sqldb, err := db.Open(":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = sqldb.Close() })
+	if err := db.Migrate(sqldb, "../db/migrations"); err != nil {
+		t.Fatal(err)
+	}
+	u, err := UpsertDiscord(sqldb, "d-erase", "erase", "Erase", "", RoleSkater, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := LinkYouTube(sqldb, u.ID, "ch-erase", "Chan", "", "refresh"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := CreateSession(sqldb, u.ID); err != nil {
+		t.Fatal(err)
+	}
+	if err := RequestAccess(sqldb, u.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := sqldb.Exec(`INSERT INTO skater_profiles (id, user_id, slug, skater_name) VALUES ('p-erase', ?, 'erase', 'Erase')`, u.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := sqldb.Exec(`INSERT INTO articles (id, slug, title, content_raw, content_html, author_id, status) VALUES ('a-erase', 'erase-post', 'Post', 'hi', 'hi', ?, 'published')`, u.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := sqldb.Exec(`INSERT INTO youtube_videos (id, channel_id, title, published_at, thumbnail_url) VALUES ('vid-erase', 'ch-erase', 'Clip', '2020-01-01', 'https://img')`); err != nil {
+		t.Fatal(err)
+	}
+	if err := DeleteUser(sqldb, u.ID, ""); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := GetUser(sqldb, u.ID); err == nil {
+		t.Fatal("user still there")
+	}
+	var n int
+	_ = sqldb.QueryRow(`SELECT COUNT(*) FROM skater_profiles WHERE id='p-erase'`).Scan(&n)
+	if n != 0 {
+		t.Fatal("profile survived")
+	}
+	_ = sqldb.QueryRow(`SELECT COUNT(*) FROM sessions WHERE user_id=?`, u.ID).Scan(&n)
+	if n != 0 {
+		t.Fatal("session survived")
+	}
+	_ = sqldb.QueryRow(`SELECT COUNT(*) FROM access_requests WHERE user_id=?`, u.ID).Scan(&n)
+	if n != 0 {
+		t.Fatal("access request survived")
+	}
+	_ = sqldb.QueryRow(`SELECT COUNT(*) FROM youtube_videos WHERE channel_id='ch-erase'`).Scan(&n)
+	if n != 0 {
+		t.Fatal("clips survived")
+	}
+	var author string
+	if err := sqldb.QueryRow(`SELECT author_id FROM articles WHERE id='a-erase'`).Scan(&author); err != nil || author != TombstoneID {
+		t.Fatalf("article author %q %v", author, err)
+	}
+	list, err := ListUsers(sqldb)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, got := range list {
+		if got.ID == TombstoneID {
+			t.Fatal("tombstone listed")
+		}
+	}
+}

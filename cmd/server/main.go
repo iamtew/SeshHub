@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"seshhub/internal/auth"
 	"seshhub/internal/config"
 	"seshhub/internal/db"
 	"seshhub/internal/spot"
@@ -33,6 +34,9 @@ func main() {
 	if err := db.Migrate(sqldb, cfg.MigrationsDir); err != nil {
 		slog.Error("migrate", "err", err)
 		os.Exit(1)
+	}
+	if err := auth.PurgeExpiredSessions(sqldb); err != nil {
+		slog.Error("purge sessions", "err", err)
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)

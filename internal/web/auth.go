@@ -209,7 +209,7 @@ func (s *Server) checkOAuth(r *http.Request, provider string) (string, error) {
 }
 
 func (s *Server) issueSession(w http.ResponseWriter, r *http.Request, userID string) {
-	token, err := auth.CreateSession(s.db, userID, r.RemoteAddr, r.UserAgent())
+	token, err := auth.CreateSession(s.db, userID)
 	if err != nil {
 		slog.Error("session", "err", err)
 		http.Error(w, "login failed", http.StatusInternalServerError)
@@ -229,8 +229,8 @@ func (s *Server) issueSession(w http.ResponseWriter, r *http.Request, userID str
 }
 
 func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
-	if c, err := r.Cookie(auth.CookieName); err == nil {
-		_ = auth.DeleteSession(s.db, c.Value)
+	if u := UserFrom(r); u != nil {
+		_ = auth.DeleteSessionsForUser(s.db, u.ID)
 	}
 	http.SetCookie(w, &http.Cookie{Name: auth.CookieName, Path: "/", MaxAge: -1, HttpOnly: true})
 	http.Redirect(w, r, "/", http.StatusFound)

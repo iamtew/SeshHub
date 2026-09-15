@@ -7,25 +7,17 @@ Status, not spec. Spec lives in `README.md`.
 - Public site, OAuth (login + link Discord/YouTube), access queue, Discord-role team + skater profiles, articles, per-skater YouTube clips, admin users (merge/unlink/delete), custom pages (nested slugs; seeded `/about`, `/about/privacy`, `/about/tos`), Spot (`/` markdown + Subotto `{{placeholders}}`), Episodes (`/episodes` archive + Subotto stub; hosts-role edit), `-port`. `DISCORD_HUB_ADMIN_ROLE_ID` + `DISCORD_HOSTS_ROLE_ID`. `SUBOTTO_INSTANCE` (Core env) is the Subotto host. Nav About after Videos; footer Privacy / ToS / SeshHub.
 - Dark neon CSS in `web/static/css/app.css`. Site-wide `background.png`. Visitor: sofa hero + Discord/Twitch/YouTube + Hub square. Sesh Hub (logged-in): folded bar + avatar; same three social icons, no Hub square. `/login` is the OAuth picker. Well is 70% / min 720px. Queue list actions sit on the right. Public nav and admin skaters link are **FS Team**.
 - Halftone-over-gradient recipe in `sesh_halftone.md` (local lift-out; not always in git).
-- `docs/privacy-policy.md` is the source of truth for `/about/privacy`. The CMS row is still the `# Privacy Policy` stub from `006_about_pages.sql` — paste the markdown into `/admin/pages` to publish. Seed's `WHERE NOT EXISTS` never overwrites it. Remediation plan for the disclosed gaps: `docs/privacy-remediation.md`.
+- `docs/privacy-policy.md` is the source of truth for `/about/privacy`. Paste it into `/admin/pages` to publish (seed never overwrites). Consent gate, no session IP/UA, complete erasure + `/account` self-service. Fonts stay on cdnfonts (commercial licence). Dead `SESSION_SECRET` gone.
 
 ## Next
 
-Privacy backlog, ordered by legal exposure. `docs/privacy-policy.md` §9 discloses every one of these, so shipping a fix means deleting a line from §9. The how-to lives in `docs/privacy-remediation.md` (P0-P3); this list stays the status. **Read its "three traps" section before starting items 4 or 5** — the obvious implementation is wrong in all three cases (vanishing articles, `DROP COLUMN` bricking the second boot, half-deleted accounts).
-
-1. **P0-1** Consent gate before `gtag.js`. Only item with live legal exposure.
-2. **P0-2** Fill the policy's two `[TODO before publishing]` markers (contact address, hosting country) before pasting it into `/admin/pages`.
-3. **P1-1** Purge expired sessions at boot.
-4. **P1-2** Stop storing `sessions.ip_address` / `user_agent`. Write-only columns; deleting the collection is a smaller diff than keeping it.
-5. **P2-2** Finish `DeleteUser`: profile + cached clips, tombstone author, wrap in a tx. Needs a test — it's the one path where a bug means we lied about erasing someone.
-6. **P2-1** Self-service unlink / delete / export on `/account`.
-7. **P3** Self-host the cdnfonts faces (check licensing), delete dead `SESSION_SECRET`.
-8. Turso only when a real need shows up.
-
-Erasure runbook until P2-2 lands: delete the **account first** (kills sessions), **then** the skater profile. `maybeEnsureProfile` runs on every request, so removing the profile alone just recreates it on the next page load. Also clear `youtube_videos` by channel ID, and note an author cannot be deleted at all yet (`ErrHasArticles`).
+- Paste `docs/privacy-policy.md` into `/admin/pages` for `/about/privacy`. Bounce `just dev` so `POST /consent` and `/account` routes exist.
+- Turso only when a real need shows up.
 
 ## Log
 
+- 2026-09-16 — Privacy contact mailbox is `GoatOps@stupid.systems`.
+- 2026-09-16 — Privacy P0–P3: consent before gtag, session IP/UA gone, DeleteUser in a tx with tombstone + profile/clips, `/account` unlink/export/delete, logout all sessions, drop `SESSION_SECRET`. Fonts stay remote (Pill Gothic is commercial). Paste the policy into the CMS.
 - 2026-09-15 — Docs moved to `docs/`; added `docs/privacy-remediation.md` (P0-P3 fix plan for the §9 gaps).
 - 2026-09-15 — Privacy policy rewritten against the actual schema; old "we store nothing" text was false. Known gaps disclosed in §9, code fixes queued in Next.
 - 2026-09-15 — Google tag from `GTAG_ID` env (empty = omit).

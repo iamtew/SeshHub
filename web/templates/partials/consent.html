@@ -1,0 +1,12 @@
+{{define "consent.html"}}
+{{if .ConsentAsk}}
+<aside class="consent" role="dialog" aria-label="Analytics cookies">
+    <form method="post" action="/consent">
+        <input type="hidden" name="return" value="{{.Path}}">
+        <p>Google Analytics is optional. Allow it, or decline and we never load it.</p>
+        <button type="submit" name="choice" value="yes">Allow</button>
+        <button type="submit" name="choice" value="no">Decline</button>
+    </form>
+</aside>
+{{end}}
+{{end}}

@@ -63,13 +63,6 @@ just dev -port 127.0.0.1:53054 -db file:scratch.db
 
 `-port` accepts `53054` or `host:port`. `-web` points at the `web/` folder if you moved it.
 
-Put a real secret in `.env`:
-
-```powershell
-# SESSION_SECRET — 32+ random bytes, hex is fine
--join ((1..32) | ForEach-Object { '{0:x2}' -f (Get-Random -Max 256) })
-```
-
 Set `BASE_URL` to the same origin you type in the browser (`http://localhost:53053`). OAuth redirect URIs must match that origin exactly.
 
 ### Discord login and roles
@@ -99,7 +92,7 @@ YouTube-only accounts start as **pending**. After an admin approves (or Discord 
 
 Team skaters (Discord `DISCORD_SKATER_ROLE_ID`, after they log in) with a linked YouTube channel: while they are logged in, SeshHub pulls up to 50 latest uploads (at most once an hour) onto `/team/{slug}` and the public `/videos` list. Guests see the last snapshot. The skater profile row is created on Discord login.
 
-Restart after `.env` changes. Production: add the live `https://…/auth/…/callback` URIs and set `APP_ENV=production`, `BASE_URL` to the public https origin, and a non-default `SESSION_SECRET`.
+Restart after `.env` changes. Production: add the live `https://…/auth/…/callback` URIs and set `APP_ENV=production` and `BASE_URL` to the public https origin.
 
 ### Day-to-day
 
@@ -527,7 +520,6 @@ Copy `.env.example` to `.env` in your local development environment:
 APP_ENV=development                  # 'development' or 'production'
 PORT=53053                           # HTTP port to listen on
 BASE_URL=http://localhost:53053      # Public base URL for OAuth callbacks
-SESSION_SECRET=change-me-to-a-secure-random-32-byte-hex-string
 SUBOTTO_INSTANCE=subotto.seshsofa.nl # Subotto host for Spot/Episodes JSON
 GTAG_ID=                             # GA4 measurement ID; empty = no tag
 

@@ -11,7 +11,6 @@ type Config struct {
 	AppEnv                string
 	Port                  string
 	BaseURL               string
-	SessionSecret         string
 	SubottoInstance       string
 	DatabaseURL           string
 	WebDir                string
@@ -34,7 +33,6 @@ func Load() Config {
 		AppEnv:                getenv("APP_ENV", "development"),
 		Port:                  getenv("PORT", "53053"),
 		BaseURL:               getenv("BASE_URL", "http://localhost:53053"),
-		SessionSecret:         getenv("SESSION_SECRET", "change-me-to-a-secure-random-32-byte-hex-string"),
 		SubottoInstance:       getenv("SUBOTTO_INSTANCE", "subotto.seshsofa.nl"),
 		DatabaseURL:           getenv("DATABASE_URL", "file:seshhub.db"),
 		WebDir:                getenv("WEB_DIR", "web"),
