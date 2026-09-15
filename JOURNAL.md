@@ -14,6 +14,7 @@ Status, not spec. Spec lives in `README.md`.
 
 ## Log
 
+- 2026-09-15 — Stop tracking `seshsofa.mp4`; copy it onto the VPS by hand.
 - 2026-09-15 — Discord/Twitch/YouTube icons stay in nav when logged in.
 - 2026-09-15 — Site-wide `background.png`; dropped fire-field page overlay.
 - 2026-09-15 — Login: bold labels; louder back link; team/friends copy.
