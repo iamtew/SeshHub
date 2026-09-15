@@ -253,6 +253,11 @@ form[action*="/unlink/"] button { background: var(--magenta); }
     padding: 1.1rem 0;
 }
 .queue form { margin: 0; }
+.queue li > .who + .btn,
+.queue li > .who + form,
+.queue li > a:not(.btn) + form {
+    margin-left: auto;
+}
 .grid {
     list-style: none; padding: 0; margin: 1.5rem 0 0;
     display: grid; gap: 1.25rem; grid-template-columns: 1fr;
