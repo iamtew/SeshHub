@@ -14,6 +14,7 @@ Status, not spec. Spec lives in `README.md`.
 
 ## Log
 
+- 2026-09-15 — Login: bold labels; louder back link; team/friends copy.
 - 2026-09-15 — Visitor: PNG bg, social icons, no Sesh Sofa brand; well 70%/720px.
 - 2026-09-15 — Rerun `ALTER` migrations ignore duplicate columns (hosts `host`).
 - 2026-09-15 — `SUBOTTO_INSTANCE` in Core env; Spot/Episodes fetch that host.

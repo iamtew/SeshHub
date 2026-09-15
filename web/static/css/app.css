@@ -190,9 +190,10 @@ a:hover { text-shadow: 0 0 6px var(--red), 0 0 12px var(--chartreuse); color: va
 .wrap.auth .btn, .wrap.auth button {
     width: 100%;
     text-align: center;
+    font-weight: 700;
     border-radius: 0.55rem;
 }
-.auth-back { align-self: center; font-size: 0.95rem; color: var(--muted); font-weight: 400; }
+.auth-back { align-self: center; font-size: 1.2rem; color: var(--chartreuse); font-weight: 700; }
 .nav, .wrap, .foot {
     background: var(--panel);
     padding-left: 1.5rem;
