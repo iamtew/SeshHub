@@ -46,7 +46,7 @@ func Migrate(sqldb *sql.DB, dir string) error {
 		if err != nil {
 			return fmt.Errorf("reading %s: %w", name, err)
 		}
-		if _, err := sqldb.Exec(string(body)); err != nil {
+		if _, err := sqldb.Exec(string(body)); err != nil && !strings.Contains(err.Error(), "duplicate column name") {
 			return fmt.Errorf("applying %s: %w", name, err)
 		}
 	}

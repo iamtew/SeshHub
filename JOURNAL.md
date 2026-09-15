@@ -14,6 +14,7 @@ Status, not spec. Spec lives in `README.md`.
 
 ## Log
 
+- 2026-09-15 — Rerun `ALTER` migrations ignore duplicate columns (hosts `host`).
 - 2026-09-15 — `SUBOTTO_INSTANCE` in Core env; Spot/Episodes fetch that host.
 - 2026-09-15 — Spot/Episodes edit is `DISCORD_HOSTS_ROLE_ID`; hub admin renamed.
 - 2026-09-15 — Show-site gradient `<hr>` is site-wide.

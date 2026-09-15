@@ -11,6 +11,9 @@ func TestMigrateCreatesTables(t *testing.T) {
 	if err := Migrate(sqldb, "migrations"); err != nil {
 		t.Fatal(err)
 	}
+	if err := Migrate(sqldb, "migrations"); err != nil {
+		t.Fatal(err)
+	}
 	tables := []string{"users", "sessions", "skater_profiles", "articles", "pages", "youtube_videos", "sync_logs", "access_requests"}
 	for _, name := range tables {
 		var n int
