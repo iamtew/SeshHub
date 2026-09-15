@@ -284,7 +284,7 @@ Two header modes. Same public nav (Spot / Episodes / Team / News / Videos) in th
 
 ### Special page: Spot
 - **De-facto homepage (`/`)**: Nav label is **Spot**. Not a custom-page slug (reserved). No `/spot` route.
-- **Subotto JSON**: Fetches `https://subotto.seshsofa.nl/api/get/episode/sesh-sofa` (cached ~60s). Flattened keys (`episode_short`, `listeners.0.name`, …) fill `{{placeholders}}` in the markdown at request time. Missing keys / Subotto down → empty string.
+- **Subotto JSON**: Fetches `https://{SUBOTTO_INSTANCE}/api/get/episode/sesh-sofa` (cached ~60s). Flattened keys (`episode_short`, `listeners.0.name`, …) fill `{{placeholders}}` in the markdown at request time. Missing keys / Subotto down → empty string.
 - **Edit (`/admin/spot`)**: Hosts role only. Lists live JSON fields as copyable placeholders; one markdown box is the page. Date tags `[date_count:…]` `[date_local:…]` `[date_24h:…]` `[date_12h:…]` wrap an RFC3339 time (usually `{{air_datetime}}`); countdown ticks in the browser.
 
 ### Special page: Episodes
@@ -527,6 +527,7 @@ APP_ENV=development                  # 'development' or 'production'
 PORT=53053                           # HTTP port to listen on
 BASE_URL=http://localhost:53053      # Public base URL for OAuth callbacks
 SESSION_SECRET=change-me-to-a-secure-random-32-byte-hex-string
+SUBOTTO_INSTANCE=subotto.seshsofa.nl # Subotto host for Spot/Episodes JSON
 
 # ==============================================================================
 # Database (libSQL / Turso)

@@ -17,7 +17,7 @@ const rowID = 1
 // ponytail: in-memory TTL; persist last-good if Subotto downtime becomes a problem.
 const cacheTTL = 60 * time.Second
 
-var EpisodeURL = "https://subotto.seshsofa.nl/api/get/episode/sesh-sofa"
+var EpisodeURL string
 
 var httpc = &http.Client{Timeout: 3 * time.Second}
 

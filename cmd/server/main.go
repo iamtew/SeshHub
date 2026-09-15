@@ -12,6 +12,7 @@ import (
 
 	"seshhub/internal/config"
 	"seshhub/internal/db"
+	"seshhub/internal/spot"
 	"seshhub/internal/web"
 )
 
@@ -21,6 +22,7 @@ func main() {
 	if err := cfg.ApplyFlags(flag.CommandLine, os.Args[1:]); err != nil {
 		os.Exit(2)
 	}
+	spot.EpisodeURL = "https://" + cfg.SubottoInstance + "/api/get/episode/sesh-sofa"
 
 	sqldb, err := db.Open(cfg.DatabaseURL)
 	if err != nil {
