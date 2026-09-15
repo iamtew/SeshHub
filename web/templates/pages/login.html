@@ -3,5 +3,6 @@
 <p class="auth-tag">Sesh Sofa team and friends login.</p>
 {{if .DiscordLogin}}<a class="btn auth-discord" href="/auth/discord">Discord</a>{{else}}<button type="button" disabled title="OAuth not configured">Discord</button>{{end}}
 {{if .YouTubeLogin}}<a class="btn auth-youtube" href="/auth/youtube">YouTube</a>{{else}}<button type="button" disabled title="OAuth not configured">YouTube</button>{{end}}
+{{if .YouTubeLogin}}<p class="auth-tag">By signing in with YouTube you agree to our <a href="/about/privacy">Privacy Policy</a> and <a href="/about/tos">Terms</a>. We use YouTube API Services.</p>{{end}}
 <a class="auth-back" href="/">Back to the sofa</a>
 {{end}}

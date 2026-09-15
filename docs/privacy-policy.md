@@ -28,11 +28,32 @@ Authentication is entirely via OAuth. We never see or store a password.
 
 **Discord.** We request the scopes `identify` and `guilds.members.read`. `identify` returns your Discord user ID, username, global display name and avatar hash. `guilds.members.read` lets us read your role list in the Sesh Sofa Discord server, which is how we decide whether you are a member, a skater, a host or an admin. We do **not** request the `email` scope, so Discord does not give us your email address.
 
-**YouTube (Google).** We request the scope `youtube.readonly`, with offline access so we receive a refresh token. This returns your channel ID, channel title and channel thumbnail, and lets us list the videos on your own channel.
+**YouTube (Google).** We request the OAuth scope `https://www.googleapis.com/auth/youtube.readonly`, with offline access so we receive a refresh token. This returns your channel ID, channel title and channel thumbnail, and lets us list the videos on your own channel. We do not request Gmail, Drive, Google Calendar, or your Google account email.
 
 Both flows use PKCE (S256) and a `state` parameter to prevent request forgery.
 
 Your Discord **role IDs are not stored**. We read them at the moment you sign in, convert them into a single role label (`admin`, `skater`, `member` or `pending`) plus a `host` yes/no flag, and store only that result.
+
+### 3.1 YouTube API Services and Google user data
+
+Sesh Hub **uses YouTube API Services**. Information obtained through those services is also subject to [Google's Privacy Policy](https://www.google.com/policies/privacy).
+
+**Access.** When you sign in or link YouTube, we access Google user data (YouTube API Data) limited to: your YouTube channel ID, channel title, channel thumbnail, the list and public metadata of videos on that channel (title, description, publication date, thumbnail URL, duration, view count, like count, tags), and a refresh token so we can repeat that read while you remain linked.
+
+**Use.** We use that data only to (1) create or link your Sesh Hub account, (2) show your channel on your skater profile, and (3) cache up to 50 of your recent public uploads so `/videos` and profile pages can load without calling YouTube on every view. We do not use Google user data for any other purpose.
+
+**Store.** Channel fields and the refresh token live in the `users` table on our Amsterdam SQLite database. Cached clip metadata lives in `youtube_videos`. The refresh token is stored in plain text. See sections 4.1 and 4.6.
+
+**Share.** We do not sell, rent, or transfer Google user data to third parties, advertising platforms, data brokers, or information resellers. Public clip metadata is displayed on this Service; that display is the user-facing feature. Our server calls Google's YouTube Data API with our server's IP address, not yours. Optional Google Analytics (section 6) is a separate cookie, loaded only after you Allow it, and **does not receive** YouTube OAuth tokens, refresh tokens, or channel IDs from our application.
+
+**Limited Use.** We comply with Google's Limited Use requirements for this data, including data aggregated, anonymized, or derived from it:
+
+- We use it only to provide or improve user-facing features that are prominent in the Service (sign-in, skater profiles, the videos gallery).
+- We do not transfer it except to operate those features, for security (investigating abuse), to comply with law, or as part of a sale of the Service after your explicit prior consent.
+- We do not use it for targeted, personalized, retargeted, or interest-based advertising, to determine credit-worthiness, or to train generalized (non-personalized) AI or ML models.
+- Humans do not read Authorized Data except when you ask us to (for example account support or deletion), for security, or to comply with law.
+
+**Revoke and delete.** Unlink YouTube or delete your account at `/account`. Independently, revoke Sesh Hub's access at [Google's security settings](https://security.google.com/settings/security/permissions). Revoking invalidates the refresh token immediately. Unlink or account deletion clears the token, channel fields, and cached clips. Privacy questions or complaints: the contact address in section 1.
 
 ## 4. What we store, and its full lifecycle
 
@@ -52,7 +73,7 @@ Our database is a SQLite file on the server that runs the Service.
 
 **Deleted:** by you at `/account`, or by an administrator. Articles you wrote stay published with the byline "Former member". See section 4.5.
 
-The refresh token deserves a specific mention: it is a long-lived credential that lets us request read-only access to your YouTube channel without you signing in again. It is stored in the database in plain text. It is cleared when a YouTube account is unlinked or the account is deleted. You can also revoke it yourself at any time from your Google account's security settings, which invalidates it immediately regardless of what we hold.
+The refresh token deserves a specific mention: it is a long-lived credential that lets us request read-only access to your YouTube channel without you signing in again. It is stored in the database in plain text. It is cleared when a YouTube account is unlinked or the account is deleted. You can also revoke it yourself at any time from [Google's security settings](https://security.google.com/settings/security/permissions), which invalidates it immediately regardless of what we hold.
 
 ### 4.2 Your login session (`sessions` table)
 
@@ -155,7 +176,7 @@ Our server also talks to these services directly. In those cases your IP address
 - **Google's YouTube Data API**, during sign-in and during clip sync, to read your channel and its public videos.
 - **Subotto** (`subotto.seshsofa.nl`), to fetch current episode information for the homepage. This is an anonymous request containing no information about you.
 
-Each of these companies handles your data under its own privacy policy. You can revoke our access to your Discord or YouTube account at any time from that platform's own settings.
+Each of these companies handles your data under its own privacy policy. You can revoke our access to your Discord account from Discord's settings. You can revoke YouTube / Google access from [Google's security settings](https://security.google.com/settings/security/permissions). Google's handling of data is described in [Google's Privacy Policy](https://www.google.com/policies/privacy).
 
 ## 7. Purposes and legal basis
 

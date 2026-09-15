@@ -7,7 +7,7 @@ Status, not spec. Spec lives in `README.md`.
 - Public site, OAuth (login + link Discord/YouTube), access queue, Discord-role team + skater profiles, articles, per-skater YouTube clips, admin users (merge/unlink/delete), custom pages (nested slugs; seeded `/about`, `/about/privacy`, `/about/tos`), Spot (`/` markdown + Subotto `{{placeholders}}`), Episodes (`/episodes` archive + Subotto stub; hosts-role edit), `-port`. `DISCORD_HUB_ADMIN_ROLE_ID` + `DISCORD_HOSTS_ROLE_ID`. `SUBOTTO_INSTANCE` (Core env) is the Subotto host. Nav About after Videos; footer Privacy / ToS / SeshHub.
 - Dark neon CSS in `web/static/css/app.css`. Site-wide `background.png`. Visitor: sofa hero + Discord/Twitch/YouTube + Hub square. Sesh Hub (logged-in): folded bar + avatar; same three social icons, no Hub square. `/login` is the OAuth picker. Well is 70% / min 720px. Queue list actions sit on the right. Public nav and admin skaters link are **FS Team**.
 - Halftone-over-gradient recipe in `sesh_halftone.md` (local lift-out; not always in git).
-- `docs/privacy-policy.md` is the source of truth for `/about/privacy`. Paste it into `/admin/pages` to publish (seed never overwrites). Consent gate, no session IP/UA, complete erasure + `/account` self-service. Fonts stay on cdnfonts (commercial licence). Dead `SESSION_SECRET` gone.
+- `docs/privacy-policy.md` + `docs/tos.md` are the source of truth for `/about/privacy` and `/about/tos` (YouTube API Services + Limited Use + Google PP/revoke links). Paste both into `/admin/pages` (seed never overwrites). OAuth consent screen URLs: `https://hub.seshsofa.nl/about/privacy` and `/about/tos`. `/login` states YouTube sign-in agrees to those. Consent gate, no session IP/UA, complete erasure + `/account` self-service. Fonts stay on cdnfonts. Dead `SESSION_SECRET` gone.
 
 ## Next
 
@@ -15,6 +15,7 @@ Status, not spec. Spec lives in `README.md`.
 
 ## Log
 
+- 2026-09-16 — Privacy/ToS rewritten for Google OAuth publish (YouTube API Services, Limited Use, Google PP + revoke URLs). Paste CMS; point Cloud Console at hub.seshsofa.nl/about/privacy.
 - 2026-09-16 — `GoatOps@stupid.systems` confirmed live; Meat Bag pastes the policy into `/admin/pages`.
 - 2026-09-16 — Privacy contact mailbox is `GoatOps@stupid.systems`.
 - 2026-09-16 — Privacy P0–P3: consent before gtag, session IP/UA gone, DeleteUser in a tx with tombstone + profile/clips, `/account` unlink/export/delete, logout all sessions, drop `SESSION_SECRET`. Fonts stay remote (Pill Gothic is commercial). Paste the policy into the CMS.
