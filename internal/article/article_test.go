@@ -32,6 +32,13 @@ func TestRenderImages(t *testing.T) {
 	}
 }
 
+func TestRenderTable(t *testing.T) {
+	html := Render("| A | B |\n| --- | --- |\n| 1 | 2 |")
+	if !strings.Contains(html, "<table") || !strings.Contains(html, "<td>") {
+		t.Fatalf("gfm table: %s", html)
+	}
+}
+
 func TestRenderStripsScript(t *testing.T) {
 	html := Render("hi <script>alert(1)</script> **x**")
 	if strings.Contains(html, "<script") {

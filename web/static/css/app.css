@@ -182,6 +182,9 @@ a:hover { text-shadow: 0 0 6px var(--red), 0 0 12px var(--chartreuse); color: va
     border-radius: 0 0 0.75rem 0.75rem;
     font-size: 0.95rem;
 }
+.foot p { margin: 0; }
+.foot p + p { margin-top: 0.35rem; }
+.foot a { color: var(--muted); }
 .nav-toggle { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 .nav-burger {
     justify-self: end;
@@ -282,8 +285,8 @@ hr {
     box-shadow: 0 0 6px #E5F20D, 0 0 12px #F20D0D, 0 0 18px rgba(242, 13, 13, 0.6), 0 0 24px rgba(229, 242, 13, 0.5);
     margin: 1.3em;
 }
-.episodes table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; }
-.episodes th, .episodes td { text-align: left; padding: 0.45rem 0.6rem; border-bottom: 1px solid color-mix(in srgb, var(--violet) 50%, var(--gray)); }
+.episodes table, .prose table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; }
+.episodes th, .episodes td, .prose th, .prose td { text-align: left; padding: 0.45rem 0.6rem; border-bottom: 1px solid color-mix(in srgb, var(--violet) 50%, var(--gray)); }
 .episodes .ep-rows { list-style: none; padding: 0; margin: 0.75rem 0 1rem; display: flex; flex-wrap: wrap; gap: 0.5rem 1.25rem; }
 .episodes .ep-rows li { margin: 0; }
 .episodes .grid {

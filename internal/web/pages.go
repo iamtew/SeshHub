@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"net/http"
 
+	"seshhub/internal/article"
 	"seshhub/internal/auth"
 	"seshhub/internal/page"
 )
@@ -27,7 +28,7 @@ func (s *Server) customPage(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	s.render(w, r, "custom_page.html", map[string]any{
-		"Title": p.Title, "Path": "/" + p.Slug, "HTML": template.HTML(p.ContentHTML), "CSS": template.CSS(p.CSS),
+		"Title": p.Title, "Path": "/" + p.Slug, "HTML": template.HTML(article.Render(p.ContentRaw)), "CSS": template.CSS(p.CSS),
 	})
 }
 

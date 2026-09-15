@@ -10,12 +10,16 @@ import (
 
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
 	gmhtml "github.com/yuin/goldmark/renderer/html"
 )
 
 // goldmark + bluemonday, not marked.js. WithUnsafe lets <img> through; the sanitizer is the XSS gate.
 // ponytail: UGCPolicy strips relative src unless AllowRelativeURLs; /static/... images need it.
-var md = goldmark.New(goldmark.WithRendererOptions(gmhtml.WithUnsafe()))
+var md = goldmark.New(
+	goldmark.WithExtensions(extension.Table),
+	goldmark.WithRendererOptions(gmhtml.WithUnsafe()),
+)
 
 var policy = func() *bluemonday.Policy {
 	p := bluemonday.UGCPolicy()

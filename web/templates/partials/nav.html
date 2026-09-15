@@ -8,6 +8,7 @@
         <a href="/team" {{if eq .Path "/team"}}aria-current="page"{{end}}>FS Team</a>
         <a href="/news" {{if eq .Path "/news"}}aria-current="page"{{end}}>News</a>
         <a href="/videos" {{if eq .Path "/videos"}}aria-current="page"{{end}}>Videos</a>
+        <a href="/about" {{if .NavAbout}}aria-current="page"{{end}}>About</a>
     </nav>
     <div class="signin">
         <a class="hub-btn" href="https://discord.gg/gXnpmM8zDX" target="_blank" rel="noopener noreferrer" aria-label="Discord"><img src="/static/img/icon_discord.png" alt=""></a>

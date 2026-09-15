@@ -6,9 +6,9 @@ import (
 	"encoding/hex"
 	"fmt"
 	"strings"
+	"unicode"
 
 	"seshhub/internal/article"
-	"seshhub/internal/skater"
 )
 
 var reserved = map[string]bool{
@@ -21,7 +21,10 @@ type Page struct {
 	Published                                     bool
 }
 
-func Reserved(slug string) bool { return reserved[slug] }
+func Reserved(slug string) bool {
+	first, _, _ := strings.Cut(strings.Trim(slug, "/"), "/")
+	return reserved[first]
+}
 
 func newID() string {
 	var b [16]byte
@@ -66,11 +69,12 @@ func Save(db *sql.DB, p Page) (Page, error) {
 	if p.Title == "" || strings.TrimSpace(p.ContentRaw) == "" {
 		return p, fmt.Errorf("title and body required")
 	}
-	base := p.Slug
+	base := slugify(p.Slug)
 	if base == "" {
-		base = skater.Slugify(p.Title)
-	} else {
-		base = skater.Slugify(base)
+		base = slugify(p.Title)
+	}
+	if base == "" {
+		return p, fmt.Errorf("slug required")
 	}
 	if Reserved(base) {
 		return p, fmt.Errorf("slug reserved")
@@ -115,6 +119,36 @@ func unique(db *sql.DB, base, exceptID string) (string, error) {
 		slug = fmt.Sprintf("%s-%d", base, n)
 	}
 	return "", fmt.Errorf("slug taken")
+}
+
+func slugify(s string) string {
+	s = strings.ToLower(strings.TrimSpace(s))
+	var parts []string
+	for _, seg := range strings.Split(s, "/") {
+		p := slugSeg(seg)
+		if p == "" {
+			continue
+		}
+		parts = append(parts, p)
+	}
+	return strings.Join(parts, "/")
+}
+
+func slugSeg(s string) string {
+	var b strings.Builder
+	dash := false
+	for _, r := range s {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			b.WriteRune(r)
+			dash = false
+			continue
+		}
+		if !dash {
+			b.WriteByte('-')
+			dash = true
+		}
+	}
+	return strings.Trim(b.String(), "-")
 }
 
 func nullEmpty(s string) any {

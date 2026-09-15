@@ -252,7 +252,7 @@ Users who do not match a Discord guild role, as well as users authenticated thro
 
 ### Chrome: visitor vs Sesh Hub
 
-Two header modes. Same public nav (Spot / Episodes / FS Team / News / Videos) in the dark well either way.
+Two header modes. Same public nav (Spot / Episodes / FS Team / News / Videos / About) in the dark well either way.
 
 - **Visitor mode** (logged out): 16:9 sofa hero, click to play `seshsofa.mp4` (local `web/static/vid/`, not in git), Close restores the poster. Header: Discord / Twitch / YouTube icons then a Sesh Hub square to `/login`.
 - **Sesh Hub mode** (logged in): same `background.png`. Hero folds into a translucent panel — `seshhub.png` (click plays the same intro; Close folds it back), then role links, **Account**, Discord avatar (also `/account`; name on hover). Display name is on the `/account` heading. **Log out** is at the bottom of `/account`. Public nav still has Discord / Twitch / YouTube icons, not the Hub square. No 16:9 until the logo is clicked. `/login` redirects home.
@@ -279,7 +279,7 @@ Two header modes. Same public nav (Spot / Episodes / FS Team / News / Videos) in
 - **Categorization & Tagging**: Tag clouds and category filters (News, Event Recaps, Modding, Trick Tips).
 
 ### 4. Custom Static Pages
-- **Dynamic Slug Routing (`/{slug}`)**: Manage standalone pages such as `/about`, `/rules`, `/fakeskate-setup`, `/sponsors`, `/join-team`.
+- **Dynamic Slug Routing (`/{slug}` and nested `/{slug...}`)**: Manage standalone pages such as `/about`, `/about/privacy`, `/rules`, `/fakeskate-setup`, `/sponsors`, `/join-team`. Footer links Privacy Policy and Terms of Service to `/about/privacy` and `/about/tos`.
 - **Custom Metadata**: Page title, custom navigation header/footer inclusion, and optional custom CSS injection per page for special campaign styling.
 
 ### Special page: Spot

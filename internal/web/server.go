@@ -83,7 +83,7 @@ func New(cfg config.Config, db *sql.DB) *Server {
 	s.mux.HandleFunc("GET /admin/pages/{id}", s.adminPageEdit)
 	s.mux.HandleFunc("POST /admin/pages/{id}", s.adminPageEdit)
 	s.mux.HandleFunc("POST /admin/pages/{id}/delete", s.adminPageDelete)
-	s.mux.HandleFunc("GET /{slug}", s.customPage)
+	s.mux.HandleFunc("GET /{slug...}", s.customPage)
 	return s
 }
 
@@ -106,6 +106,7 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, dat
 	data["YouTubeLogin"] = s.cfg.YouTubeEnabled()
 	authPage, _ := data["AuthPage"].(bool)
 	path, _ := data["Path"].(string)
+	data["NavAbout"] = path == "/about" || strings.HasPrefix(path, "/about/")
 	if !authPage {
 		if u != nil {
 			data["Fold"] = true
