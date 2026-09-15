@@ -37,7 +37,7 @@ func (s *Server) adminSpot(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
-		http.Redirect(w, r, "/admin/spot", http.StatusSeeOther)
+		http.Redirect(w, r, afterSave(r, "/admin/spot", "/admin"), http.StatusSeeOther)
 		return
 	}
 	var items []spot.Item
@@ -45,6 +45,6 @@ func (s *Server) adminSpot(w http.ResponseWriter, r *http.Request) {
 		items = spot.Items(vals)
 	}
 	s.render(w, r, "admin_spot.html", map[string]any{
-		"Title": "Spot", "Path": "/admin/spot", "Cfg": cfg, "Items": items,
+		"Title": "Spot", "Path": "/admin/spot", "Cfg": cfg, "Items": items, "Monaco": true, "Cancel": "/admin",
 	})
 }

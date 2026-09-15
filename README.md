@@ -126,7 +126,7 @@ The rest of this file is the architecture spec (what the system is supposed to b
    - [Custom Static Pages](#4-custom-static-pages)
    - [Special page: Spot](#special-page-spot)
    - [Special page: Episodes](#special-page-episodes)
-   - [Admin UI & Monaco Editor](#5-admin-ui--monaco-editor)
+   - [Admin UI & Markdown editor](#5-admin-ui--markdown-editor)
 6. [Data Models & Database Schema (libSQL)](#data-models--database-schema-libsql)
 7. [Project Directory Layout](#project-directory-layout)
 8. [Configuration & Environment Variables](#configuration--environment-variables)
@@ -158,7 +158,7 @@ SeshHub is engineered around specific design principles:
 | **Templating** | Go `html/template` | Standard library server-side rendered HTML with strict context-aware escaping. |
 | **Interactivity** | [HTMX](https://htmx.org/) + [Alpine.js](https://alpinejs.dev/) | Declarative AJAX swaps, inline element updates, modal dialogs, and UI toggles. |
 | **Styling** | Hand-written CSS | Dark neon palette in `web/static/css/app.css`. No CSS framework. |
-| **Content Editor** | [Monaco Editor](https://microsoft.github.io/monaco-editor/) | In-browser Markdown and HTML editor for rich article publishing and page formatting. |
+| **Content Editor** | [Monaco Editor](https://microsoft.github.io/monaco-editor/) (CDN) + textarea | Basic markdown + live goldmark preview; Advanced overlay loads Monaco from jsDelivr. |
 | **Identity & Auth** | Discord & YouTube OAuth 2.0 | Decentralized authentication with Discord Guild API role validation. |
 | **Media** | YouTube Data API v3 via skater OAuth | Latest uploads from linked skater channels while they are logged in. |
 
@@ -279,19 +279,17 @@ Two header modes. Same public nav (Spot / Episodes / FS Team / News / Videos / A
 ### Special page: Spot
 - **De-facto homepage (`/`)**: Nav label is **Spot**. Not a custom-page slug (reserved). No `/spot` route.
 - **Subotto JSON**: Fetches `https://{SUBOTTO_INSTANCE}/api/get/episode/sesh-sofa` (cached ~60s). Flattened keys (`episode_short`, `listeners.0.name`, …) fill `{{placeholders}}` in the markdown at request time. Missing keys / Subotto down → empty string.
-- **Edit (`/admin/spot`)**: Hosts role only. Lists live JSON fields as copyable placeholders; one markdown box is the page. Date tags `[date_count:…]` `[date_local:…]` `[date_24h:…]` `[date_12h:…]` wrap an RFC3339 time (usually `{{air_datetime}}`); countdown ticks in the browser.
+- **Edit (`/admin/spot`)**: Hosts role only. Live JSON fields and date tags are clickable inserts (basic textarea or Advanced Monaco). One markdown box is the page. Date tags `[date_count:…]` `[date_local:…]` `[date_24h:…]` `[date_12h:…]` wrap an RFC3339 time (usually `{{air_datetime}}`); countdown ticks in the browser.
 
 ### Special page: Episodes
 - **Archive (`/episodes`)**: Auto table (Episode / Submissions / Winner / Spot) with `#epN` anchors, then one heading plus configurable link rows per show (full VOD, playlists, winner, trick of the show). Winner and trick stay hidden until set. YouTube thumbs use the Videos-page `<img class="thumb">` pattern plus the heartbeat hover from the old show-site CSS. Reserved slug (not a custom page).
 - **Live stub**: Same Subotto JSON as Spot. If the current episode number is missing, insert a row with content-listener playlists; `sesh-sofa-spot-challenge` is the winner-picker playlist only. Existing rows are not overwritten (blank challenge playlist / missing playlist rows can still fill).
 - **Edit (`/admin/episodes`)**: Hosts role only. Edit title, counts, rows, trick URL, winner (pick from the challenge playlist when the editor has YouTube linked, or paste a watch URL; empty winner name fills from the video’s channel and can be overwritten).
 
-### 5. Admin UI & Monaco Editor
+### 5. Admin UI & Markdown editor
 - **Admin Control Center (`/admin`)**: Metric overviews, access queue, and **Users** (see who has Discord/YouTube, merge duplicate accounts, unlink, delete).
-- **Monaco Editor Integration**: Embedded VS Code-grade Monaco Editor component on `/admin/articles/{id}/edit` and `/admin/pages/{id}/edit`.
-  - Side-by-side live Markdown preview powered by Alpine.js/HTMX.
-  - Syntax highlighting for Markdown, HTML, and YAML frontmatter.
-  - Image uploader modal with drag-and-drop support.
+- **Basic editor**: `textarea[name=content_raw]` on articles, custom pages, and Spot, with a live HTML preview beside it (under it below 800px). Preview is `POST /preview` → goldmark + bluemonday (Spot also fills `{{placeholders}}`).
+- **Advanced editor**: button opens a near-fullscreen `<dialog>`. Left sidebar is the rest of the document (slug, published, …; Spot: insert chips). Center is Monaco from jsDelivr. Right is the same live preview. Palette theme `sesh-sofa`.
 
 ---
 
@@ -474,15 +472,17 @@ SeshHub/
 ├── web/                             # Runtime-loaded frontend assets served separately from the binary
 │   ├── static/
 │   │   ├── css/                     # Site CSS (app.css)
-│   │   ├── js/                      # HTMX, Alpine.js, Monaco initialization scripts
+│   │   ├── js/                      # dates.js, editor.js, hero.js
 │   │   ├── img/                     # Brand icons, placeholders, default avatars
-│   │   └── monaco/                  # Monaco Editor distribution assets
 │   └── templates/
 │       ├── layouts/
 │       │   ├── base.html            # Main public shell layout
 │       │   └── admin.html           # Admin dashboard shell layout
 │       ├── pages/
 │       │   ├── index.html           # Spot (homepage)
+│       │   ├── article_form.html    # Article markdown + live preview
+│       │   ├── page_form.html       # Custom page markdown + live preview
+│       │   ├── admin_spot.html      # Spot markdown + placeholder chips
 │       │   ├── articles_list.html   # News & articles index
 │       │   ├── article_detail.html  # Single article view
 │       │   ├── skaters_list.html    # Team grid
@@ -648,7 +648,7 @@ When developing features, fixing bugs, or writing tests for SeshHub, all AI codi
    - Return errors explicitly up the call stack; wrap errors with context (`fmt.Errorf("reading article %s: %w", id, err)`).
    - Never silence errors or panic in HTTP handlers. Use structured logging (`log/slog`).
 7. **Monaco Editor Integration**:
-    - Host Monaco editor scripts locally under `/web/static/monaco/` and serve them from the runtime web assets folder to ensure offline capability and zero CDN reliance.
+    - Load Monaco from the jsDelivr CDN on Advanced editor open. Live preview is server `article.Render`, not a second client parser. Textarea stays the basic editor and the save source.
 
 ---
 

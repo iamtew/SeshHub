@@ -107,7 +107,7 @@ func (s *Server) articleCreate(admin bool) http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		http.Redirect(w, r, pathFor(admin)+"/"+saved.ID, http.StatusSeeOther)
+		http.Redirect(w, r, afterSave(r, pathFor(admin)+"/"+saved.ID, pathFor(admin)), http.StatusSeeOther)
 	}
 }
 
@@ -138,7 +138,7 @@ func (s *Server) articleEdit(admin bool) http.HandlerFunc {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
-			http.Redirect(w, r, pathFor(admin), http.StatusSeeOther)
+			http.Redirect(w, r, afterSave(r, pathFor(admin)+"/"+a.ID, pathFor(admin)), http.StatusSeeOther)
 			return
 		}
 		s.render(w, r, "article_form.html", map[string]any{"Title": "Edit " + a.Title, "Path": pathFor(admin), "A": a, "Action": pathFor(admin) + "/" + a.ID, "Admin": admin, "Monaco": true})

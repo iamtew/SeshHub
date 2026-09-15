@@ -1,22 +1,25 @@
 {{define "content"}}
 <h1>{{.Title}}</h1>
+{{template "md_toolbar" .}}
 <form method="post" action="{{.Action}}" class="form">
     <input type="hidden" name="id" value="{{.A.ID}}">
-    <label>Title <input name="title" required value="{{.A.Title}}"></label>
-    {{if .Admin}}<label>Slug <input name="slug" value="{{.A.Slug}}" placeholder="auto"></label>{{end}}
-    <label>Excerpt <input name="excerpt" value="{{.A.Excerpt}}"></label>
-    <label>Image URL <input name="featured_image_url" value="{{.A.ImageURL}}"></label>
-    <label>Tags (comma or newline) <input name="tags" value="{{.A.Tags}}"></label>
-    {{if .Admin}}
-    <label>Status
-        <select name="status">
-            <option value="draft" {{if eq .A.Status "draft"}}selected{{end}}>Draft</option>
-            <option value="published" {{if eq .A.Status "published"}}selected{{end}}>Published</option>
-            <option value="archived" {{if eq .A.Status "archived"}}selected{{end}}>Archived</option>
-        </select>
-    </label>
-    {{end}}
-    <label>Markdown <textarea name="content_raw" rows="16" required>{{.A.ContentRaw}}</textarea></label>
-    <button type="submit">Save</button>
+    <div data-md-meta>
+        <label>Title <input name="title" required value="{{.A.Title}}"></label>
+        {{if .Admin}}<label>Slug <input name="slug" value="{{.A.Slug}}" placeholder="auto"></label>{{end}}
+        <label>Excerpt <input name="excerpt" value="{{.A.Excerpt}}"></label>
+        <label>Image URL <input name="featured_image_url" value="{{.A.ImageURL}}"></label>
+        <label>Tags (comma or newline) <input name="tags" value="{{.A.Tags}}"></label>
+        {{if .Admin}}
+        <label>Status
+            <select name="status">
+                <option value="draft" {{if eq .A.Status "draft"}}selected{{end}}>Draft</option>
+                <option value="published" {{if eq .A.Status "published"}}selected{{end}}>Published</option>
+                <option value="archived" {{if eq .A.Status "archived"}}selected{{end}}>Archived</option>
+            </select>
+        </label>
+        {{end}}
+    </div>
+    {{template "md_editor" .}}
+    {{template "md_actions" .}}
 </form>
 {{end}}

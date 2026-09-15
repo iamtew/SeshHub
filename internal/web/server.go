@@ -46,6 +46,7 @@ func New(cfg config.Config, db *sql.DB) *Server {
 	s.mux.HandleFunc("POST /account/delete", s.accountDelete)
 	s.mux.HandleFunc("GET /account/export", s.accountExport)
 	s.mux.HandleFunc("POST /consent", s.consent)
+	s.mux.HandleFunc("POST /preview", s.preview)
 	s.mux.HandleFunc("GET /access", s.accessPage)
 	s.mux.HandleFunc("POST /access/request", s.accessRequest)
 	s.mux.HandleFunc("GET /admin/access", s.adminAccess)
@@ -133,6 +134,7 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, dat
 		filepath.Join(s.webDir, "templates", "partials", "signin.html"),
 		filepath.Join(s.webDir, "templates", "partials", "footer.html"),
 		filepath.Join(s.webDir, "templates", "partials", "consent.html"),
+		filepath.Join(s.webDir, "templates", "partials", "md_editor.html"),
 		filepath.Join(s.webDir, "templates", "pages", page),
 	}
 	t, err := template.ParseFiles(files...)
@@ -159,4 +161,11 @@ func publicHero(path string) bool {
 
 func Addr(port string) string {
 	return fmt.Sprintf(":%s", port)
+}
+
+func afterSave(r *http.Request, stay, closeTo string) string {
+	if r.FormValue("after") == "close" {
+		return closeTo
+	}
+	return stay
 }

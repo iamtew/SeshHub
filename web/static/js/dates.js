@@ -1,6 +1,5 @@
 (function () {
-  var nodes = document.querySelectorAll("time.md-date");
-  if (!nodes.length) return;
+  var counting = false;
 
   function pad(n) {
     return String(n).padStart(2, "0");
@@ -128,6 +127,7 @@
   };
 
   function tick() {
+    var nodes = document.querySelectorAll("time.md-date");
     var now = new Date();
     for (var i = 0; i < nodes.length; i++) {
       var el = nodes[i];
@@ -151,11 +151,13 @@
     }
   }
 
-  tick();
-  for (var j = 0; j < nodes.length; j++) {
-    if (nodes[j].getAttribute("data-fmt") === "count") {
+  function refresh() {
+    tick();
+    if (!counting && document.querySelector('time.md-date[data-fmt="count"]')) {
+      counting = true;
       setInterval(tick, 1000);
-      break;
     }
   }
+  window.mdDates = refresh;
+  refresh();
 })();

@@ -58,6 +58,19 @@
     </main>
     {{if not .AuthPage}}{{template "footer.html" .}}{{end}}
     {{template "consent.html" .}}
+    {{if .Monaco}}
+    <dialog class="md-overlay" aria-label="Advanced markdown editor">
+        <div class="md-overlay-bar">
+            <button type="button" class="md-overlay-close">Close</button>
+            <button type="button" class="md-overlay-save">Save</button>
+        </div>
+        <div class="md-overlay-body">
+            <aside class="md-side"></aside>
+            <div id="monaco-mount"></div>
+            <div class="md-preview md-overlay-preview prose" aria-live="polite"></div>
+        </div>
+    </dialog>
+    {{end}}
 </body>
 </html>
 {{end}}

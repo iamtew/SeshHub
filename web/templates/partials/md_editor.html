@@ -1,0 +1,20 @@
+{{define "md_toolbar"}}
+<p class="md-toolbar"><button type="button" class="md-adv-btn">Advanced editor</button></p>
+{{end}}
+
+{{define "md_editor"}}
+<div class="md-edit"{{if .Cfg}} data-fill="spot"{{end}}>
+    <div class="md-basic">
+        <label>Markdown <textarea name="content_raw" rows="16" {{if not .Cfg}}required{{end}}>{{if .A}}{{.A.ContentRaw}}{{else if .P}}{{.P.ContentRaw}}{{else if .Cfg}}{{.Cfg.ContentRaw}}{{end}}</textarea></label>
+        <label>Preview <div class="md-preview prose" aria-live="polite"></div></label>
+    </div>
+</div>
+{{end}}
+
+{{define "md_actions"}}
+<div class="form-actions">
+    <a class="btn md-discard" href="{{if .Cancel}}{{.Cancel}}{{else}}{{.Path}}{{end}}">Discard and close</a>
+    <button type="submit" name="after" value="stay">Save</button>
+    <button type="submit" name="after" value="close">Save and close</button>
+</div>
+{{end}}

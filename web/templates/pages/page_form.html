@@ -1,12 +1,18 @@
 {{define "content"}}
 <h1>{{.Title}}</h1>
+{{template "md_toolbar" .}}
 <form method="post" action="{{.Action}}" class="form">
     <input type="hidden" name="id" value="{{.P.ID}}">
-    <label>Title <input name="title" required value="{{.P.Title}}"></label>
-    <label>Slug <input name="slug" value="{{.P.Slug}}" placeholder="auto"></label>
-    <label><input type="checkbox" name="published" value="1" {{if .P.Published}}checked{{end}}> Published</label>
-    <label>Custom CSS <textarea name="custom_css" rows="3">{{.P.CSS}}</textarea></label>
-    <label>Markdown <textarea name="content_raw" rows="16" required>{{.P.ContentRaw}}</textarea></label>
-    <button type="submit">Save</button>
+    <div data-md-meta>
+        <label>Title <input name="title" required value="{{.P.Title}}"></label>
+        <label>Slug <input name="slug" value="{{.P.Slug}}" placeholder="auto"></label>
+        <label><input type="checkbox" name="published" value="1" {{if .P.Published}}checked{{end}}> Published</label>
+    </div>
+    {{template "md_editor" .}}
+    <details class="md-css">
+        <summary>Custom CSS</summary>
+        <textarea name="custom_css" rows="6">{{.P.CSS}}</textarea>
+    </details>
+    {{template "md_actions" .}}
 </form>
 {{end}}

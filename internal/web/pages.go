@@ -75,7 +75,7 @@ func (s *Server) adminPageCreate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	http.Redirect(w, r, "/admin/pages/"+saved.ID, http.StatusSeeOther)
+	http.Redirect(w, r, afterSave(r, "/admin/pages/"+saved.ID, "/admin/pages"), http.StatusSeeOther)
 }
 
 func (s *Server) adminPageEdit(w http.ResponseWriter, r *http.Request) {
@@ -96,7 +96,7 @@ func (s *Server) adminPageEdit(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		http.Redirect(w, r, "/admin/pages", http.StatusSeeOther)
+		http.Redirect(w, r, afterSave(r, "/admin/pages/"+p.ID, "/admin/pages"), http.StatusSeeOther)
 		return
 	}
 	s.render(w, r, "page_form.html", map[string]any{"Title": "Edit " + p.Title, "Path": "/admin/pages", "P": p, "Action": "/admin/pages/" + p.ID, "Monaco": true})

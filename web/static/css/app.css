@@ -8,6 +8,8 @@
     --cyan: #00FFFF;
     --offwhite: #E0E0E0;
     --gray: #666666;
+    --olive: #9AAC62;
+    --dusty: #6C754A;
     --bg: var(--chartreuse);
     --panel: rgb(0 0 0 / 0.82);
     --fg: #ffffff;
@@ -271,11 +273,16 @@ form[action*="/unlink/"] button { background: var(--magenta); }
 }
 .grid li:has(.thumb) { border: none; }
 .form { display: flex; flex-direction: column; gap: 1.1rem; max-width: 36rem; }
+.form:has(.md-edit) { max-width: none; }
 .form label { display: flex; flex-direction: column; gap: 0.4rem; }
-.form input, .form textarea, .form select, .queue select {
+.form label:has([type="checkbox"]), .md-side label:has([type="checkbox"]) {
+    flex-direction: row; align-items: center; gap: 0.5rem;
+}
+.form input:not([type="checkbox"]), .form textarea, .form select, .queue select {
     background: var(--black); color: var(--fg); border: 2px solid var(--violet);
     padding: 0.65rem 0.75rem; font: inherit; border-radius: 0.6rem;
 }
+.form input[type="checkbox"] { width: 1.15rem; height: 1.15rem; margin: 0; accent-color: var(--green); }
 .avatar { max-width: 8rem; }
 .thumb { width: 100%; max-width: none; display: block; border-radius: 0.5rem; }
 hr {
@@ -317,8 +324,52 @@ hr {
     100% { filter: drop-shadow(0 0 2px #E5F20D) drop-shadow(0 0 4px #F20D0D) drop-shadow(0 0 6px rgba(242, 13, 13, 0.35)) drop-shadow(0 0 8px rgba(229, 242, 13, 0.3)); }
 }
 .ep-row { border: 2px solid var(--violet); border-radius: 0.6rem; padding: 0.75rem; display: flex; flex-direction: column; gap: 0.6rem; }
-#monaco-mount { height: 28rem; border: 2px solid var(--violet); border-radius: 0.6rem; }
-.monaco-src { position: absolute; left: -9999px; width: 1px; height: 1px; }
+.md-basic {
+    display: grid; gap: 1rem; grid-template-columns: 1fr;
+}
+.md-basic > label { min-width: 0; }
+.md-basic textarea { min-height: 16rem; width: 100%; flex: 1; }
+.md-preview {
+    min-height: 16rem; overflow: auto; padding: 0.75rem; flex: 1;
+    background: var(--black); border: 2px solid var(--violet); border-radius: 0.6rem;
+}
+.md-toolbar { margin: 0 0 1rem; }
+.md-adv-btn { align-self: flex-start; }
+.form-actions {
+    display: flex; flex-wrap: wrap; gap: 0.65rem; align-items: center;
+}
+.md-discard { margin-right: auto; background: var(--gray); }
+.md-css summary { cursor: pointer; font-weight: 600; }
+.md-css textarea { margin-top: 0.4rem; width: 100%; }
+.md-insert {
+    background: var(--black); color: var(--fg); border: 1px solid var(--violet);
+    border-radius: 0.4rem; padding: 0.2rem 0.45rem; cursor: pointer; font: inherit;
+}
+.md-insert:hover { border-color: var(--chartreuse); }
+.md-chips { max-height: 40vh; overflow: auto; }
+.md-overlay {
+    width: calc(100vw - 1.5rem); height: calc(100dvh - 1.5rem); max-width: none; max-height: none;
+    margin: auto; padding: 0; border: 2px solid var(--violet); border-radius: 0.75rem;
+    background: var(--black); color: var(--fg); z-index: 40;
+}
+.md-overlay[open] { display: flex; flex-direction: column; }
+.md-overlay::backdrop { background: rgb(0 0 0 / 0.85); }
+.md-overlay-bar {
+    display: flex; justify-content: flex-end; gap: 0.6rem; padding: 0.6rem 0.75rem;
+    border-bottom: 2px solid var(--dusty);
+}
+.md-overlay-body {
+    flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr; gap: 0.75rem; padding: 0.75rem;
+}
+.md-overlay-body > * { min-height: 0; }
+.md-side { overflow: auto; display: flex; flex-direction: column; gap: 0.85rem; }
+.md-side label { display: flex; flex-direction: column; gap: 0.4rem; }
+.md-side input:not([type="checkbox"]), .md-side textarea, .md-side select {
+    background: var(--black); color: var(--fg); border: 2px solid var(--violet);
+    padding: 0.5rem 0.65rem; font: inherit; border-radius: 0.6rem;
+}
+#monaco-mount { min-height: 16rem; height: 100%; border: 2px solid var(--dusty); border-radius: 0.6rem; overflow: hidden; }
+.md-overlay-preview { min-height: 12rem; }
 .banner { max-width: 100%; }
 .prose :is(h2,h3) { margin-top: 1.5rem; }
 .prose img { max-width: 100%; }
@@ -340,6 +391,8 @@ input, select, textarea { accent-color: var(--green); }
     .grid { grid-template-columns: repeat(2, 1fr); }
 }
 @media (min-width: 800px) {
+    .md-basic { grid-template-columns: 1fr 1fr; }
+    .md-overlay-body { grid-template-columns: minmax(13rem, 16rem) 1fr 1fr; }
     .nav { display: flex; flex-wrap: wrap; gap: 1rem 1.5rem; align-items: center; }
     .nav-burger { display: none; }
     .nav nav, .nav .signin { display: flex; grid-column: auto; flex: 1; }
