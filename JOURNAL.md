@@ -5,7 +5,7 @@ Status, not spec. Spec lives in `README.md`.
 ## Now
 
 - Public site, OAuth (login + link Discord/YouTube), access queue, Discord-role team + skater profiles, articles, per-skater YouTube clips, admin users (merge/unlink/delete), custom pages, Spot (`/` markdown + Subotto `{{placeholders}}`), Episodes (`/episodes` archive + Subotto stub; hosts-role edit), `-port`. `DISCORD_HUB_ADMIN_ROLE_ID` + `DISCORD_HOSTS_ROLE_ID`. `SUBOTTO_INSTANCE` (Core env) is the Subotto host.
-- Dark neon CSS in `web/static/css/app.css`. Visitor: sofa hero. Sesh Hub (logged-in): folded bar + avatar. `/login` is the OAuth picker.
+- Dark neon CSS in `web/static/css/app.css`. Visitor: `background.png` + sofa hero + Discord/Twitch/YouTube + Hub square. Sesh Hub (logged-in): fire field, folded bar + avatar. `/login` is the OAuth picker. Well is 70% / min 720px.
 - Halftone-over-gradient recipe in `sesh_halftone.md` (local lift-out; not always in git).
 
 ## Next
@@ -14,6 +14,7 @@ Status, not spec. Spec lives in `README.md`.
 
 ## Log
 
+- 2026-09-15 — Visitor: PNG bg, social icons, no Sesh Sofa brand; well 70%/720px.
 - 2026-09-15 — Rerun `ALTER` migrations ignore duplicate columns (hosts `host`).
 - 2026-09-15 — `SUBOTTO_INSTANCE` in Core env; Spot/Episodes fetch that host.
 - 2026-09-15 — Spot/Episodes edit is `DISCORD_HOSTS_ROLE_ID`; hub admin renamed.

@@ -1,6 +1,5 @@
 {{define "nav.html"}}
 <header class="nav">
-    <a class="brand" href="/">Sesh Sofa</a>
     <input id="nav-toggle" class="nav-toggle" type="checkbox">
     <label class="nav-burger" for="nav-toggle">Menu</label>
     <nav>
@@ -12,6 +11,9 @@
     </nav>
     {{if not .User}}
     <div class="signin">
+        <a class="hub-btn" href="https://discord.gg/gXnpmM8zDX" target="_blank" rel="noopener noreferrer" aria-label="Discord"><img src="/static/img/icon_discord.png" alt=""></a>
+        <a class="hub-btn" href="https://www.twitch.tv/tew020" target="_blank" rel="noopener noreferrer" aria-label="Twitch"><img src="/static/img/icon_twitch.png" alt=""></a>
+        <a class="hub-btn" href="https://www.youtube.com/@tew020" target="_blank" rel="noopener noreferrer" aria-label="YouTube"><img src="/static/img/icon_youtube.png" alt=""></a>
         <a class="hub-btn" href="/login" aria-label="Sesh Hub"><img src="/static/img/seshhub-square.png" alt=""></a>
     </div>
     {{end}}

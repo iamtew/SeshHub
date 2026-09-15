@@ -254,7 +254,7 @@ Users who do not match a Discord guild role, as well as users authenticated thro
 
 Two header modes. Same public nav (Spot / Episodes / Team / News / Videos) in the dark well either way.
 
-- **Visitor mode** (logged out): 16:9 sofa hero, click to play `seshsofa.mp4`, Close restores the poster. Header login is a Sesh Hub square that goes to `/login`.
+- **Visitor mode** (logged out): `background.png` instead of the fire field. 16:9 sofa hero, click to play `seshsofa.mp4`, Close restores the poster. Header: Discord / Twitch / YouTube icons then a Sesh Hub square to `/login`.
 - **Sesh Hub mode** (logged in): hero folds into a translucent panel — `seshhub.png` (click plays the same intro; Close folds it back), then role links, **Account**, Discord avatar (also `/account`; name on hover). Display name is on the `/account` heading. **Log out** is at the bottom of `/account`. No 16:9 until the logo is clicked. `/login` redirects home.
 
 ---

@@ -57,12 +57,17 @@ body::after {
     transform: rotate(58deg);
     mix-blend-mode: multiply;
 }
+body.guest {
+    background: url("/static/img/background.png") center / cover no-repeat fixed;
+}
+body.guest::before,
+body.guest::after { display: none; }
 body > * { position: relative; z-index: 1; }
 a { color: var(--fg); text-decoration: none; font-weight: 600; }
 a:hover { text-shadow: 0 0 6px var(--red), 0 0 12px var(--chartreuse); color: var(--fg); }
 .hero, .nav, .wrap, .foot {
-    width: 100%;
-    max-width: 68rem;
+    width: 70%;
+    min-width: min(720px, 100%);
 }
 .hero {
     position: relative;
@@ -238,12 +243,6 @@ a:hover { text-shadow: 0 0 6px var(--red), 0 0 12px var(--chartreuse); color: va
     background-clip: text;
     color: transparent;
     text-shadow: none;
-}
-.brand {
-    font-family: "Monster Chiller", "Pill Gothic 600mg", sans-serif;
-    font-size: clamp(1.6rem, 3vw, 2.4rem);
-    font-weight: 400;
-    color: var(--fg);
 }
 .signin .btn, .signin button {
     background: var(--violet); color: var(--fg); border: 0;
