@@ -15,6 +15,7 @@ Status, not spec. Spec lives in `README.md`.
 
 ## Log
 
+- 2026-09-16 — Public nav always shows; no mobile Menu burger.
 - 2026-09-16 — Markdown editor: live goldmark preview, CDN Monaco overlay, Save / Save and close / Discard. Custom CSS folded. Bounce `just dev` for `POST /preview`.
 - 2026-09-16 — Privacy/ToS rewritten for Google OAuth publish (YouTube API Services, Limited Use, Google PP + revoke URLs). Paste CMS; point Cloud Console at hub.seshsofa.nl/about/privacy.
 - 2026-09-16 — `GoatOps@stupid.systems` confirmed live; Meat Bag pastes the policy into `/admin/pages`.

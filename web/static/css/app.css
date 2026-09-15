@@ -168,9 +168,9 @@ a:hover { text-shadow: 0 0 6px var(--red), 0 0 12px var(--chartreuse); color: va
     padding-right: 1.5rem;
 }
 .nav {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 0.75rem 1.25rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem 1.5rem;
     align-items: center;
     padding-top: 1.25rem;
     padding-bottom: 1rem;
@@ -187,27 +187,17 @@ a:hover { text-shadow: 0 0 6px var(--red), 0 0 12px var(--chartreuse); color: va
 .foot p { margin: 0; }
 .foot p + p { margin-top: 0.35rem; }
 .foot a { color: var(--muted); }
-.nav-toggle { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-.nav-burger {
-    justify-self: end;
-    display: inline-flex; align-items: center; justify-content: center;
-    min-height: 2.5rem; padding: 0.4rem 0.9rem;
-    border: 2px solid var(--chartreuse); color: var(--fg); background: transparent;
-    font: inherit; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer;
-    border-radius: 999px;
-}
-.nav-burger:hover { border-color: var(--red); }
 .nav nav, .nav .signin {
-    display: none; flex-wrap: wrap; gap: 0.65rem 1.1rem; align-items: center;
-    grid-column: 1 / -1;
+    display: flex; flex-wrap: wrap; gap: 0.65rem 1.1rem; align-items: center;
 }
-.nav-toggle:checked ~ nav, .nav-toggle:checked ~ .signin { display: flex; }
 .nav nav {
     font-family: "Monster Chiller", "Pill Gothic 600mg", sans-serif;
     font-size: clamp(1.6rem, 3vw, 2.4rem);
     font-weight: 400;
-    justify-content: center;
+    flex: 1;
+    justify-content: flex-start;
 }
+.nav .signin { flex: 0 1 auto; justify-content: flex-end; }
 .nav nav a { font-weight: 400; }
 .nav nav a[aria-current="page"] {
     background-image: var(--fire);
@@ -245,7 +235,7 @@ button:hover, .btn:hover { box-shadow: 0 0 12px var(--violet); }
 .wrap.auth .auth-youtube { background: #FF0000; }
 .wrap.auth .auth-discord:hover { box-shadow: 0 0 14px #5865F2; }
 .wrap.auth .auth-youtube:hover { box-shadow: 0 0 14px #FF0000; }
-button:focus-visible, .btn:focus-visible, a:focus-visible, .nav-burger:focus-visible,
+button:focus-visible, .btn:focus-visible, a:focus-visible,
 input:focus-visible, textarea:focus-visible, select:focus-visible {
     outline: 2px solid var(--chartreuse); outline-offset: 3px;
 }
@@ -393,11 +383,6 @@ input, select, textarea { accent-color: var(--green); }
 @media (min-width: 800px) {
     .md-basic { grid-template-columns: 1fr 1fr; }
     .md-overlay-body { grid-template-columns: minmax(13rem, 16rem) 1fr 1fr; }
-    .nav { display: flex; flex-wrap: wrap; gap: 1rem 1.5rem; align-items: center; }
-    .nav-burger { display: none; }
-    .nav nav, .nav .signin { display: flex; grid-column: auto; flex: 1; }
-    .nav .signin { flex: 0 1 auto; justify-content: flex-end; }
-    .nav nav { justify-content: flex-start; }
 }
 @media (min-width: 960px) {
     .grid { grid-template-columns: repeat(3, 1fr); }

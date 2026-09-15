@@ -1,7 +1,5 @@
 {{define "nav.html"}}
 <header class="nav">
-    <input id="nav-toggle" class="nav-toggle" type="checkbox">
-    <label class="nav-burger" for="nav-toggle">Menu</label>
     <nav>
         <a href="/" {{if eq .Path "/"}}aria-current="page"{{end}}>Spot</a>
         <a href="/episodes" {{if eq .Path "/episodes"}}aria-current="page"{{end}}>Episodes</a>
