@@ -44,7 +44,7 @@ func TestOwnerFilterOnPublicVideos(t *testing.T) {
 	if err := db.Migrate(sqldb, "../db/migrations"); err != nil {
 		t.Fatal(err)
 	}
-	a, err := auth.UpsertDiscord(sqldb, "da", "a", "A", "", auth.RoleMember, false)
+	a, err := auth.UpsertDiscord(sqldb, "da", "a", "A", "", auth.RoleSkater, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -78,9 +78,9 @@ func TestOwnerFilterOnPublicVideos(t *testing.T) {
 	}
 
 	rec = httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodPost, "/account/filter", strings.NewReader("action=save&field=title&value=wheel"))
+	req := httptest.NewRequest(http.MethodPost, "/dashboard/profile/filter", strings.NewReader("action=save&field=title&value=wheel"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	s.accountFilter(rec, with(a, req))
+	s.profileFilter(rec, with(a, req))
 	if rec.Code != http.StatusSeeOther {
 		t.Fatalf("save %d", rec.Code)
 	}
@@ -93,15 +93,15 @@ func TestOwnerFilterOnPublicVideos(t *testing.T) {
 	}
 
 	rec = httptest.NewRecorder()
-	s.accountPage(rec, with(a, httptest.NewRequest(http.MethodGet, "/account", nil)))
+	s.dashboardProfile(rec, with(a, httptest.NewRequest(http.MethodGet, "/dashboard/profile", nil)))
 	if rec.Code != 200 || !strings.Contains(rec.Body.String(), "My clips on /videos") {
-		t.Fatalf("account %d %s", rec.Code, rec.Body.String())
+		t.Fatalf("profile %d %s", rec.Code, rec.Body.String())
 	}
 
 	rec = httptest.NewRecorder()
-	req = httptest.NewRequest(http.MethodPost, "/account/filter", strings.NewReader("action=test&field=title&value=wheel"))
+	req = httptest.NewRequest(http.MethodPost, "/dashboard/profile/filter", strings.NewReader("action=test&field=title&value=wheel"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	s.accountFilter(rec, with(a, req))
+	s.profileFilter(rec, with(a, req))
 	body = rec.Body.String()
 	if rec.Code != 200 || !strings.Contains(body, "Keep") || !strings.Contains(body, "Hidden") || !strings.Contains(body, "Other") {
 		t.Fatalf("test %d %s", rec.Code, body)

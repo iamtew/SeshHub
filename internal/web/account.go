@@ -7,7 +7,6 @@ import (
 
 	"seshhub/internal/auth"
 	"seshhub/internal/skater"
-	"seshhub/internal/yt"
 )
 
 func (s *Server) requireUser(w http.ResponseWriter, r *http.Request) *auth.User {
@@ -99,62 +98,10 @@ func (s *Server) accountExport(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(out)
 }
 
-type clipTest struct {
-	yt.Video
-	Keep bool
-}
-
 func (s *Server) accountPage(w http.ResponseWriter, r *http.Request) {
-	u := s.requireUser(w, r)
-	if u == nil {
+	if UserFrom(r) == nil {
+		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
-	s.renderAccount(w, r, u, nil, false)
-}
-
-func (s *Server) accountFilter(w http.ResponseWriter, r *http.Request) {
-	u := s.requireUser(w, r)
-	if u == nil {
-		return
-	}
-	_ = r.ParseForm()
-	rows := yt.FormRules(r.Form["field"], r.Form["value"])
-	switch r.FormValue("action") {
-	case "clear":
-		if err := auth.SetVideoFilter(s.db, u.ID, ""); err != nil {
-			http.Error(w, "db error", http.StatusInternalServerError)
-			return
-		}
-		http.Redirect(w, r, "/account", http.StatusSeeOther)
-	case "save":
-		if err := auth.SetVideoFilter(s.db, u.ID, yt.EncodeRules(rows)); err != nil {
-			http.Error(w, "db error", http.StatusInternalServerError)
-			return
-		}
-		http.Redirect(w, r, "/account", http.StatusSeeOther)
-	case "add":
-		if len(rows) < yt.MaxRules {
-			rows = append(rows, yt.Rule{})
-		}
-		s.renderAccount(w, r, u, rows, false)
-	default:
-		s.renderAccount(w, r, u, yt.WithBlank(rows), true)
-	}
-}
-
-func (s *Server) renderAccount(w http.ResponseWriter, r *http.Request, u *auth.User, rows []yt.Rule, test bool) {
-	if rows == nil {
-		raw, _ := auth.GetVideoFilter(s.db, u.ID)
-		rows = yt.WithBlank(yt.ParseRules(raw))
-	}
-	rules := yt.Normalize(rows)
-	data := map[string]any{"Title": "Account", "Path": "/account", "FilterRows": rows, "Test": test}
-	if test {
-		var items []clipTest
-		for _, v := range userChannelVideos(s.db, u.ID, 50) {
-			items = append(items, clipTest{Video: v, Keep: yt.Match(v, rules)})
-		}
-		data["TestClips"] = items
-	}
-	s.render(w, r, "account.html", data)
+	s.render(w, r, "account.html", map[string]any{"Title": "Account", "Path": "/account"})
 }

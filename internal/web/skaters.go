@@ -133,10 +133,61 @@ func (s *Server) adminSkaterDelete(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) dashboardProfile(w http.ResponseWriter, r *http.Request) {
+	u, p, ok := s.ownProfile(w, r)
+	if !ok {
+		return
+	}
+	if r.Method == http.MethodPost {
+		if _, err := skater.Save(s.db, formProfile(r, p)); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		http.Redirect(w, r, "/team/"+p.Slug, http.StatusSeeOther)
+		return
+	}
+	s.renderSkaterProfile(w, r, u, p, nil, false)
+}
+
+func (s *Server) profileFilter(w http.ResponseWriter, r *http.Request) {
+	u, p, ok := s.ownProfile(w, r)
+	if !ok {
+		return
+	}
+	_ = r.ParseForm()
+	rows := yt.FormRules(r.Form["field"], r.Form["value"])
+	switch r.FormValue("action") {
+	case "clear":
+		if err := auth.SetVideoFilter(s.db, u.ID, ""); err != nil {
+			http.Error(w, "db error", http.StatusInternalServerError)
+			return
+		}
+		http.Redirect(w, r, "/dashboard/profile", http.StatusSeeOther)
+	case "save":
+		if err := auth.SetVideoFilter(s.db, u.ID, yt.EncodeRules(rows)); err != nil {
+			http.Error(w, "db error", http.StatusInternalServerError)
+			return
+		}
+		http.Redirect(w, r, "/dashboard/profile", http.StatusSeeOther)
+	case "add":
+		if len(rows) < yt.MaxRules {
+			rows = append(rows, yt.Rule{})
+		}
+		s.renderSkaterProfile(w, r, u, p, rows, false)
+	default:
+		s.renderSkaterProfile(w, r, u, p, yt.WithBlank(rows), true)
+	}
+}
+
+type clipTest struct {
+	yt.Video
+	Keep bool
+}
+
+func (s *Server) ownProfile(w http.ResponseWriter, r *http.Request) (*auth.User, skater.Profile, bool) {
 	u := UserFrom(r)
 	if u == nil || (u.Role != auth.RoleSkater && u.Role != auth.RoleAdmin) {
 		http.Error(w, "forbidden", http.StatusForbidden)
-		return
+		return nil, skater.Profile{}, false
 	}
 	p, err := skater.Get(s.db, "user_id", u.ID)
 	if err == sql.ErrNoRows {
@@ -148,20 +199,32 @@ func (s *Server) dashboardProfile(w http.ResponseWriter, r *http.Request) {
 	}
 	if err == sql.ErrNoRows {
 		http.Error(w, "no profile linked", http.StatusNotFound)
-		return
+		return nil, skater.Profile{}, false
 	}
 	if err != nil {
 		http.Error(w, "db error", http.StatusInternalServerError)
-		return
+		return nil, skater.Profile{}, false
 	}
-	if r.Method == http.MethodPost {
-		if _, err := skater.Save(s.db, formProfile(r, p)); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		http.Redirect(w, r, "/team/"+p.Slug, http.StatusSeeOther)
-		return
+	return u, p, true
+}
+
+func (s *Server) renderSkaterProfile(w http.ResponseWriter, r *http.Request, u *auth.User, p skater.Profile, rows []yt.Rule, test bool) {
+	if rows == nil {
+		raw, _ := auth.GetVideoFilter(s.db, u.ID)
+		rows = yt.WithBlank(yt.ParseRules(raw))
 	}
 	vids := userChannelVideos(s.db, u.ID, 50)
-	s.render(w, r, "skater_form.html", map[string]any{"Title": "Skater profile", "Path": "/dashboard/profile", "P": p, "Action": "/dashboard/profile", "Videos": vids})
+	data := map[string]any{
+		"Title": "Skater profile", "Path": "/dashboard/profile", "P": p, "Action": "/dashboard/profile",
+		"Videos": vids, "FilterRows": rows, "Test": test,
+	}
+	if test {
+		rules := yt.Normalize(rows)
+		var items []clipTest
+		for _, v := range vids {
+			items = append(items, clipTest{Video: v, Keep: yt.Match(v, rules)})
+		}
+		data["TestClips"] = items
+	}
+	s.render(w, r, "skater_form.html", data)
 }

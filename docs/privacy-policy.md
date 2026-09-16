@@ -65,11 +65,11 @@ Our database is a SQLite file on the server that runs the Service.
 
 **Why:** to recognise you across visits, to show your name and avatar in the interface, to decide what you are allowed to see and edit, to fetch your clips if you have linked YouTube, and to apply your clip publish filter to the public gallery.
 
-**Created:** the first time you sign in with Discord or YouTube. The clip filter is created when you save one on `/account`.
+**Created:** the first time you sign in with Discord or YouTube. The clip filter is created when you save one on `/dashboard/profile`.
 
 **Read:** on every request you make while signed in, to resolve your session to an account. Your display name is also shown publicly as the author of any article you write. The clip filter is read to decide which of your cached clips appear on `/videos` and your team page.
 
-**Updated:** on **every** subsequent sign-in. We re-copy your current username, display name, avatar and roles from the provider, so changing your name or avatar on Discord changes it here the next time you log in. Linking or unlinking a provider also updates this record. Saving or clearing the clip filter on `/account` updates this record.
+**Updated:** on **every** subsequent sign-in. We re-copy your current username, display name, avatar and roles from the provider, so changing your name or avatar on Discord changes it here the next time you log in. Linking or unlinking a provider also updates this record. Saving or clearing the clip filter on `/dashboard/profile` updates this record.
 
 **Deleted:** by you at `/account`, or by an administrator. The clip filter is deleted with the account. Articles you wrote stay published with the byline "Former member". See section 4.5.
 
@@ -103,7 +103,7 @@ We do **not** store your IP address or User-Agent.
 
 **Read: this profile is public.** Anyone on the internet, signed in or not, can see it. Note in particular that the name shown publicly is your **real name if you have filled it in**, and falls back to your skater name only if you have not. Your **location** and **biography** are also shown publicly when set. Please do not put anything in these fields that you would not want a stranger to read.
 
-**Updated:** by you, at `/dashboard/profile`. That form currently edits your real name, biography, stance, location and featured video. An administrator can separately change your roster status.
+**Updated:** by you, at `/dashboard/profile`. That form currently edits your real name, biography, stance, location, featured video, and clip publish filter. An administrator can separately change your roster status.
 
 **Deleted:** when your account is deleted, or by an administrator.
 
@@ -206,7 +206,7 @@ You have the right of access (Art. 15), rectification (Art. 16), erasure (Art. 1
 
 - **Access or portability:** use **Download my data** on `/account`, or ask us by email.
 - **Erasure:** use **Delete my account** on `/account`. That removes your account record (including the clip filter), sessions, access request, skater profile and cached clips. Articles stay published as "Former member".
-- **Rectification:** most profile fields update themselves from Discord or YouTube on your next sign-in. Your biography and location are yours to edit at `/dashboard/profile`. Your clip publish filter is yours to edit or clear on `/account`.
+- **Rectification:** most profile fields update themselves from Discord or YouTube on your next sign-in. Your biography, location, featured clip and clip publish filter are yours to edit at `/dashboard/profile`.
 - **Objection or restriction:** tell us what you object to and we will stop it or explain why we believe we may continue.
 
 Some of the underlying personal data also lives with Discord and Google, and we cannot reach into their systems. Revoking our OAuth access from their settings pages is immediate and does not require us.

@@ -17,60 +17,6 @@
     </li>
 </ul>
 <p class="who">Skater pages pick up latest YouTube uploads while you are logged in, after YouTube is connected. Unlink needs the other provider still connected; otherwise delete the account.</p>
-<h2>My clips on /videos</h2>
-<form method="post" action="/account/filter" class="form video-filter">
-    <p class="who">Rules apply only to your linked YouTube uploads. Clips that match every rule appear on /videos (and your team page) for everyone. Empty filter publishes all of yours. Test labels Keep or Hidden without saving.</p>
-    {{range .FilterRows}}
-    <div class="filter-row">
-        <label>Field
-            <select name="field">
-                <option value="title" {{if or (eq .Field "title") (eq .Field "")}}selected{{end}}>Title contains</option>
-                <option value="channel" {{if eq .Field "channel"}}selected{{end}}>Channel contains</option>
-                <option value="tags" {{if eq .Field "tags"}}selected{{end}}>Tags contain</option>
-                <option value="category" {{if eq .Field "category"}}selected{{end}}>Category is</option>
-            </select>
-        </label>
-        <label>Value
-            {{if eq .Field "category"}}
-            <select name="value">
-                <option value="">Pick</option>
-                <option value="session" {{if eq .Value "session"}}selected{{end}}>session</option>
-                <option value="short" {{if eq .Value "short"}}selected{{end}}>short</option>
-                <option value="contest" {{if eq .Value "contest"}}selected{{end}}>contest</option>
-                <option value="part" {{if eq .Value "part"}}selected{{end}}>part</option>
-            </select>
-            {{else}}
-            <input name="value" value="{{.Value}}" maxlength="80">
-            {{end}}
-        </label>
-    </div>
-    {{end}}
-    <div class="form-actions">
-        <button type="submit" name="action" value="save">Save</button>
-        <button type="submit" name="action" value="test">Test</button>
-        <button type="submit" name="action" value="add">Add rule</button>
-        <button type="submit" name="action" value="clear">Clear</button>
-    </div>
-</form>
-{{if .Test}}
-<p class="who">{{if .User.YouTubeChannelID}}Test against your cached uploads.{{else}}Connect YouTube to test against your clips.{{end}} Not saved.</p>
-{{if .TestClips}}
-<ul class="grid">
-{{range .TestClips}}
-<li>
-    {{if .Keep}}<span class="filter-keep">Keep</span>{{else}}<span class="filter-hide">Hidden</span>{{end}}
-    <a href="https://www.youtube.com/watch?v={{.ID}}">
-        {{if .Thumb}}<img src="{{.Thumb}}" alt="" class="thumb">{{end}}
-        <strong>{{.Title}}</strong>
-    </a>
-    {{if .StatsLine}}<span class="who">{{.StatsLine}}</span>{{end}}
-</li>
-{{end}}
-</ul>
-{{else if .User.YouTubeChannelID}}
-<p class="who">No cached clips yet. Visit the site while logged in after YouTube is connected.</p>
-{{end}}
-{{end}}
 <p><a href="/auth/logout">Log out</a> (all devices)</p>
 <hr>
 <p><a href="/account/export">Download my data</a></p>
