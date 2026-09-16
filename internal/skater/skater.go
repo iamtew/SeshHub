@@ -174,13 +174,23 @@ func Save(db *sql.DB, p Profile) (Profile, error) {
 	}
 	base := p.Slug
 	if base == "" {
-		base = Slugify(p.SkaterName)
+		if strings.TrimSpace(p.RealName) != "" {
+			base = Slugify(p.RealName)
+		} else {
+			base = Slugify(p.SkaterName)
+		}
 	} else {
 		base = Slugify(base)
 	}
 	slug, err := uniqueSlug(db, base, p.ID)
 	if err != nil {
 		return p, err
+	}
+	oldSlug := ""
+	if p.ID != "" {
+		if prev, err := Get(db, "id", p.ID); err == nil {
+			oldSlug = prev.Slug
+		}
 	}
 	p.Slug = slug
 	if p.Stance == "" {
@@ -209,10 +219,59 @@ func Save(db *sql.DB, p Profile) (Profile, error) {
 	if err != nil {
 		return p, err
 	}
+	if err := rememberSlug(db, p.ID, oldSlug, p.Slug); err != nil {
+		return p, err
+	}
 	return p, nil
 }
 
+func rememberSlug(db *sql.DB, profileID, oldSlug, newSlug string) error {
+	if _, err := db.Exec(`DELETE FROM skater_slug_redirects WHERE slug = ?`, newSlug); err != nil {
+		return err
+	}
+	if oldSlug == "" || oldSlug == newSlug {
+		return nil
+	}
+	_, err := db.Exec(`INSERT INTO skater_slug_redirects (slug, profile_id) VALUES (?,?)
+		ON CONFLICT(slug) DO UPDATE SET profile_id=excluded.profile_id`, oldSlug, profileID)
+	return err
+}
+
+func CurrentSlug(db *sql.DB, old string) (string, error) {
+	var id string
+	err := db.QueryRow(`SELECT profile_id FROM skater_slug_redirects WHERE slug = ?`, old).Scan(&id)
+	if err != nil {
+		return "", err
+	}
+	p, err := Get(db, "id", id)
+	if err != nil {
+		return "", err
+	}
+	if p.Slug == "" || p.Slug == old {
+		return "", sql.ErrNoRows
+	}
+	return p.Slug, nil
+}
+
+func FormerSlugs(db *sql.DB, profileID string) ([]string, error) {
+	rows, err := db.Query(`SELECT slug FROM skater_slug_redirects WHERE profile_id = ?`, profileID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []string
+	for rows.Next() {
+		var s string
+		if err := rows.Scan(&s); err != nil {
+			return nil, err
+		}
+		out = append(out, s)
+	}
+	return out, rows.Err()
+}
+
 func Delete(db *sql.DB, id string) error {
+	_, _ = db.Exec(`DELETE FROM skater_slug_redirects WHERE profile_id = ?`, id)
 	_, err := db.Exec(`DELETE FROM skater_profiles WHERE id = ?`, id)
 	return err
 }

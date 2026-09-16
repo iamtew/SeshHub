@@ -83,6 +83,12 @@ func (s *Server) accountExport(w http.ResponseWriter, r *http.Request) {
 	out["video_filter"] = raw
 	if p, err := skater.Get(s.db, "user_id", fresh.ID); err == nil {
 		out["profile"] = p
+		if slugs, err := skater.FormerSlugs(s.db, p.ID); err != nil {
+			http.Error(w, "db error", http.StatusInternalServerError)
+			return
+		} else if len(slugs) > 0 {
+			out["former_slugs"] = slugs
+		}
 	} else if err != sql.ErrNoRows {
 		http.Error(w, "db error", http.StatusInternalServerError)
 		return

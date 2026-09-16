@@ -265,6 +265,8 @@ form[action*="/unlink/"] button { background: var(--magenta); }
 .form { display: flex; flex-direction: column; gap: 1.1rem; max-width: 36rem; }
 .form:has(.md-edit) { max-width: none; }
 .form label { display: flex; flex-direction: column; gap: 0.4rem; }
+.field-reset { display: grid; grid-template-columns: 1fr auto; gap: 0.5rem; align-items: end; }
+.field-reset label { margin: 0; }
 .form label:has([type="checkbox"]), .md-side label:has([type="checkbox"]) {
     flex-direction: row; align-items: center; gap: 0.5rem;
 }

@@ -3,6 +3,7 @@ package web
 import (
 	"database/sql"
 	"net/http"
+	"strings"
 
 	"seshhub/internal/auth"
 	"seshhub/internal/skater"
@@ -12,6 +13,7 @@ import (
 func formProfile(r *http.Request, existing skater.Profile) skater.Profile {
 	_ = r.ParseForm()
 	existing.RealName = r.FormValue("display_name")
+	existing.Slug = strings.TrimSpace(r.FormValue("slug"))
 	existing.Bio = r.FormValue("bio")
 	existing.Stance = r.FormValue("stance")
 	existing.Location = r.FormValue("location")
@@ -42,8 +44,18 @@ func (s *Server) skatersAlias(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) skaterDetail(w http.ResponseWriter, r *http.Request) {
-	p, err := skater.Get(s.db, "slug", r.PathValue("slug"))
-	if err == sql.ErrNoRows || (err == nil && p.UserID == "") {
+	want := r.PathValue("slug")
+	p, err := skater.Get(s.db, "slug", want)
+	if err == sql.ErrNoRows {
+		cur, rerr := skater.CurrentSlug(s.db, want)
+		if rerr == nil {
+			http.Redirect(w, r, "/team/"+cur, http.StatusFound)
+			return
+		}
+		http.NotFound(w, r)
+		return
+	}
+	if err == nil && p.UserID == "" {
 		http.NotFound(w, r)
 		return
 	}
@@ -138,11 +150,12 @@ func (s *Server) dashboardProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if r.Method == http.MethodPost {
-		if _, err := skater.Save(s.db, formProfile(r, p)); err != nil {
+		saved, err := skater.Save(s.db, formProfile(r, p))
+		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		http.Redirect(w, r, "/team/"+p.Slug, http.StatusSeeOther)
+		http.Redirect(w, r, "/team/"+saved.Slug, http.StatusSeeOther)
 		return
 	}
 	s.renderSkaterProfile(w, r, u, p, nil, false)
@@ -222,9 +235,11 @@ func (s *Server) renderSkaterProfile(w http.ResponseWriter, r *http.Request, u *
 		kindOn[k] = true
 	}
 	vids := userChannelVideos(s.db, u.ID, 50)
+	defName := providerName(u)
 	data := map[string]any{
 		"Title": "Skater profile", "Path": "/dashboard/profile", "P": p, "Action": "/dashboard/profile",
 		"Videos": vids, "FilterRows": sspec.Rules, "KindOn": kindOn, "Test": test,
+		"DefaultName": defName, "DefaultSlug": skater.Slugify(defName),
 	}
 	if test {
 		check := yt.NormalizeSpec(sspec)
@@ -240,4 +255,20 @@ func (s *Server) renderSkaterProfile(w http.ResponseWriter, r *http.Request, u *
 		data["TestClips"] = append(keep, hide...)
 	}
 	s.render(w, r, "skater_form.html", data)
+}
+
+func providerName(u *auth.User) string {
+	if u.DiscordID != "" {
+		if s := strings.TrimSpace(u.DisplayName); s != "" {
+			return s
+		}
+		return strings.TrimSpace(u.Username)
+	}
+	if s := strings.TrimSpace(u.YouTubeChannelTitle); s != "" {
+		return s
+	}
+	if s := strings.TrimSpace(u.DisplayName); s != "" {
+		return s
+	}
+	return strings.TrimSpace(u.Username)
 }

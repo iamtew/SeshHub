@@ -201,6 +201,9 @@ func DeleteUser(db *sql.DB, id, actorID string) error {
 	if _, err := tx.Exec(`UPDATE articles SET author_id=? WHERE author_id=?`, TombstoneID, id); err != nil {
 		return err
 	}
+	if _, err := tx.Exec(`DELETE FROM skater_slug_redirects WHERE profile_id IN (SELECT id FROM skater_profiles WHERE user_id=?)`, id); err != nil {
+		return err
+	}
 	if _, err := tx.Exec(`DELETE FROM skater_profiles WHERE user_id=?`, id); err != nil {
 		return err
 	}

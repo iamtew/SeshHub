@@ -1,8 +1,14 @@
 {{define "content"}}
 <h1>{{.Title}}</h1>
-<form method="post" action="{{.Action}}" class="form">
-    <p>Name {{.P.SkaterName}}</p>
-    <label>Display name <input name="display_name" value="{{.P.RealName}}" placeholder="optional"></label>
+<form method="post" action="{{.Action}}" class="form" id="profile-form" data-default-name="{{.DefaultName}}" data-default-slug="{{.DefaultSlug}}">
+    <div class="field-reset">
+        <label>Display name <input name="display_name" value="{{or .P.RealName .DefaultName}}"></label>
+        <button type="button" data-reset="name">Reset</button>
+    </div>
+    <div class="field-reset">
+        <label>User slug <span class="who">/team/</span><input name="slug" value="{{.P.Slug}}" autocomplete="off"></label>
+        <button type="button" data-reset="slug">Reset</button>
+    </div>
     <label>Location <input name="location" value="{{.P.Location}}"></label>
     <label>Stance
         <select name="stance">
@@ -24,6 +30,45 @@
     {{end}}
     <button type="submit">Save</button>
 </form>
+<script>
+(function () {
+  var form = document.getElementById('profile-form');
+  if (!form) return;
+  var name = form.elements.namedItem('display_name');
+  var slug = form.elements.namedItem('slug');
+  var defName = form.getAttribute('data-default-name') || '';
+  var defSlug = form.getAttribute('data-default-slug') || '';
+  function slugify(s) {
+    s = String(s || '').toLowerCase().trim();
+    var out = '', dash = false;
+    for (var i = 0; i < s.length; ) {
+      var r = s.codePointAt(i);
+      i += r > 0xffff ? 2 : 1;
+      var ch = String.fromCodePoint(r);
+      if (/\p{L}|\p{N}/u.test(ch)) { out += ch; dash = false; }
+      else if (!dash) { out += '-'; dash = true; }
+    }
+    out = out.replace(/^-+|-+$/g, '');
+    return out || 'skater';
+  }
+  var follow = !name.value.trim() || slugify(name.value) === slug.value;
+  name.addEventListener('input', function () {
+    if (follow) slug.value = slugify(name.value);
+  });
+  slug.addEventListener('input', function () { follow = false; });
+  form.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-reset]');
+    if (!b) return;
+    if (b.getAttribute('data-reset') === 'name') {
+      name.value = defName;
+      if (follow) slug.value = slugify(name.value);
+    } else {
+      slug.value = defSlug;
+      follow = false;
+    }
+  });
+})();
+</script>
 <h2>YouTube Feed Filter</h2>
 <form method="post" action="/dashboard/profile/filter" class="form video-filter">
     <p class="who">YouTube Feed Filter applies only to your linked uploads. Every rule is AND. Clips that pass appear on /videos and your team page. Other skaters’ clips are unchanged. Empty filter publishes all of yours. Test lists Keep then Hidden (Hidden still listed so you can see misses). Not saved until you hit Save.</p>

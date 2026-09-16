@@ -159,6 +159,9 @@ func TestDeleteUserErasure(t *testing.T) {
 	if _, err := sqldb.Exec(`INSERT INTO skater_profiles (id, user_id, slug, skater_name) VALUES ('p-erase', ?, 'erase', 'Erase')`, u.ID); err != nil {
 		t.Fatal(err)
 	}
+	if _, err := sqldb.Exec(`INSERT INTO skater_slug_redirects (slug, profile_id) VALUES ('old-erase', 'p-erase')`); err != nil {
+		t.Fatal(err)
+	}
 	if _, err := sqldb.Exec(`INSERT INTO articles (id, slug, title, content_raw, content_html, author_id, status) VALUES ('a-erase', 'erase-post', 'Post', 'hi', 'hi', ?, 'published')`, u.ID); err != nil {
 		t.Fatal(err)
 	}
@@ -175,6 +178,10 @@ func TestDeleteUserErasure(t *testing.T) {
 	_ = sqldb.QueryRow(`SELECT COUNT(*) FROM skater_profiles WHERE id='p-erase'`).Scan(&n)
 	if n != 0 {
 		t.Fatal("profile survived")
+	}
+	_ = sqldb.QueryRow(`SELECT COUNT(*) FROM skater_slug_redirects WHERE profile_id='p-erase'`).Scan(&n)
+	if n != 0 {
+		t.Fatal("slug redirect survived")
 	}
 	_ = sqldb.QueryRow(`SELECT COUNT(*) FROM sessions WHERE user_id=?`, u.ID).Scan(&n)
 	if n != 0 {

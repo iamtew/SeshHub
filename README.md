@@ -271,7 +271,7 @@ Two header modes. Same public nav (Spot / Episodes / FS Team / News / Videos / A
 ### 1. Skater Profiles & Team Roster
 - **Team Directory (`/team` / `/skaters`)**: People who hold `DISCORD_SKATER_ROLE_ID` in the guild and have logged in with Discord. Name comes from Discord; optional display name, stance, status, location, bio.
 - **Skater Detail Page (`/team/{slug}`)**: Bio, stance, status, location, Discord avatar, and clips from a linked YouTube channel (optional featured pin).
-- **Skater profile (`/dashboard/profile`)**: Own profile only — display name, stance, location, bio, featured clip, YouTube Feed Filter.
+- **Skater profile (`/dashboard/profile`)**: Own profile only — display name, user slug (`/team/{slug}`), stance, location, bio, featured clip, YouTube Feed Filter. Display name and slug default from Discord (YouTube if Discord is not connected); Reset restores those. Typing a display name sets the slug until the slug field is edited. Changing slug 302s the old URL to the new one until that slug is claimed again (not reserved).
 - **FS Team (`/admin/skaters`)**: Superadmin / Discord hub-admin role only. Set another skater’s status. No add-skater form.
 
 ### 2. YouTube clips from skaters
@@ -355,6 +355,11 @@ CREATE TABLE IF NOT EXISTS skater_profiles (
     featured_video_id TEXT,                    -- References youtube_videos(id)
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS skater_slug_redirects (
+    slug TEXT PRIMARY KEY,
+    profile_id TEXT NOT NULL REFERENCES skater_profiles(id) ON DELETE CASCADE
 );
 
 -- Articles and announcements

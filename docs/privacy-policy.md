@@ -95,17 +95,17 @@ We do **not** store your IP address or User-Agent.
 
 ### 4.3 Your skater profile (`skater_profiles` table)
 
-**What:** a public slug, your skater name, your real name, a biography, your stance, a roster status, avatar and banner URLs, your location, sponsors, social links, signature tricks, and a featured video ID.
+**What:** a public slug, your skater name, your real name, a biography, your stance, a roster status, avatar and banner URLs, your location, sponsors, social links, signature tricks, a featured video ID, and **former slugs** (only while nobody else is using that URL).
 
-**Why:** to show the team roster at `/team` and your own profile page at `/team/{slug}`.
+**Why:** to show the team roster at `/team` and your own profile page at `/team/{slug}`. Former slugs 302 to your current page so old links keep working, until that slug is claimed again.
 
-**Created:** automatically, the first time you sign in holding the skater or admin role in the Sesh Sofa Discord. Your skater name is initially taken from your Discord username, and is kept in step with it on subsequent visits. The check that creates it runs on every request you make, so as long as your account exists and still holds the role, a profile will exist.
+**Created:** automatically, the first time you sign in holding the skater or admin role in the Sesh Sofa Discord. Your skater name is initially taken from your Discord username, and is kept in step with it on subsequent visits. Your public slug starts as a slugified form of that Discord username (or your YouTube channel title if Discord is not connected). The check that creates the profile runs on every request you make, so as long as your account exists and still holds the role, a profile will exist.
 
-**Read: this profile is public.** Anyone on the internet, signed in or not, can see it. Note in particular that the name shown publicly is your **real name if you have filled it in**, and falls back to your skater name only if you have not. Your **location** and **biography** are also shown publicly when set. Please do not put anything in these fields that you would not want a stranger to read.
+**Read: this profile is public.** Anyone on the internet, signed in or not, can see it. Note in particular that the name shown publicly is your **display name (stored as real name) if you have filled it in**, and falls back to your skater name only if you have not. Your **slug** is the public URL `/team/{slug}`. Former slugs are public too: visiting them redirects to your current page. Your **location** and **biography** are also shown publicly when set. Please do not put anything in these fields that you would not want a stranger to read.
 
-**Updated:** by you, at `/dashboard/profile`. That form currently edits your real name, biography, stance, location, featured video, and YouTube Feed Filter. An administrator can separately change your roster status.
+**Updated:** by you, at `/dashboard/profile`. That form edits your display name, slug, biography, stance, location, featured video, and YouTube Feed Filter. Changing your slug records the previous one as a redirect and frees it for anyone to claim later. Logging in still refreshes your Discord skater name; it does not overwrite a slug you chose. An administrator can separately change your roster status.
 
-**Deleted:** when your account is deleted, or by an administrator.
+**Deleted:** when your account is deleted, or by an administrator. Former-slug redirects are deleted with the profile. If someone else takes an old slug, that redirect row is deleted so their page wins.
 
 ### 4.4 Your access request (`access_requests` table)
 
@@ -202,11 +202,11 @@ Each of these companies handles your data under its own privacy policy. You can 
 
 You have the right of access (Art. 15), rectification (Art. 16), erasure (Art. 17), restriction (Art. 18), data portability (Art. 20), and objection (Art. 21).
 
-**How to exercise these rights.** Most of them are on `/account` while you are signed in: unlink a provider, download a JSON export of your account, profile, YouTube Feed Filter and access request, or delete the account. Logging out ends every session. You can also email the contact address in section 1. We will respond within one month, as Art. 12(3) requires.
+**How to exercise these rights.** Most of them are on `/account` while you are signed in: unlink a provider, download a JSON export of your account, profile, former slugs, YouTube Feed Filter and access request, or delete the account. Logging out ends every session. You can also email the contact address in section 1. We will respond within one month, as Art. 12(3) requires.
 
 - **Access or portability:** use **Download my data** on `/account`, or ask us by email.
-- **Erasure:** use **Delete my account** on `/account`. That removes your account record (including the YouTube Feed Filter), sessions, access request, skater profile and cached clips. Articles stay published as "Former member".
-- **Rectification:** most profile fields update themselves from Discord or YouTube on your next sign-in. Your biography, location, featured clip and YouTube Feed Filter are yours to edit at `/dashboard/profile`.
+- **Erasure:** use **Delete my account** on `/account`. That removes your account record (including the YouTube Feed Filter), sessions, access request, skater profile, former-slug redirects, and cached clips. Articles stay published as "Former member".
+- **Rectification:** most profile fields update themselves from Discord or YouTube on your next sign-in. Your display name, slug, biography, location, featured clip and YouTube Feed Filter are yours to edit at `/dashboard/profile`.
 - **Objection or restriction:** tell us what you object to and we will stop it or explain why we believe we may continue.
 
 Some of the underlying personal data also lives with Discord and Google, and we cannot reach into their systems. Revoking our OAuth access from their settings pages is immediate and does not require us.

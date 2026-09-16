@@ -1,6 +1,7 @@
 package skater
 
 import (
+	"database/sql"
 	"testing"
 
 	"seshhub/internal/db"
@@ -56,6 +57,49 @@ func TestSaveUniqueSlug(t *testing.T) {
 	list, err := List(sqldb)
 	if err != nil || len(list) != 2 {
 		t.Fatalf("list %v %d", err, len(list))
+	}
+	custom, err := Save(sqldb, Profile{SkaterName: "keep", Slug: "mongo-link"})
+	if err != nil || custom.Slug != "mongo-link" {
+		t.Fatalf("custom slug %+v %v", custom, err)
+	}
+	custom.RealName = "Show Name"
+	custom.Slug = ""
+	custom, err = Save(sqldb, custom)
+	if err != nil || custom.Slug != "show-name" {
+		t.Fatalf("slug from display %+v %v", custom, err)
+	}
+	same, err := Save(sqldb, custom)
+	if err != nil || same.Slug != "show-name" {
+		t.Fatalf("own slug bump %+v %v", same, err)
+	}
+	gotOld, err := CurrentSlug(sqldb, "mongo-link")
+	if err != nil || gotOld != "show-name" {
+		t.Fatalf("redirect %q %v", gotOld, err)
+	}
+	custom.Slug = "mongo-link"
+	custom, err = Save(sqldb, custom)
+	if err != nil || custom.Slug != "mongo-link" {
+		t.Fatalf("reclaim %+v %v", custom, err)
+	}
+	if _, err := CurrentSlug(sqldb, "mongo-link"); err != sql.ErrNoRows {
+		t.Fatalf("live slug still redirects %v", err)
+	}
+	custom.Slug = "show-name"
+	custom, err = Save(sqldb, custom)
+	if err != nil {
+		t.Fatal(err)
+	}
+	taken, err := Save(sqldb, Profile{SkaterName: "other", Slug: "mongo-link"})
+	if err != nil || taken.Slug != "mongo-link" {
+		t.Fatalf("reuse old slug %+v %v", taken, err)
+	}
+	if _, err := CurrentSlug(sqldb, "mongo-link"); err != sql.ErrNoRows {
+		t.Fatalf("claimed slug still redirects %v", err)
+	}
+	custom.Slug = "mongo-link"
+	custom, err = Save(sqldb, custom)
+	if err != nil || custom.Slug != "mongo-link-2" {
+		t.Fatalf("live collision %+v %v", custom, err)
 	}
 }
 
