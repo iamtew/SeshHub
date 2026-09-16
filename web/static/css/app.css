@@ -328,6 +328,13 @@ hr {
 .form-actions {
     display: flex; flex-wrap: wrap; gap: 0.65rem; align-items: center;
 }
+.video-filter { margin: 0 0 1.25rem; max-width: 42rem; }
+.video-filter summary { cursor: pointer; font-weight: 600; }
+.video-filter .form { margin-top: 0.75rem; }
+.filter-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; }
+.filter-keep, .filter-hide { font-weight: 700; }
+.filter-keep { color: var(--green); }
+.filter-hide { color: var(--muted); }
 .md-discard { margin-right: auto; background: var(--gray); }
 .md-css summary { cursor: pointer; font-weight: 600; }
 .md-css textarea { margin-top: 0.4rem; width: 100%; }

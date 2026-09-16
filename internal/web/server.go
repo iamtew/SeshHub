@@ -33,6 +33,7 @@ func New(cfg config.Config, db *sql.DB) *Server {
 	s.mux.HandleFunc("GET /news", s.news)
 	s.mux.HandleFunc("GET /news/{slug}", s.articleDetail)
 	s.mux.HandleFunc("GET /videos", s.videos)
+	s.mux.HandleFunc("POST /videos/filter", s.videosFilter)
 	s.mux.HandleFunc("GET /episodes", s.episodes)
 	s.mux.HandleFunc("GET /login", s.loginPage)
 	s.mux.HandleFunc("GET /auth/discord", s.startOAuth("discord"))

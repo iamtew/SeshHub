@@ -277,6 +277,7 @@ Two header modes. Same public nav (Spot / Episodes / FS Team / News / Videos / A
 ### 2. YouTube clips from skaters
 - **No site-wide channel crawler**: `/videos` is still the union of clips pulled from team skaters who have connected YouTube. An optional `YOUTUBE_DATA_API_KEY` poller only refreshes public stats on those existing rows (hourly).
 - **Logged-in refresh**: If the user has a `skater_profiles` row, a YouTube refresh token, and last sync is older than 60 minutes, a request while they are logged in refreshes up to 50 latest uploads.
+- **Feed filter**: Logged-in save of AND-ed rules (title / channel / category / tags) on `/videos`. The allowlist applies to the public gallery for visitors too. Test labels Keep / Hidden without saving. Team and episode pages are unfiltered.
 - **Manual pin**: Admins/skaters can still set `featured_video_id` from that channel’s synced rows.
 
 ### 3. Articles, News & Blog CMS
@@ -403,6 +404,11 @@ CREATE TABLE IF NOT EXISTS youtube_videos (
     is_featured BOOLEAN NOT NULL DEFAULT 0,
     is_hidden BOOLEAN NOT NULL DEFAULT 0,
     synced_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS site_video_filter (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    rules TEXT                                 -- JSON allowlist for public /videos
 );
 
 CREATE TABLE IF NOT EXISTS episodes (

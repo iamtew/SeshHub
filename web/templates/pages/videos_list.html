@@ -1,11 +1,55 @@
 {{define "content"}}
 <h1>Videos</h1>
+{{if .User}}
+<details class="video-filter" {{if .FilterOpen}}open{{end}}>
+<summary>Feed filter</summary>
+<form method="post" action="/videos/filter" class="form">
+    <input type="hidden" name="n" value="{{.Per}}">
+    <p class="who">Show only clips that match every rule. Empty filter shows all. Test labels Keep or Hidden without saving. The saved filter applies to everyone on /videos, including visitors.</p>
+    {{range .FilterRows}}
+    <div class="filter-row">
+        <label>Field
+            <select name="field">
+                <option value="title" {{if or (eq .Field "title") (eq .Field "")}}selected{{end}}>Title contains</option>
+                <option value="channel" {{if eq .Field "channel"}}selected{{end}}>Channel contains</option>
+                <option value="tags" {{if eq .Field "tags"}}selected{{end}}>Tags contain</option>
+                <option value="category" {{if eq .Field "category"}}selected{{end}}>Category is</option>
+            </select>
+        </label>
+        <label>Value
+            {{if eq .Field "category"}}
+            <select name="value">
+                <option value="">Pick</option>
+                <option value="session" {{if eq .Value "session"}}selected{{end}}>session</option>
+                <option value="short" {{if eq .Value "short"}}selected{{end}}>short</option>
+                <option value="contest" {{if eq .Value "contest"}}selected{{end}}>contest</option>
+                <option value="part" {{if eq .Value "part"}}selected{{end}}>part</option>
+            </select>
+            {{else}}
+            <input name="value" value="{{.Value}}" maxlength="80">
+            {{end}}
+        </label>
+    </div>
+    {{end}}
+    <div class="form-actions">
+        <button type="submit" name="action" value="save">Save</button>
+        <button type="submit" name="action" value="test">Test</button>
+        <button type="submit" name="action" value="add">Add rule</button>
+        <button type="submit" name="action" value="clear">Clear</button>
+    </div>
+</form>
+</details>
+{{end}}
 {{if not .Videos}}
 <p>No videos yet.</p>
+{{if .FilterOn}}<p class="who">Nothing matches the feed filter.</p>{{end}}
 {{else}}
+{{if .FilterOn}}<p class="who">Showing clips that match the feed filter.</p>{{end}}
+{{if .Test}}<p class="who">Test: Keep means the clip would show with these rules. Hidden would not. Not saved.</p>{{end}}
 <ul class="grid">
 {{range .Videos}}
 <li>
+    {{if $.Test}}{{if .Keep}}<span class="filter-keep">Keep</span>{{else}}<span class="filter-hide">Hidden</span>{{end}}{{end}}
     <a href="https://www.youtube.com/watch?v={{.ID}}">
         {{if .Thumb}}<img src="{{.Thumb}}" alt="" class="thumb">{{end}}
         <strong>{{.Title}}</strong>
@@ -19,16 +63,16 @@
         <details>
             <summary>{{.Per}}</summary>
             <div>
-                <a href="/videos?n=9" {{if eq .Per 9}}aria-current="true"{{end}}>9</a>
-                <a href="/videos?n=18" {{if eq .Per 18}}aria-current="true"{{end}}>18</a>
-                <a href="/videos?n=27" {{if eq .Per 27}}aria-current="true"{{end}}>27</a>
+                <a href="/videos?n=9{{.PagerQ}}" {{if eq .Per 9}}aria-current="true"{{end}}>9</a>
+                <a href="/videos?n=18{{.PagerQ}}" {{if eq .Per 18}}aria-current="true"{{end}}>18</a>
+                <a href="/videos?n=27{{.PagerQ}}" {{if eq .Per 27}}aria-current="true"{{end}}>27</a>
             </div>
         </details>
     </span>
     <span class="pager-range">{{.From}}–{{.To}} of {{.Total}}</span>
-    {{if .HasPrev}}<a href="/videos?n={{.Per}}&amp;p=1" aria-label="First page">|‹</a>{{else}}<span aria-disabled="true">|‹</span>{{end}}
-    {{if .HasPrev}}<a href="/videos?n={{.Per}}&amp;p={{.Prev}}" aria-label="Previous page">‹</a>{{else}}<span aria-disabled="true">‹</span>{{end}}
-    {{if .HasNext}}<a href="/videos?n={{.Per}}&amp;p={{.Next}}" aria-label="Next page">›</a>{{else}}<span aria-disabled="true">›</span>{{end}}
+    {{if .HasPrev}}<a href="/videos?n={{.Per}}&amp;p=1{{.PagerQ}}" aria-label="First page">|‹</a>{{else}}<span aria-disabled="true">|‹</span>{{end}}
+    {{if .HasPrev}}<a href="/videos?n={{.Per}}&amp;p={{.Prev}}{{.PagerQ}}" aria-label="Previous page">‹</a>{{else}}<span aria-disabled="true">‹</span>{{end}}
+    {{if .HasNext}}<a href="/videos?n={{.Per}}&amp;p={{.Next}}{{.PagerQ}}" aria-label="Next page">›</a>{{else}}<span aria-disabled="true">›</span>{{end}}
 </nav>
 {{end}}
 {{end}}
