@@ -18,6 +18,7 @@
     </li>
     {{end}}
     </ul>
+    {{template "pager.html" .}}
     {{end}}
     {{if .Social}}<h2>Links</h2><ul>{{range .Social}}<li>{{.}}</li>{{end}}</ul>{{end}}
     {{if .Sponsors}}<h2>Sponsors</h2><ul>{{range .Sponsors}}<li>{{.}}</li>{{end}}</ul>{{end}}

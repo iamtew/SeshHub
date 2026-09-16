@@ -2,6 +2,7 @@ package web
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -10,6 +11,7 @@ import (
 
 	"seshhub/internal/auth"
 	"seshhub/internal/db"
+	"seshhub/internal/skater"
 )
 
 func TestVideoPage(t *testing.T) {
@@ -105,5 +107,63 @@ func TestOwnerFilterOnPublicVideos(t *testing.T) {
 	body = rec.Body.String()
 	if rec.Code != 200 || !strings.Contains(body, "Keep") || !strings.Contains(body, "Hidden") || !strings.Contains(body, "Other") {
 		t.Fatalf("test %d %s", rec.Code, body)
+	}
+}
+
+func TestRosterVideoPager(t *testing.T) {
+	sqldb, err := db.Open(":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = sqldb.Close() })
+	if err := db.Migrate(sqldb, "../db/migrations"); err != nil {
+		t.Fatal(err)
+	}
+	u, err := auth.UpsertDiscord(sqldb, "d1", "alice", "Alice", "", auth.RoleSkater, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := auth.LinkYouTube(sqldb, u.ID, "cha", "A TV", "", "r"); err != nil {
+		t.Fatal(err)
+	}
+	p, err := skater.EnsureForUser(sqldb, u.ID, "Alice")
+	if err != nil {
+		t.Fatal(err)
+	}
+	p.FeaturedVideoID = "clip00"
+	if _, err := skater.Save(sqldb, p); err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 11; i++ {
+		_, err = sqldb.Exec(`INSERT INTO youtube_videos (id, channel_id, channel_title, title, published_at, thumbnail_url) VALUES (?,?,?,?,?,?)`,
+			fmt.Sprintf("clip%02d", i), "cha", "A TV", fmt.Sprintf("Clip %02d", i), fmt.Sprintf("2026-01-%02d", i+1), "http://t")
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	s := &Server{db: sqldb, webDir: filepath.Join("..", "..", "web")}
+	hit := func(q string) string {
+		req := httptest.NewRequest(http.MethodGet, "/team/"+p.Slug+q, nil)
+		req.SetPathValue("slug", p.Slug)
+		rec := httptest.NewRecorder()
+		s.skaterDetail(rec, req)
+		if rec.Code != 200 {
+			t.Fatalf("%s %d %s", q, rec.Code, rec.Body.String())
+		}
+		return rec.Body.String()
+	}
+	p1 := hit("")
+	if !strings.Contains(p1, "Clip 00") || !strings.Contains(p1, "Clip 10") || strings.Contains(p1, "Clip 01") {
+		t.Fatalf("page1 %s", p1)
+	}
+	if !strings.Contains(p1, "/team/"+p.Slug+"?n=9") || !strings.Contains(p1, "1–9 of 10") {
+		t.Fatalf("pager %s", p1)
+	}
+	p2 := hit("?p=2")
+	if !strings.Contains(p2, "Clip 00") || !strings.Contains(p2, "Clip 01") || strings.Contains(p2, "Clip 10") {
+		t.Fatalf("page2 %s", p2)
+	}
+	if !strings.Contains(p2, "10–10 of 10") {
+		t.Fatalf("range %s", p2)
 	}
 }

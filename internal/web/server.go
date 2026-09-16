@@ -140,6 +140,7 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, dat
 		filepath.Join(s.webDir, "templates", "partials", "footer.html"),
 		filepath.Join(s.webDir, "templates", "partials", "consent.html"),
 		filepath.Join(s.webDir, "templates", "partials", "md_editor.html"),
+		filepath.Join(s.webDir, "templates", "partials", "pager.html"),
 		filepath.Join(s.webDir, "templates", "pages", page),
 	}
 	t, err := template.ParseFiles(files...)

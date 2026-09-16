@@ -24,20 +24,9 @@ func (s *Server) videos(w http.ResponseWriter, r *http.Request) {
 	shown := yt.FilterOwned(list, by)
 	n, _ := strconv.Atoi(r.URL.Query().Get("n"))
 	p, _ := strconv.Atoi(r.URL.Query().Get("p"))
-	per, page, offset, from, to := videoPage(n, p, len(shown))
-	var pageItems []yt.Video
-	if len(shown) > 0 {
-		end := offset + per
-		if end > len(shown) {
-			end = len(shown)
-		}
-		pageItems = shown[offset:end]
-	}
-	s.render(w, r, "videos_list.html", map[string]any{
-		"Title": "Videos", "Path": "/videos", "Videos": pageItems,
-		"Per": per, "Page": page, "Total": len(shown), "From": from, "To": to,
-		"Prev": page - 1, "Next": page + 1, "HasPrev": page > 1, "HasNext": to < len(shown),
-	})
+	data := map[string]any{"Title": "Videos", "Path": "/videos"}
+	data["Videos"] = videoPager("/videos", n, p, shown, data)
+	s.render(w, r, "videos_list.html", data)
 }
 
 func videoPage(n, p, total int) (per, page, offset, from, to int) {
@@ -65,6 +54,24 @@ func videoPage(n, p, total int) (per, page, offset, from, to int) {
 		to = total
 	}
 	return
+}
+
+func videoPager(base string, n, p int, shown []yt.Video, data map[string]any) []yt.Video {
+	per, page, offset, from, to := videoPage(n, p, len(shown))
+	var pageItems []yt.Video
+	if len(shown) > 0 {
+		end := offset + per
+		if end > len(shown) {
+			end = len(shown)
+		}
+		pageItems = shown[offset:end]
+	}
+	data["PagerBase"] = base
+	data["Per"], data["Page"], data["Total"] = per, page, len(shown)
+	data["From"], data["To"] = from, to
+	data["Prev"], data["Next"] = page-1, page+1
+	data["HasPrev"], data["HasNext"] = page > 1, to < len(shown)
+	return pageItems
 }
 
 func userChannelVideos(db *sql.DB, userID string, limit int) []yt.Video {

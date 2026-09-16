@@ -3,6 +3,7 @@ package web
 import (
 	"database/sql"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"seshhub/internal/auth"
@@ -91,7 +92,7 @@ func (s *Server) skaterDetail(w http.ResponseWriter, r *http.Request) {
 	if v, err := yt.Get(s.db, p.FeaturedVideoID); err == nil && yt.Match(v, by[v.ChannelID]) {
 		data["Featured"] = v
 	}
-	clips := yt.FilterOwned(userChannelVideos(s.db, p.UserID, 6), by)
+	clips := yt.FilterOwned(userChannelVideos(s.db, p.UserID, 0), by)
 	if feat, ok := data["Featured"].(yt.Video); ok {
 		var rest []yt.Video
 		for _, c := range clips {
@@ -99,10 +100,11 @@ func (s *Server) skaterDetail(w http.ResponseWriter, r *http.Request) {
 				rest = append(rest, c)
 			}
 		}
-		data["Clips"] = rest
-	} else {
-		data["Clips"] = clips
+		clips = rest
 	}
+	n, _ := strconv.Atoi(r.URL.Query().Get("n"))
+	pn, _ := strconv.Atoi(r.URL.Query().Get("p"))
+	data["Clips"] = videoPager(wantPath+"/"+p.Slug, n, pn, clips, data)
 	if u != nil {
 		data["CanEdit"] = skater.CanEdit(u.Role, u.ID, p.UserID)
 	}
