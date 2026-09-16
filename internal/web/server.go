@@ -90,6 +90,8 @@ func New(cfg config.Config, db *sql.DB) *Server {
 	s.mux.HandleFunc("GET /admin/pages/{id}", s.adminPageEdit)
 	s.mux.HandleFunc("POST /admin/pages/{id}", s.adminPageEdit)
 	s.mux.HandleFunc("POST /admin/pages/{id}/delete", s.adminPageDelete)
+	s.mux.HandleFunc("GET /about/privacy", s.legalPrivacy)
+	s.mux.HandleFunc("GET /about/tos", s.legalTOS)
 	s.mux.HandleFunc("GET /{slug...}", s.customPage)
 	return s
 }

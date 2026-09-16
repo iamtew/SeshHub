@@ -4,10 +4,10 @@ Status, not spec. Spec lives in `README.md`.
 
 ## Now
 
-- `/videos` paginates 9/18/27 (default 9) via `?n=&p=`. YouTube Feed Filter at the bottom of `/dashboard/profile` (field/operator/value + upload types; Test Keep/Hidden); public `/videos` and team pages show only that user's matching clips. Public site, OAuth (login + link Discord/YouTube), access queue, Discord-role team + skater profiles, articles, per-skater YouTube clips, admin users (merge/unlink/delete), custom pages (nested slugs; seeded `/about`, `/about/privacy`, `/about/tos`), Spot (`/` markdown + Subotto `{{placeholders}}`), Episodes (`/episodes` archive + Subotto stub; hosts-role edit), `-port`. Markdown: basic textarea + live goldmark preview; Advanced overlay is CDN Monaco. `DISCORD_HUB_ADMIN_ROLE_ID` + `DISCORD_HOSTS_ROLE_ID`. `SUBOTTO_INSTANCE` (Core env) is the Subotto host. Nav About after Videos; footer Privacy / ToS / SeshHub.
+- `/videos` paginates 9/18/27 (default 9) via `?n=&p=`. YouTube Feed Filter at the bottom of `/dashboard/profile` (field/operator/value + upload types; Test Keep/Hidden); public `/videos` and team pages show only that user's matching clips. Public site, OAuth (login + link Discord/YouTube), access queue, Discord-role team + skater profiles, articles, per-skater YouTube clips, admin users (merge/unlink/delete), custom pages (nested slugs; seeded `/about`), Spot (`/` markdown + Subotto `{{placeholders}}`), Episodes (`/episodes` archive + Subotto stub; hosts-role edit), `-port`. Markdown: basic textarea + live goldmark preview; Advanced overlay is CDN Monaco. `DISCORD_HUB_ADMIN_ROLE_ID` + `DISCORD_HOSTS_ROLE_ID`. `SUBOTTO_INSTANCE` (Core env) is the Subotto host. Nav About after Videos; footer Privacy / ToS / SeshHub.
 - Dark neon CSS in `web/static/css/app.css`. Site-wide `background.png`. Visitor: sofa hero + Discord/Twitch/YouTube + Hub square. Sesh Hub (logged-in): folded bar + avatar; same three social icons, no Hub square. `/login` is the OAuth picker. Well is 70% / min 720px. Queue list actions sit on the right. Public nav and admin skaters link are **FS Team**.
 - Halftone-over-gradient recipe in `sesh_halftone.md` (local lift-out; not always in git).
-- `docs/privacy-policy.md` + `docs/tos.md` are the source of truth for `/about/privacy` and `/about/tos` (YouTube API Services + Limited Use + Google PP/revoke links). Contact mailbox is `tewmten@gmail.com`. Paste both into `/admin/pages` (seed never overwrites). OAuth consent screen URLs: `https://hub.seshsofa.nl/about/privacy` and `/about/tos`. `/login` states YouTube sign-in agrees to those. Consent gate, no session IP/UA, complete erasure + `/account` self-service. Fonts stay on cdnfonts. Dead `SESSION_SECRET` gone. GDPR is a hard agent rule (`.cursor/rules/privacy-gdpr.mdc` + `AGENTS.md`); code must not grow past the policy. Optional `YOUTUBE_DATA_API_KEY` hourly stats poll on cached clip IDs (title, channel name, views/likes/comments counts; zeros hidden).
+- `docs/privacy-policy.md` + `docs/tos.md` compile into the binary (`go:embed`) and are served at `/about/privacy` and `/about/tos` (not CMS). Contact mailbox is `tewmten@gmail.com`. OAuth consent screen URLs: `https://hub.seshsofa.nl/about/privacy` and `/about/tos`. `/login` states YouTube sign-in agrees to those. Consent gate, no session IP/UA, complete erasure + `/account` self-service. Fonts stay on cdnfonts. Dead `SESSION_SECRET` gone. GDPR is a hard agent rule (`.cursor/rules/privacy-gdpr.mdc` + `AGENTS.md`); code must not grow past the policy. Optional `YOUTUBE_DATA_API_KEY` hourly stats poll on cached clip IDs (title, channel name, views/likes/comments counts; zeros hidden).
 
 ## Next
 
@@ -15,6 +15,7 @@ Status, not spec. Spec lives in `README.md`.
 
 ## Log
 
+- 2026-09-16 — Privacy/ToS ship from `docs/` via `go:embed`; CMS rows gone. Bounce `just dev`.
 - 2026-09-16 — YouTube Feed Filter: field/operator/value + video/short/live/premiere; title contains actually contains. Paste CMS privacy.
 - 2026-09-16 — Privacy/ToS contact mailbox is `tewmten@gmail.com`. Paste CMS.
 - 2026-09-16 — Clip publish filter sits at the bottom of Skater profile (`/dashboard/profile`).

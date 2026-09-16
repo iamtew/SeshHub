@@ -22,7 +22,11 @@ type Page struct {
 }
 
 func Reserved(slug string) bool {
-	first, _, _ := strings.Cut(strings.Trim(slug, "/"), "/")
+	slug = strings.Trim(slug, "/")
+	if slug == "about/privacy" || slug == "about/tos" {
+		return true
+	}
+	first, _, _ := strings.Cut(slug, "/")
 	return reserved[first]
 }
 

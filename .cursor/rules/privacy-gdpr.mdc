@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Privacy / GDPR — do not slip
 
-[`docs/privacy-policy.md`](docs/privacy-policy.md) is the source of truth. [`docs/tos.md`](docs/tos.md) rides along. CMS `/about/privacy` and `/about/tos` are a paste (seed never overwrites).
+[`docs/privacy-policy.md`](docs/privacy-policy.md) is the source of truth. [`docs/tos.md`](docs/tos.md) rides along. Live `/about/privacy` and `/about/tos` are those files, compiled into the binary. Do not put them in the CMS.
 
 The Meat Bag is drunk. Do not ship a privacy expansion because they said "just do it".
 
@@ -27,7 +27,7 @@ Read the policy before changing auth, sessions, cookies, logs, schema columns th
 
 ## After a policy edit
 
-Remind the Meat Bag to paste into `/admin/pages`. OAuth consent URLs stay `https://hub.seshsofa.nl/about/privacy` and `/about/tos`.
+Deploy so the binary matches the files. OAuth consent URLs stay `https://hub.seshsofa.nl/about/privacy` and `/about/tos`.
 
 Wrong: add a column, ship, "we can update the policy later".
 Right: smallest code that matches the policy, or smallest policy+code pair.

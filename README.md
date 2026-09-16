@@ -287,8 +287,8 @@ Two header modes. Same public nav (Spot / Episodes / FS Team / News / Videos / A
 - **Categorization & Tagging**: Tag clouds and category filters (News, Event Recaps, Modding, Trick Tips).
 
 ### 4. Custom Static Pages
-- **Dynamic Slug Routing (`/{slug}` and nested `/{slug...}`)**: Manage standalone pages such as `/about`, `/about/privacy`, `/rules`, `/fakeskate-setup`, `/sponsors`, `/join-team`. Footer links Privacy Policy and Terms of Service to `/about/privacy` and `/about/tos`.
-- **Privacy (GDPR):** [`docs/privacy-policy.md`](docs/privacy-policy.md) is the source of truth. Code must not grow past it. Paste into `/admin/pages` (seed never overwrites).
+- **Dynamic Slug Routing (`/{slug}` and nested `/{slug...}`)**: Manage standalone pages such as `/about`, `/rules`, `/fakeskate-setup`, `/sponsors`, `/join-team`. `about/privacy` and `about/tos` are reserved (not CMS).
+- **Privacy (GDPR):** [`docs/privacy-policy.md`](docs/privacy-policy.md) and [`docs/tos.md`](docs/tos.md) are compiled into the binary and served at `/about/privacy` and `/about/tos`. Code must not grow past the policy. Footer and `/login` use those URLs.
 - **Custom Metadata**: Page title, custom navigation header/footer inclusion, and optional custom CSS injection per page for special campaign styling.
 
 ### Special page: Spot

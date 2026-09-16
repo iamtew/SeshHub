@@ -5,10 +5,25 @@ import (
 	"html/template"
 	"net/http"
 
+	"seshhub/docs"
 	"seshhub/internal/article"
 	"seshhub/internal/auth"
 	"seshhub/internal/page"
 )
+
+func (s *Server) legalPrivacy(w http.ResponseWriter, r *http.Request) {
+	s.legal(w, r, "Privacy Policy", "/about/privacy", docs.PrivacyPolicy)
+}
+
+func (s *Server) legalTOS(w http.ResponseWriter, r *http.Request) {
+	s.legal(w, r, "Terms of Service", "/about/tos", docs.TermsOfService)
+}
+
+func (s *Server) legal(w http.ResponseWriter, r *http.Request, title, path, md string) {
+	s.render(w, r, "custom_page.html", map[string]any{
+		"Title": title, "Path": path, "HTML": template.HTML(article.Render(md)),
+	})
+}
 
 func (s *Server) customPage(w http.ResponseWriter, r *http.Request) {
 	p, err := page.Get(s.db, "slug", r.PathValue("slug"))
