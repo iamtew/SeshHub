@@ -17,7 +17,6 @@
     <link rel="stylesheet" href="/static/css/app.css">
     <script src="/static/js/dates.js" defer></script>
     {{if or .Hero .Fold}}<script src="/static/js/hero.js" defer></script>{{end}}
-    {{if .Monaco}}<script src="/static/js/editor.js" defer></script>{{end}}
     {{if .GTag}}
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id={{.GTag}}"></script>
@@ -58,19 +57,6 @@
     </main>
     {{if not .AuthPage}}{{template "footer.html" .}}{{end}}
     {{template "consent.html" .}}
-    {{if .Monaco}}
-    <dialog class="md-overlay" aria-label="Advanced markdown editor">
-        <div class="md-overlay-bar">
-            <button type="button" class="md-overlay-close">Close</button>
-            <button type="button" class="md-overlay-save">Save</button>
-        </div>
-        <div class="md-overlay-body">
-            <aside class="md-side"></aside>
-            <div id="monaco-mount"></div>
-            <div class="md-preview md-overlay-preview prose" aria-live="polite"></div>
-        </div>
-    </dialog>
-    {{end}}
 </body>
 </html>
 {{end}}

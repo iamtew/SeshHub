@@ -1,12 +1,30 @@
 {{define "md_toolbar"}}
 <p class="md-toolbar"><button type="button" class="md-adv-btn">Advanced editor</button></p>
+<dialog class="md-overlay" aria-label="Advanced markdown editor">
+    <div class="md-overlay-bar">
+        <button type="button" class="md-overlay-close">Close</button>
+        <button type="button" class="md-overlay-save">Save</button>
+    </div>
+    <div class="md-overlay-body">
+        <aside class="md-side"></aside>
+        <div id="monaco-mount"></div>
+        <div class="md-preview md-overlay-preview prose" aria-live="polite"></div>
+    </div>
+</dialog>
+<script src="/static/js/editor.js" defer></script>
 {{end}}
 
 {{define "md_editor"}}
 <div class="md-edit"{{if .Cfg}} data-fill="spot"{{end}}>
     <div class="md-basic">
-        <label>Markdown <textarea name="content_raw" rows="16" {{if not .Cfg}}required{{end}}>{{if .A}}{{.A.ContentRaw}}{{else if .P}}{{.P.ContentRaw}}{{else if .Cfg}}{{.Cfg.ContentRaw}}{{end}}</textarea></label>
-        <label>Preview <div class="md-preview prose" aria-live="polite"></div></label>
+        <div class="md-col">
+            <span>Markdown</span>
+            <textarea name="content_raw" rows="16" {{if not .Cfg}}required{{end}}>{{if .A}}{{.A.ContentRaw}}{{else if .P}}{{.P.ContentRaw}}{{else if .Cfg}}{{.Cfg.ContentRaw}}{{end}}</textarea>
+        </div>
+        <div class="md-col">
+            <span>Preview</span>
+            <div class="md-preview prose" aria-live="polite"></div>
+        </div>
     </div>
 </div>
 {{end}}

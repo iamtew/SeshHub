@@ -10,7 +10,8 @@ import (
 const previewMax = 256 << 10
 
 func (s *Server) preview(w http.ResponseWriter, r *http.Request) {
-	if s.requireUser(w, r) == nil {
+	if UserFrom(r) == nil {
+		http.Error(w, "auth", http.StatusUnauthorized)
 		return
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, previewMax)
@@ -25,5 +26,6 @@ func (s *Server) preview(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("X-Sesh-Preview", "1")
 	_, _ = w.Write([]byte(article.Render(raw)))
 }

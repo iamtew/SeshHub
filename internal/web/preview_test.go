@@ -19,7 +19,7 @@ func TestPreviewAuthAndMarkdown(t *testing.T) {
 	anon.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	rec := httptest.NewRecorder()
 	s.preview(rec, anon)
-	if rec.Code != http.StatusFound {
+	if rec.Code != http.StatusUnauthorized {
 		t.Fatalf("anon: %d", rec.Code)
 	}
 
@@ -28,7 +28,7 @@ func TestPreviewAuthAndMarkdown(t *testing.T) {
 	req = req.WithContext(context.WithValue(req.Context(), userKey, &auth.User{ID: "u"}))
 	rec = httptest.NewRecorder()
 	s.preview(rec, req)
-	if rec.Code != http.StatusOK {
+	if rec.Code != http.StatusOK || rec.Header().Get("X-Sesh-Preview") != "1" {
 		t.Fatalf("user: %d %s", rec.Code, rec.Body.String())
 	}
 	html := rec.Body.String()

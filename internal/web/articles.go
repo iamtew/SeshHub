@@ -70,7 +70,7 @@ func (s *Server) adminArticles(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "db error", http.StatusInternalServerError)
 		return
 	}
-	s.render(w, r, "admin_articles.html", map[string]any{"Title": "Articles", "Path": "/admin/articles", "Articles": list})
+	s.render(w, r, "admin_articles.html", map[string]any{"Title": "News", "Path": "/admin/articles", "Articles": list})
 }
 
 func (s *Server) dashboardArticles(w http.ResponseWriter, r *http.Request) {

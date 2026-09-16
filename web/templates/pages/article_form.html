@@ -4,22 +4,27 @@
 <form method="post" action="{{.Action}}" class="form">
     <input type="hidden" name="id" value="{{.A.ID}}">
     <div data-md-meta>
-        <label>Title <input name="title" required value="{{.A.Title}}"></label>
-        {{if .Admin}}<label>Slug <input name="slug" value="{{.A.Slug}}" placeholder="auto"></label>{{end}}
+        <div class="md-title-slug">
+            {{if .Admin}}
+            <label>Status
+                <select name="status">
+                    <option value="draft" {{if eq .A.Status "draft"}}selected{{end}}>Draft</option>
+                    <option value="published" {{if eq .A.Status "published"}}selected{{end}}>Published</option>
+                    <option value="archived" {{if eq .A.Status "archived"}}selected{{end}}>Archived</option>
+                </select>
+            </label>
+            {{end}}
+            <label>Title <input name="title" required value="{{.A.Title}}"></label>
+            {{if .Admin}}<label>Slug <input name="slug" value="{{.A.Slug}}" placeholder="auto"></label>{{end}}
+        </div>
+    </div>
+    {{template "md_editor" .}}
+    <details class="md-css">
+        <summary>More</summary>
         <label>Excerpt <input name="excerpt" value="{{.A.Excerpt}}"></label>
         <label>Image URL <input name="featured_image_url" value="{{.A.ImageURL}}"></label>
         <label>Tags (comma or newline) <input name="tags" value="{{.A.Tags}}"></label>
-        {{if .Admin}}
-        <label>Status
-            <select name="status">
-                <option value="draft" {{if eq .A.Status "draft"}}selected{{end}}>Draft</option>
-                <option value="published" {{if eq .A.Status "published"}}selected{{end}}>Published</option>
-                <option value="archived" {{if eq .A.Status "archived"}}selected{{end}}>Archived</option>
-            </select>
-        </label>
-        {{end}}
-    </div>
-    {{template "md_editor" .}}
+    </details>
     {{template "md_actions" .}}
 </form>
 {{end}}

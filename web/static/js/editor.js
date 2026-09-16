@@ -31,13 +31,12 @@
     fetch("/preview", {
       method: "POST",
       credentials: "same-origin",
-      redirect: "manual",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: body
     }).then(function (r) {
-      if (r.status !== 200) return "";
+      if (r.status !== 200 || r.headers.get("X-Sesh-Preview") !== "1") return "";
       return r.text();
-    }).then(paint);
+    }).then(paint).catch(function () {});
   }
 
   function debounce() {
@@ -129,6 +128,11 @@
   }
 
   function openAdv() {
+    dialog = document.querySelector("dialog.md-overlay");
+    side = dialog && dialog.querySelector(".md-side");
+    advPrev = dialog && dialog.querySelector(".md-overlay-preview");
+    mount = dialog && dialog.querySelector("#monaco-mount");
+    form = ta.form;
     if (!dialog || !form) return;
     if (!form.id) form.id = "md-form";
     if (meta && side && meta.parentNode !== side) {
@@ -137,7 +141,8 @@
       bindForm(meta, form.id);
       side.appendChild(meta);
     }
-    dialog.showModal();
+    if (typeof dialog.showModal === "function") dialog.showModal();
+    else dialog.setAttribute("open", "");
     loadMonaco(function () {
       if (ed) {
         ed.setValue(ta.value);
@@ -208,8 +213,12 @@
     document.head.appendChild(s);
   }
 
-  var advBtn = document.querySelector(".md-adv-btn");
-  if (advBtn) advBtn.addEventListener("click", openAdv);
+  document.addEventListener("click", function (ev) {
+    if (ev.target.closest(".md-adv-btn")) {
+      ev.preventDefault();
+      openAdv();
+    }
+  });
   if (dialog) {
     dialog.querySelector(".md-overlay-close").addEventListener("click", function () {
       dialog.close();

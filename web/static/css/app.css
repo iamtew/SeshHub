@@ -317,7 +317,7 @@ hr {
 .md-basic {
     display: grid; gap: 1rem; grid-template-columns: 1fr;
 }
-.md-basic > label { min-width: 0; }
+.md-basic > .md-col { display: flex; flex-direction: column; gap: 0.4rem; min-width: 0; }
 .md-basic textarea { min-height: 16rem; width: 100%; flex: 1; }
 .md-preview {
     min-height: 16rem; overflow: auto; padding: 0.75rem; flex: 1;
@@ -331,6 +331,11 @@ hr {
 .md-discard { margin-right: auto; background: var(--gray); }
 .md-css summary { cursor: pointer; font-weight: 600; }
 .md-css textarea { margin-top: 0.4rem; width: 100%; }
+.md-css label { margin-top: 0.75rem; }
+.md-title-slug { display: grid; gap: 1rem; grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr); align-items: end; }
+.md-title-slug:has(> :only-child) { grid-template-columns: 1fr; }
+.md-title-slug input, .md-title-slug select { width: 100%; }
+.md-side .md-title-slug { grid-template-columns: 1fr; }
 .md-insert {
     display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.4rem; align-items: center;
     background: var(--black); color: var(--fg); border: 1px solid var(--violet);

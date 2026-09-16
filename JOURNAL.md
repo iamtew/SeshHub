@@ -15,9 +15,10 @@ Status, not spec. Spec lives in `README.md`.
 
 ## Log
 
+- 2026-09-16 — News edit: title+slug on one row, status, then markdown; excerpt/image/tags folded.
 - 2026-09-16 — `/videos` pager: 9/18/27 default 9; louder chartreuse bar.
 - 2026-09-16 — `/videos` pager: 10/30/50, range, first/prev/next.
-- 2026-09-16 — Overlay sidebar: date tags first and sticky; one-line key + value chips.
+- 2026-09-16 — News editor wired from the form itself (preview + Advanced); admin menu says News, not Articles. Bounce `just dev` for 401-on-unauth `/preview`.
 - 2026-09-16 — Spot edit: Subotto fields sit under markdown/preview.
 - 2026-09-16 — Public nav always shows; no mobile Menu burger.
 - 2026-09-16 — Markdown editor: live goldmark preview, CDN Monaco overlay, Save / Save and close / Discard. Custom CSS folded. Bounce `just dev` for `POST /preview`.
