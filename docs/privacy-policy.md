@@ -38,9 +38,9 @@ Your Discord **role IDs are not stored**. We read them at the moment you sign in
 
 Sesh Hub **uses YouTube API Services**. Information obtained through those services is also subject to [Google's Privacy Policy](https://www.google.com/policies/privacy).
 
-**Access.** When you sign in or link YouTube, we access Google user data (YouTube API Data) limited to: your YouTube channel ID, channel title, channel thumbnail, the list and public metadata of videos on that channel (title, description, publication date, thumbnail URL, duration, view count, like count, tags), and a refresh token so we can repeat that read while you remain linked.
+**Access.** When you sign in or link YouTube, we access Google user data (YouTube API Data) limited to: your YouTube channel ID, channel title, channel thumbnail, the list and public metadata of videos on that channel (title, description, publication date, thumbnail URL, duration, view count, like count, comment count, tags), and a refresh token so we can repeat that read while you remain linked.
 
-**Use.** We use that data only to (1) create or link your Sesh Hub account, (2) show your channel on your skater profile, and (3) cache up to 50 of your recent public uploads so `/videos` and profile pages can load without calling YouTube on every view. We do not use Google user data for any other purpose.
+**Use.** We use that data only to (1) create or link your Sesh Hub account, (2) show your channel on your skater profile, and (3) cache up to 50 of your recent public uploads so `/videos` and profile pages can load without calling YouTube on every view. An API key (not your OAuth token) may refresh the public title, channel name, view count, like count and comment count on those already-cached clips about once an hour. We do not fetch comment text. We do not use Google user data for any other purpose.
 
 **Store.** Channel fields and the refresh token live in the `users` table on our Amsterdam SQLite database. Cached clip metadata lives in `youtube_videos`. The refresh token is stored in plain text. See sections 4.1 and 4.6.
 
@@ -123,11 +123,11 @@ If your account is deleted, authorship is reassigned to a reserved "Former membe
 
 ### 4.6 Cached clips from your YouTube channel (`youtube_videos` table)
 
-**What:** for up to 50 recent uploads on a linked channel, the video ID, your channel ID, title, description, publication date, thumbnail URL, duration, view count, like count and tags.
+**What:** for up to 50 recent uploads on a linked channel, the video ID, your channel ID, the public channel title, title, description, publication date, thumbnail URL, duration, view count, like count, comment count and tags. We do not store comment text.
 
-**Why:** so the `/videos` gallery and skater profiles load from our database instead of calling the YouTube API on every page view.
+**Why:** so the `/videos` gallery and skater profiles load from our database instead of calling the YouTube API on every page view. Counts of zero are stored but not shown.
 
-**Created and updated:** in the background when a signed-in skater visits the Service and the cache for their channel is more than an hour old.
+**Created and updated:** in the background when a signed-in skater visits the Service and the cache for their channel is more than an hour old; and, if an API key is configured, about once an hour for every clip already in the table (public statistics only).
 
 **Read:** publicly, on `/videos` and on skater profile pages.
 
@@ -173,7 +173,7 @@ Any time your browser loads something from another company's server, that compan
 Our server also talks to these services directly. In those cases your IP address is not sent; ours is.
 
 - **Discord's API**, during sign-in, to read your profile and your roles in the Sesh Sofa server.
-- **Google's YouTube Data API**, during sign-in and during clip sync, to read your channel and its public videos.
+- **Google's YouTube Data API**, during sign-in and during clip sync, to read your channel and its public videos; and, if configured, during an hourly stats poll of video IDs already in our database (title, channel name, view/like/comment counts only).
 - **Subotto** (`subotto.seshsofa.nl`), to fetch current episode information for the homepage. This is an anonymous request containing no information about you.
 
 Each of these companies handles your data under its own privacy policy. You can revoke our access to your Discord account from Discord's settings. You can revoke YouTube / Google access from [Google's security settings](https://security.google.com/settings/security/permissions). Google's handling of data is described in [Google's Privacy Policy](https://www.google.com/policies/privacy).

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"flag"
 	"log/slog"
 	"net/http"
@@ -15,6 +16,7 @@ import (
 	"seshhub/internal/db"
 	"seshhub/internal/spot"
 	"seshhub/internal/web"
+	"seshhub/internal/yt"
 )
 
 func main() {
@@ -42,6 +44,10 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
+	if cfg.YouTubeAPIKey != "" {
+		go pollYouTube(ctx, sqldb, cfg.YouTubeAPIKey)
+	}
+
 	srv := &http.Server{
 		Addr:              cfg.ListenAddr(),
 		Handler:           web.New(cfg, sqldb),
@@ -58,4 +64,26 @@ func main() {
 	shut, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	_ = srv.Shutdown(shut)
+}
+
+func pollYouTube(ctx context.Context, db *sql.DB, key string) {
+	run := func() {
+		n, err := yt.PollPublic(ctx, db, key)
+		if err != nil {
+			slog.Error("youtube poll", "err", err)
+			return
+		}
+		slog.Info("youtube poll", "updated", n)
+	}
+	run()
+	t := time.NewTicker(time.Hour)
+	defer t.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+			run()
+		}
+	}
 }

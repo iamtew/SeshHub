@@ -24,6 +24,7 @@ type Config struct {
 	SuperAdminIDs         []string
 	YouTubeClientID       string
 	YouTubeClientSecret   string
+	YouTubeAPIKey         string
 	GTagID                string
 }
 
@@ -46,6 +47,7 @@ func Load() Config {
 		SuperAdminIDs:         splitCSV(getenv("SUPERADMIN_DISCORD_IDS", "")),
 		YouTubeClientID:       getenv("YOUTUBE_CLIENT_ID", ""),
 		YouTubeClientSecret:   getenv("YOUTUBE_CLIENT_SECRET", ""),
+		YouTubeAPIKey:         getenv("YOUTUBE_DATA_API_KEY", ""),
 		GTagID:                getenv("GTAG_ID", ""),
 	}
 }

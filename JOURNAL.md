@@ -7,7 +7,7 @@ Status, not spec. Spec lives in `README.md`.
 - `/videos` paginates 9/18/27 (default 9) via `?n=&p=`. Public site, OAuth (login + link Discord/YouTube), access queue, Discord-role team + skater profiles, articles, per-skater YouTube clips, admin users (merge/unlink/delete), custom pages (nested slugs; seeded `/about`, `/about/privacy`, `/about/tos`), Spot (`/` markdown + Subotto `{{placeholders}}`), Episodes (`/episodes` archive + Subotto stub; hosts-role edit), `-port`. Markdown: basic textarea + live goldmark preview; Advanced overlay is CDN Monaco. `DISCORD_HUB_ADMIN_ROLE_ID` + `DISCORD_HOSTS_ROLE_ID`. `SUBOTTO_INSTANCE` (Core env) is the Subotto host. Nav About after Videos; footer Privacy / ToS / SeshHub.
 - Dark neon CSS in `web/static/css/app.css`. Site-wide `background.png`. Visitor: sofa hero + Discord/Twitch/YouTube + Hub square. Sesh Hub (logged-in): folded bar + avatar; same three social icons, no Hub square. `/login` is the OAuth picker. Well is 70% / min 720px. Queue list actions sit on the right. Public nav and admin skaters link are **FS Team**.
 - Halftone-over-gradient recipe in `sesh_halftone.md` (local lift-out; not always in git).
-- `docs/privacy-policy.md` + `docs/tos.md` are the source of truth for `/about/privacy` and `/about/tos` (YouTube API Services + Limited Use + Google PP/revoke links). Paste both into `/admin/pages` (seed never overwrites). OAuth consent screen URLs: `https://hub.seshsofa.nl/about/privacy` and `/about/tos`. `/login` states YouTube sign-in agrees to those. Consent gate, no session IP/UA, complete erasure + `/account` self-service. Fonts stay on cdnfonts. Dead `SESSION_SECRET` gone. GDPR is a hard agent rule (`.cursor/rules/privacy-gdpr.mdc` + `AGENTS.md`); code must not grow past the policy.
+- `docs/privacy-policy.md` + `docs/tos.md` are the source of truth for `/about/privacy` and `/about/tos` (YouTube API Services + Limited Use + Google PP/revoke links). Paste both into `/admin/pages` (seed never overwrites). OAuth consent screen URLs: `https://hub.seshsofa.nl/about/privacy` and `/about/tos`. `/login` states YouTube sign-in agrees to those. Consent gate, no session IP/UA, complete erasure + `/account` self-service. Fonts stay on cdnfonts. Dead `SESSION_SECRET` gone. GDPR is a hard agent rule (`.cursor/rules/privacy-gdpr.mdc` + `AGENTS.md`); code must not grow past the policy. Optional `YOUTUBE_DATA_API_KEY` hourly stats poll on cached clip IDs (title, channel name, views/likes/comments counts; zeros hidden).
 
 ## Next
 
@@ -15,7 +15,7 @@ Status, not spec. Spec lives in `README.md`.
 
 ## Log
 
-- 2026-09-16 — GDPR is a hard agent constraint: `.cursor/rules/privacy-gdpr.mdc` + `AGENTS.md`; README sessions no longer claim IP/UA.
+- 2026-09-16 — YouTube stats poller (`YOUTUBE_DATA_API_KEY`): hourly public counts on cached clip IDs; hide zeros.
 - 2026-09-16 — `/videos` pager: 9/18/27 default 9; louder chartreuse bar.
 - 2026-09-16 — `/videos` pager: 10/30/50, range, first/prev/next.
 - 2026-09-16 — News editor wired from the form itself (preview + Advanced); admin menu says News, not Articles. Bounce `just dev` for 401-on-unauth `/preview`.

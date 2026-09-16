@@ -78,7 +78,7 @@ Scopes used: `identify`, `guilds.members.read`. Restart the server after saving 
 
 ### YouTube login and skater videos
 
-One Google OAuth client. That is login, linking a channel, and (for team skaters) refreshing their latest public uploads onto their profile and `/videos`. There is no API key and no site-wide channel poller.
+One Google OAuth client. That is login, linking a channel, and (for team skaters) refreshing their latest public uploads onto their profile and `/videos`.
 
 1. [Google Cloud Console](https://console.cloud.google.com/) → new project (or reuse one).
 2. Enable **YouTube Data API v3** (OAuth calls it).
@@ -93,6 +93,19 @@ YouTube-only accounts start as **pending**. After an admin approves (or Discord 
 Team skaters (Discord `DISCORD_SKATER_ROLE_ID`, after they log in) with a linked YouTube channel: while they are logged in, SeshHub pulls up to 50 latest uploads (at most once an hour) onto `/team/{slug}` and the public `/videos` list. Guests see the last snapshot. The skater profile row is created on Discord login.
 
 Restart after `.env` changes. Production: add the live `https://…/auth/…/callback` URIs and set `APP_ENV=production` and `BASE_URL` to the public https origin.
+
+### YouTube stats poller (API key, not OAuth)
+
+OAuth only refreshes a channel when that skater is signed in. To keep title, channel name, views, likes, and comment **counts** current on clips already on the site, you need a Data API key. Empty key = poller off. This is not a site-wide channel crawler; it only hits IDs in `youtube_videos`.
+
+1. Same Google Cloud project as the OAuth client is fine.
+2. Enable **YouTube Data API v3** if it is not already.
+3. **APIs & Services → Credentials → Create credentials → API key**.
+4. Restrict the key: API restriction **YouTube Data API v3**. In production, also IP-restrict to the Amsterdam VPS.
+5. Put it in `.env` under its own block as `YOUTUBE_DATA_API_KEY` (see `.env.example`). Do not paste it into `YOUTUBE_CLIENT_SECRET`.
+6. Bounce `just dev` / the production process. Logs should show `youtube poll updated=N` once an hour (and once at boot).
+
+Quota is cheap: `videos.list` is 1 unit per 50 IDs. We do not download comments, only the count. Zero counts are hidden in the UI.
 
 ### Day-to-day
 
@@ -262,7 +275,7 @@ Two header modes. Same public nav (Spot / Episodes / FS Team / News / Videos / A
 - **FS Team (`/admin/skaters`)**: Superadmin / Discord hub-admin role only. Set another skater’s status. No add-skater form.
 
 ### 2. YouTube clips from skaters
-- **No site-wide poller**: `/videos` is the union of clips pulled from team skaters who have connected YouTube.
+- **No site-wide channel crawler**: `/videos` is still the union of clips pulled from team skaters who have connected YouTube. An optional `YOUTUBE_DATA_API_KEY` poller only refreshes public stats on those existing rows (hourly).
 - **Logged-in refresh**: If the user has a `skater_profiles` row, a YouTube refresh token, and last sync is older than 60 minutes, a request while they are logged in refreshes up to 50 latest uploads.
 - **Manual pin**: Admins/skaters can still set `featured_video_id` from that channel’s synced rows.
 
@@ -383,6 +396,8 @@ CREATE TABLE IF NOT EXISTS youtube_videos (
     duration_seconds INTEGER DEFAULT 0,
     view_count INTEGER DEFAULT 0,
     like_count INTEGER DEFAULT 0,
+    comment_count INTEGER DEFAULT 0,
+    channel_title TEXT,
     tags TEXT,                                 -- JSON array of video tags
     category TEXT,                             -- 'session', 'part', 'contest', 'short'
     is_featured BOOLEAN NOT NULL DEFAULT 0,
@@ -547,6 +562,11 @@ SUPERADMIN_DISCORD_IDS=123456789012345678,987654321098765432
 # ==============================================================================
 YOUTUBE_CLIENT_ID=your_google_oauth_client_id
 YOUTUBE_CLIENT_SECRET=your_google_oauth_client_secret
+
+# ==============================================================================
+# YouTube Data API (public stats poller — not OAuth)
+# ==============================================================================
+YOUTUBE_DATA_API_KEY=
 
 GTAG_ID=                             # GA4 measurement ID; empty = no tag
 ```

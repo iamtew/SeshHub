@@ -10,7 +10,7 @@
         {{if .Thumb}}<img src="{{.Thumb}}" alt="" class="thumb">{{end}}
         <strong>{{.Title}}</strong>
     </a>
-    <span class="who">{{.Category}} · {{.Views}} views</span>
+    {{if .StatsLine}}<span class="who">{{.StatsLine}}</span>{{end}}
 </li>
 {{end}}
 </ul>
