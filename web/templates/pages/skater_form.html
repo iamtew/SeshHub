@@ -6,7 +6,7 @@
         <button type="button" data-reset="name">Reset</button>
     </div>
     <div class="field-reset">
-        <label>User slug <span class="who">/team/</span><input name="slug" value="{{.P.Slug}}" autocomplete="off"></label>
+        <label>User slug <span class="who">{{.SlugPrefix}}</span><input name="slug" value="{{.P.Slug}}" autocomplete="off"></label>
         <button type="button" data-reset="slug">Reset</button>
     </div>
     <label>Location <input name="location" value="{{.P.Location}}"></label>
@@ -71,7 +71,7 @@
 </script>
 <h2>YouTube Feed Filter</h2>
 <form method="post" action="/dashboard/profile/filter" class="form video-filter">
-    <p class="who">YouTube Feed Filter applies only to your linked uploads. Every rule is AND. Clips that pass appear on /videos and your team page. Other skaters’ clips are unchanged. Empty filter publishes all of yours. Test lists Keep then Hidden (Hidden still listed so you can see misses). Not saved until you hit Save.</p>
+    <p class="who">YouTube Feed Filter applies only to your linked uploads. Every rule is AND. Clips that pass appear on /videos and your public page. Other people’s clips are unchanged. Empty filter publishes all of yours. Test lists Keep then Hidden (Hidden still listed so you can see misses). Not saved until you hit Save.</p>
     {{range .FilterRows}}
     <div class="filter-row">
         <label>Field

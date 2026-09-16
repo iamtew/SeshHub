@@ -25,6 +25,7 @@ type Profile struct {
 	SocialLinks     string
 	SignatureTricks string
 	FeaturedVideoID string
+	Role            string
 }
 
 func (p Profile) PublicName() string {
@@ -38,7 +39,14 @@ func CanEdit(role, userID, profileUserID string) bool {
 	if userID == "" || userID != profileUserID {
 		return false
 	}
-	return role == "skater" || role == "admin"
+	return role == "skater" || role == "admin" || role == "friend"
+}
+
+func RosterPath(role string) string {
+	if role == "friend" {
+		return "/friends"
+	}
+	return "/team"
 }
 
 func Slugify(s string) string {
@@ -100,21 +108,28 @@ const profileSelect = `
 		SELECT p.id, IFNULL(p.user_id,''), p.slug, p.skater_name, IFNULL(p.real_name,''), IFNULL(p.bio,''),
 			IFNULL(p.stance,'regular'), IFNULL(p.status,'active'), IFNULL(NULLIF(p.avatar_url,''), IFNULL(u.avatar_url,'')), IFNULL(p.banner_url,''),
 			IFNULL(p.location,''), IFNULL(p.sponsors,''), IFNULL(p.social_links,''), IFNULL(p.signature_tricks,''),
-			IFNULL(p.featured_video_id,'')
+			IFNULL(p.featured_video_id,''), IFNULL(u.role,'')
 		FROM skater_profiles p LEFT JOIN users u ON u.id = p.user_id`
 
 func List(db *sql.DB) ([]Profile, error) {
-	return list(db, false)
+	return list(db, "")
 }
 
 func ListTeam(db *sql.DB) ([]Profile, error) {
-	return list(db, true)
+	return list(db, "team")
 }
 
-func list(db *sql.DB, linkedOnly bool) ([]Profile, error) {
+func ListFriends(db *sql.DB) ([]Profile, error) {
+	return list(db, "friend")
+}
+
+func list(db *sql.DB, roster string) ([]Profile, error) {
 	q := profileSelect + ` ORDER BY COALESCE(NULLIF(p.real_name,''), p.skater_name)`
-	if linkedOnly {
-		q = profileSelect + ` WHERE p.user_id IS NOT NULL AND p.user_id != '' ORDER BY COALESCE(NULLIF(p.real_name,''), p.skater_name)`
+	switch roster {
+	case "team":
+		q = profileSelect + ` WHERE u.role IN ('skater','admin') ORDER BY COALESCE(NULLIF(p.real_name,''), p.skater_name)`
+	case "friend":
+		q = profileSelect + ` WHERE u.role = 'friend' ORDER BY COALESCE(NULLIF(p.real_name,''), p.skater_name)`
 	}
 	rows, err := db.Query(q)
 	if err != nil {
@@ -123,14 +138,20 @@ func list(db *sql.DB, linkedOnly bool) ([]Profile, error) {
 	defer rows.Close()
 	var out []Profile
 	for rows.Next() {
-		var p Profile
-		if err := rows.Scan(&p.ID, &p.UserID, &p.Slug, &p.SkaterName, &p.RealName, &p.Bio, &p.Stance, &p.Status,
-			&p.AvatarURL, &p.BannerURL, &p.Location, &p.Sponsors, &p.SocialLinks, &p.SignatureTricks, &p.FeaturedVideoID); err != nil {
+		p, err := scanProfile(rows)
+		if err != nil {
 			return nil, err
 		}
 		out = append(out, p)
 	}
 	return out, rows.Err()
+}
+
+func scanProfile(sc interface{ Scan(dest ...any) error }) (Profile, error) {
+	var p Profile
+	err := sc.Scan(&p.ID, &p.UserID, &p.Slug, &p.SkaterName, &p.RealName, &p.Bio, &p.Stance, &p.Status,
+		&p.AvatarURL, &p.BannerURL, &p.Location, &p.Sponsors, &p.SocialLinks, &p.SignatureTricks, &p.FeaturedVideoID, &p.Role)
+	return p, err
 }
 
 func Get(db *sql.DB, by, val string) (Profile, error) {
@@ -141,11 +162,7 @@ func Get(db *sql.DB, by, val string) (Profile, error) {
 	case "user_id":
 		col = "p.user_id"
 	}
-	var p Profile
-	err := db.QueryRow(profileSelect+` WHERE `+col+` = ?`, val).
-		Scan(&p.ID, &p.UserID, &p.Slug, &p.SkaterName, &p.RealName, &p.Bio, &p.Stance, &p.Status,
-			&p.AvatarURL, &p.BannerURL, &p.Location, &p.Sponsors, &p.SocialLinks, &p.SignatureTricks, &p.FeaturedVideoID)
-	return p, err
+	return scanProfile(db.QueryRow(profileSelect+` WHERE `+col+` = ?`, val))
 }
 
 func EnsureForUser(db *sql.DB, userID, discordName string) (Profile, error) {

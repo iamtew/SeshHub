@@ -14,7 +14,7 @@ func TestReservedAndSave(t *testing.T) {
 	if !Reserved("about/privacy") || !Reserved("about/tos") {
 		t.Fatal("legal reserved")
 	}
-	if !Reserved("team/x") {
+	if !Reserved("team/x") || !Reserved("friends") {
 		t.Fatal("nested reserved")
 	}
 	sqldb, err := db.Open(":memory:")

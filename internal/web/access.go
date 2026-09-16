@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"seshhub/internal/auth"
+	"seshhub/internal/skater"
 )
 
 func (s *Server) accessPage(w http.ResponseWriter, r *http.Request) {
@@ -57,6 +58,16 @@ func (s *Server) adminDecide(status string) http.HandlerFunc {
 		if err := auth.DecideAccess(s.db, r.PathValue("id"), u.ID, status); err != nil {
 			http.Error(w, "update failed", http.StatusBadRequest)
 			return
+		}
+		if status == "approved" {
+			var uid, name string
+			_ = s.db.QueryRow(`SELECT u.id, COALESCE(NULLIF(trim(u.username),''), u.display_name) FROM access_requests r JOIN users u ON u.id = r.user_id WHERE r.id = ?`, r.PathValue("id")).Scan(&uid, &name)
+			if uid != "" {
+				if _, err := skater.EnsureForUser(s.db, uid, name); err != nil {
+					http.Error(w, "profile failed", http.StatusInternalServerError)
+					return
+				}
+			}
 		}
 		http.Redirect(w, r, "/admin/access", http.StatusSeeOther)
 	}

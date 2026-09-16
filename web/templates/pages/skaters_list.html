@@ -1,13 +1,13 @@
 {{define "content"}}
-<h1>FS Team</h1>
+<h1>{{.Title}}</h1>
 {{if not .Skaters}}
-<p>No skaters yet.</p>
+<p>Nobody here yet.</p>
 {{else}}
 <ul class="grid">
 {{range .Skaters}}
 <li>
     {{if .AvatarURL}}<img class="avatar" src="{{.AvatarURL}}" alt="" referrerpolicy="no-referrer">{{end}}
-    <a href="/team/{{.Slug}}"><strong>{{.PublicName}}</strong></a>
+    <a href="{{$.Path}}/{{.Slug}}"><strong>{{.PublicName}}</strong></a>
     <span class="who">{{.Stance}} · {{.Status}}{{if .Location}} · {{.Location}}{{end}}</span>
 </li>
 {{end}}

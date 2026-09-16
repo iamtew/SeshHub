@@ -30,6 +30,8 @@ func New(cfg config.Config, db *sql.DB) *Server {
 	s.mux.HandleFunc("GET /team", s.team)
 	s.mux.HandleFunc("GET /skaters", s.skatersAlias)
 	s.mux.HandleFunc("GET /team/{slug}", s.skaterDetail)
+	s.mux.HandleFunc("GET /friends", s.friends)
+	s.mux.HandleFunc("GET /friends/{slug}", s.skaterDetail)
 	s.mux.HandleFunc("GET /news", s.news)
 	s.mux.HandleFunc("GET /news/{slug}", s.articleDetail)
 	s.mux.HandleFunc("GET /videos", s.videos)

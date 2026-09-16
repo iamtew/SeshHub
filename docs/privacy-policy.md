@@ -48,7 +48,7 @@ Sesh Hub **uses YouTube API Services**. Information obtained through those servi
 
 **Limited Use.** We comply with Google's Limited Use requirements for this data, including data aggregated, anonymized, or derived from it:
 
-- We use it only to provide or improve user-facing features that are prominent in the Service (sign-in, skater profiles, the videos gallery).
+- We use it only to provide or improve user-facing features that are prominent in the Service (sign-in, skater and friends profiles, the videos gallery).
 - We do not transfer it except to operate those features, for security (investigating abuse), to comply with law, or as part of a sale of the Service after your explicit prior consent.
 - We do not use it for targeted, personalized, retargeted, or interest-based advertising, to determine credit-worthiness, or to train generalized (non-personalized) AI or ML models.
 - Humans do not read Authorized Data except when you ask us to (for example account support or deletion), for security, or to comply with law.
@@ -61,13 +61,13 @@ Our database is a SQLite file on the server that runs the Service.
 
 ### 4.1 Your account (`users` table)
 
-**What:** an internal account ID, your username, display name, avatar URL, role label, host flag, Discord ID, Discord username, YouTube channel ID, YouTube channel title, your **YouTube OAuth refresh token**, the time of your last YouTube sync, an optional **YouTube Feed Filter** (JSON of field/operator/value rules and optional upload-type flags you set so only matching uploads from your linked YouTube channel appear on `/videos` and your team page), and creation and last-updated timestamps.
+**What:** an internal account ID, your username, display name, avatar URL, role label (`admin`, `skater`, `friend`, `pending`, and any leftover `member` until migrated), host flag, Discord ID, Discord username, YouTube channel ID, YouTube channel title, your **YouTube OAuth refresh token**, the time of your last YouTube sync, an optional **YouTube Feed Filter** (JSON of field/operator/value rules and optional upload-type flags you set so only matching uploads from your linked YouTube channel appear on `/videos` and your public roster page), and creation and last-updated timestamps.
 
 **Why:** to recognise you across visits, to show your name and avatar in the interface, to decide what you are allowed to see and edit, to fetch your clips if you have linked YouTube, and to apply your YouTube Feed Filter to the public gallery.
 
 **Created:** the first time you sign in with Discord or YouTube. The YouTube Feed Filter is created when you save one on `/dashboard/profile`.
 
-**Read:** on every request you make while signed in, to resolve your session to an account. Your display name is also shown publicly as the author of any article you write. The YouTube Feed Filter is read to decide which of your cached clips appear on `/videos` and your team page.
+**Read:** on every request you make while signed in, to resolve your session to an account. Your display name is also shown publicly as the author of any article you write. The YouTube Feed Filter is read to decide which of your cached clips appear on `/videos` and your public roster page.
 
 **Updated:** on **every** subsequent sign-in. We re-copy your current username, display name, avatar and roles from the provider, so changing your name or avatar on Discord changes it here the next time you log in. Linking or unlinking a provider also updates this record. Saving or clearing the YouTube Feed Filter on `/dashboard/profile` updates this record.
 
@@ -97,11 +97,11 @@ We do **not** store your IP address or User-Agent.
 
 **What:** a public slug, your skater name, your real name, a biography, your stance, a roster status, avatar and banner URLs, your location, sponsors, social links, signature tricks, a featured video ID, and **former slugs** (only while nobody else is using that URL).
 
-**Why:** to show the team roster at `/team` and your own profile page at `/team/{slug}`. Former slugs 302 to your current page so old links keep working, until that slug is claimed again.
+**Why:** to show the FS Team roster at `/team` and the Friends roster at `/friends`, and your own profile page at `/team/{slug}` or `/friends/{slug}`. Former slugs 302 to your current page so old links keep working, until that slug is claimed again.
 
-**Created:** automatically, the first time you sign in holding the skater or admin role in the Sesh Sofa Discord. Your skater name is initially taken from your Discord username, and is kept in step with it on subsequent visits. Your public slug starts as a slugified form of that Discord username (or your YouTube channel title if Discord is not connected). The check that creates the profile runs on every request you make, so as long as your account exists and still holds the role, a profile will exist.
+**Created:** automatically when you hold the skater or admin role in the Sesh Sofa Discord and sign in; when you hold the Discord friends role; when an administrator approves your access request (Friends); or when a former `member` account is migrated to Friends. Your skater name is initially taken from Discord (or your YouTube channel title if Discord is not connected), and is kept in step with it on subsequent visits. Your public slug starts as a slugified form of that name (migrated friends may start with a unique id slug until you edit it). The check that creates the profile runs on every request you make, so as long as your account exists and still holds a roster role, a profile will exist.
 
-**Read: this profile is public.** Anyone on the internet, signed in or not, can see it. Note in particular that the name shown publicly is your **display name (stored as real name) if you have filled it in**, and falls back to your skater name only if you have not. Your **slug** is the public URL `/team/{slug}`. Former slugs are public too: visiting them redirects to your current page. Your **location** and **biography** are also shown publicly when set. Please do not put anything in these fields that you would not want a stranger to read.
+**Read: this profile is public.** Anyone on the internet, signed in or not, can see it. Note in particular that the name shown publicly is your **display name (stored as real name) if you have filled it in**, and falls back to your skater name only if you have not. Your **slug** is the public URL `/team/{slug}` (FS Team) or `/friends/{slug}` (Friends). Former slugs are public too: visiting them redirects to your current page. Your **location** and **biography** are also shown publicly when set. Please do not put anything in these fields that you would not want a stranger to read.
 
 **Updated:** by you, at `/dashboard/profile`. That form edits your display name, slug, biography, stance, location, featured video, and YouTube Feed Filter. Changing your slug records the previous one as a redirect and frees it for anyone to claim later. Logging in still refreshes your Discord skater name; it does not overwrite a slug you chose. An administrator can separately change your roster status.
 
@@ -111,9 +111,9 @@ We do **not** store your IP address or User-Agent.
 
 **What:** your account ID, a status of pending, approved or rejected, the account ID of the administrator who reviewed it, and timestamps.
 
-**Why:** if you sign in but are not a member of the Sesh Sofa Discord server, you land in an approval queue rather than getting access.
+**Why:** if you sign in with YouTube, or with Discord while outside the Sesh Sofa server, or while in the server without the hub-admin, skater, or friends Discord role, you land in an approval queue rather than getting a public roster slot.
 
-**Created:** when you ask for access. **Read:** by administrators reviewing the queue, and by you to see your own status. **Updated:** when an administrator approves or rejects it; approval also changes your role to member. **Deleted:** together with your account.
+**Created:** when you ask for access. **Read:** by administrators reviewing the queue, and by you to see your own status. **Updated:** when an administrator approves or rejects it; approval also changes your role to friend and creates a public Friends profile. Approval cannot make you FS Team (that requires the Discord skater role). **Deleted:** together with your account.
 
 ### 4.5 Articles you write (`articles` table)
 
@@ -125,11 +125,11 @@ If your account is deleted, authorship is reassigned to a reserved "Former membe
 
 **What:** for up to 50 recent uploads on a linked channel, the video ID, your channel ID, the public channel title, title, description, publication date, thumbnail URL, duration, YouTube live-broadcast status (`none`, `live`, or `upcoming`), view count, like count, comment count and tags. We do not store comment text. Live-broadcast status is used only to classify upload type (video / short / live / premiere) for the YouTube Feed Filter.
 
-**Why:** so the `/videos` gallery and skater profiles load from our database instead of calling the YouTube API on every page view. Counts of zero are stored but not shown.
+**Why:** so the `/videos` gallery and public roster profiles load from our database instead of calling the YouTube API on every page view. Counts of zero are stored but not shown.
 
-**Created and updated:** in the background when a signed-in skater visits the Service and the cache for their channel is more than an hour old; and, if an API key is configured, about once an hour for every clip already in the table (public statistics only).
+**Created and updated:** in the background when a signed-in team skater or friend visits the Service and the cache for their channel is more than an hour old; and, if an API key is configured, about once an hour for every clip already in the table (public statistics only).
 
-**Read:** publicly, on `/videos` and on skater profile pages.
+**Read:** publicly, on `/videos` and on FS Team / Friends profile pages.
 
 **Deleted:** when your account is deleted, or when an administrator deletes the account that owned the channel.
 

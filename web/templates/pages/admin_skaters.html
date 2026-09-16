@@ -4,7 +4,7 @@
 <ul class="queue">
 {{range .Skaters}}
 <li>
-    <a href="/team/{{.Slug}}">{{.PublicName}}</a>
+    <a href="{{if eq .Role "friend"}}/friends/{{else}}/team/{{end}}{{.Slug}}">{{.PublicName}}</a>
     <form method="post" action="/admin/skaters/{{.ID}}">
         <label>Status
             <select name="status">

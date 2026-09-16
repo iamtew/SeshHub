@@ -37,7 +37,10 @@ func (s *Server) injectUser(r *http.Request) *http.Request {
 
 // ponytail: site role is admin-first, so Discord skater role is invisible after login. Admins with Discord show on /team; drop if a non-skater admin appears.
 func (s *Server) maybeEnsureProfile(u auth.User) {
-	if u.DiscordID == "" || (u.Role != auth.RoleSkater && u.Role != auth.RoleAdmin) {
+	if !auth.HasPublicRoster(u.Role) {
+		return
+	}
+	if u.Role != auth.RoleFriend && u.DiscordID == "" {
 		return
 	}
 	name := u.Username
@@ -113,10 +116,10 @@ func (s *Server) callbackDiscord(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "discord login failed", http.StatusBadGateway)
 		return
 	}
-	role := auth.DiscordRole(id, inGuild, roles, s.cfg.SuperAdminIDs, s.cfg.DiscordHubAdminRoleID, s.cfg.DiscordSkaterRoleID)
+	role := auth.DiscordRole(id, inGuild, roles, s.cfg.SuperAdminIDs, s.cfg.DiscordHubAdminRoleID, s.cfg.DiscordSkaterRoleID, s.cfg.DiscordFriendsRoleID)
 	host := auth.HasGuildRole(roles, s.cfg.DiscordHostsRoleID)
 	ensure := func(userID string) {
-		if !auth.HasGuildRole(roles, s.cfg.DiscordSkaterRoleID) {
+		if !auth.HasGuildRole(roles, s.cfg.DiscordSkaterRoleID) && !auth.HasGuildRole(roles, s.cfg.DiscordFriendsRoleID) {
 			return
 		}
 		if _, err := skater.EnsureForUser(s.db, userID, username); err != nil {

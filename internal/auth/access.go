@@ -76,7 +76,7 @@ func DecideAccess(db *sql.DB, requestID, reviewerID, status string) error {
 		return err
 	}
 	if status == "approved" {
-		_, err = tx.Exec(`UPDATE users SET role = 'member', updated_at = CURRENT_TIMESTAMP WHERE id = ? AND role = 'pending'`, userID)
+		_, err = tx.Exec(`UPDATE users SET role = 'friend', updated_at = CURRENT_TIMESTAMP WHERE id = ? AND role = 'pending'`, userID)
 		if err != nil {
 			return err
 		}

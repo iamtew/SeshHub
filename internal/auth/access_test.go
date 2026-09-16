@@ -6,7 +6,7 @@ import (
 	"seshhub/internal/db"
 )
 
-func TestAccessApproveGrantsMember(t *testing.T) {
+func TestAccessApproveGrantsFriend(t *testing.T) {
 	sqldb, err := db.Open(":memory:")
 	if err != nil {
 		t.Fatal(err)
@@ -35,7 +35,7 @@ func TestAccessApproveGrantsMember(t *testing.T) {
 	if err := sqldb.QueryRow(`SELECT role FROM users WHERE id = ?`, userID).Scan(&role); err != nil {
 		t.Fatal(err)
 	}
-	if role != RoleMember {
+	if role != RoleFriend {
 		t.Fatalf("role %s", role)
 	}
 }

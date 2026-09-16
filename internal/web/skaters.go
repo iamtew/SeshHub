@@ -39,6 +39,15 @@ func (s *Server) team(w http.ResponseWriter, r *http.Request) {
 	s.render(w, r, "skaters_list.html", map[string]any{"Title": "FS Team", "Path": "/team", "Skaters": list})
 }
 
+func (s *Server) friends(w http.ResponseWriter, r *http.Request) {
+	list, err := skater.ListFriends(s.db)
+	if err != nil {
+		http.Error(w, "db error", http.StatusInternalServerError)
+		return
+	}
+	s.render(w, r, "skaters_list.html", map[string]any{"Title": "Friends", "Path": "/friends", "Skaters": list})
+}
+
 func (s *Server) skatersAlias(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/team", http.StatusFound)
 }
@@ -49,7 +58,7 @@ func (s *Server) skaterDetail(w http.ResponseWriter, r *http.Request) {
 	if err == sql.ErrNoRows {
 		cur, rerr := skater.CurrentSlug(s.db, want)
 		if rerr == nil {
-			http.Redirect(w, r, "/team/"+cur, http.StatusFound)
+			http.Redirect(w, r, rosterURL(s.db, cur), http.StatusFound)
 			return
 		}
 		http.NotFound(w, r)
@@ -63,11 +72,16 @@ func (s *Server) skaterDetail(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "db error", http.StatusInternalServerError)
 		return
 	}
+	wantPath := skater.RosterPath(p.Role)
+	if !strings.HasPrefix(r.URL.Path, wantPath+"/") {
+		http.Redirect(w, r, wantPath+"/"+p.Slug, http.StatusFound)
+		return
+	}
 	u := UserFrom(r)
 	name := p.PublicName()
 	data := skaterView(p)
 	data["Title"] = name
-	data["Path"] = "/team"
+	data["Path"] = wantPath
 	data["OGTitle"] = name
 	data["OGDesc"] = p.Bio
 	if p.AvatarURL != "" {
@@ -93,6 +107,14 @@ func (s *Server) skaterDetail(w http.ResponseWriter, r *http.Request) {
 		data["CanEdit"] = skater.CanEdit(u.Role, u.ID, p.UserID)
 	}
 	s.render(w, r, "skater_detail.html", data)
+}
+
+func rosterURL(db *sql.DB, slug string) string {
+	p, err := skater.Get(db, "slug", slug)
+	if err != nil {
+		return "/team/" + slug
+	}
+	return skater.RosterPath(p.Role) + "/" + slug
 }
 
 func (s *Server) adminSkaters(w http.ResponseWriter, r *http.Request) {
@@ -155,7 +177,7 @@ func (s *Server) dashboardProfile(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		http.Redirect(w, r, "/team/"+saved.Slug, http.StatusSeeOther)
+		http.Redirect(w, r, skater.RosterPath(u.Role)+"/"+saved.Slug, http.StatusSeeOther)
 		return
 	}
 	s.renderSkaterProfile(w, r, u, p, nil, false)
@@ -198,7 +220,7 @@ type clipTest struct {
 
 func (s *Server) ownProfile(w http.ResponseWriter, r *http.Request) (*auth.User, skater.Profile, bool) {
 	u := UserFrom(r)
-	if u == nil || (u.Role != auth.RoleSkater && u.Role != auth.RoleAdmin) {
+	if u == nil || !auth.HasPublicRoster(u.Role) {
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return nil, skater.Profile{}, false
 	}
@@ -239,7 +261,7 @@ func (s *Server) renderSkaterProfile(w http.ResponseWriter, r *http.Request, u *
 	data := map[string]any{
 		"Title": "Skater profile", "Path": "/dashboard/profile", "P": p, "Action": "/dashboard/profile",
 		"Videos": vids, "FilterRows": sspec.Rules, "KindOn": kindOn, "Test": test,
-		"DefaultName": defName, "DefaultSlug": skater.Slugify(defName),
+		"DefaultName": defName, "DefaultSlug": skater.Slugify(defName), "SlugPrefix": skater.RosterPath(u.Role) + "/",
 	}
 	if test {
 		check := yt.NormalizeSpec(sspec)

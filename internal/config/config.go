@@ -21,6 +21,7 @@ type Config struct {
 	DiscordHubAdminRoleID string
 	DiscordHostsRoleID    string
 	DiscordSkaterRoleID   string
+	DiscordFriendsRoleID  string
 	SuperAdminIDs         []string
 	YouTubeClientID       string
 	YouTubeClientSecret   string
@@ -44,6 +45,7 @@ func Load() Config {
 		DiscordHubAdminRoleID: getenv("DISCORD_HUB_ADMIN_ROLE_ID", ""),
 		DiscordHostsRoleID:    getenv("DISCORD_HOSTS_ROLE_ID", ""),
 		DiscordSkaterRoleID:   getenv("DISCORD_SKATER_ROLE_ID", ""),
+		DiscordFriendsRoleID:  getenv("DISCORD_FRIENDS_ROLE_ID", ""),
 		SuperAdminIDs:         splitCSV(getenv("SUPERADMIN_DISCORD_IDS", "")),
 		YouTubeClientID:       getenv("YOUTUBE_CLIENT_ID", ""),
 		YouTubeClientSecret:   getenv("YOUTUBE_CLIENT_SECRET", ""),

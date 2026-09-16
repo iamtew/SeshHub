@@ -1,6 +1,6 @@
 # SeshHub
 
-SeshHub is the website and CMS for **Sesh Sofa** and the fakeskate scene. One Go process, a SQLite file, templates on disk. Public team (Discord skater role), news, videos, custom pages. Login is Discord or YouTube only — no passwords. Discord guild roles (plus a superadmin list) decide who is admin, skater, or member; everyone else can request access.
+SeshHub is the website and CMS for **Sesh Sofa** and the fakeskate scene. One Go process, a SQLite file, templates on disk. Public FS Team (Discord skater role), Friends (Discord friends role, queue approval, or former members), news, videos, custom pages. Login is Discord or YouTube only — no passwords. Discord guild roles (plus a superadmin list) decide who is admin, skater, or friend; everyone else can request access.
 
 Local default listen address is **port 53053**. That port is yours. Don't let a Clanker steal it; they use `-port`.
 
@@ -71,14 +71,14 @@ Set `BASE_URL` to the same origin you type in the browser (`http://localhost:530
 2. **OAuth2 → Redirects**: add `http://localhost:53053/auth/discord/callback` (and later the production URL).
 3. Copy **Client ID** and **Client Secret** into `DISCORD_CLIENT_ID` / `DISCORD_CLIENT_SECRET`.
 4. Enable **Developer Mode** in Discord (Settings → Advanced). Right-click the Sesh Sofa server → Copy Server ID → `DISCORD_GUILD_ID`.
-5. Server Settings → Roles → right-click hub admin, hosts, and skater → Copy Role ID → `DISCORD_HUB_ADMIN_ROLE_ID` / `DISCORD_HOSTS_ROLE_ID` / `DISCORD_SKATER_ROLE_ID`.
+5. Server Settings → Roles → right-click hub admin, hosts, skater, and friends → Copy Role ID → `DISCORD_HUB_ADMIN_ROLE_ID` / `DISCORD_HOSTS_ROLE_ID` / `DISCORD_SKATER_ROLE_ID` / `DISCORD_FRIENDS_ROLE_ID`.
 6. Right-click **your** user → Copy User ID → `SUPERADMIN_DISCORD_IDS` (comma-separated if more than one). That list is hub admin even without the guild hub-admin role, so you can log in the first time.
 
-Scopes used: `identify`, `guilds.members.read`. Restart the server after saving `.env`. Sign in with Discord. Guild hub-admin role or superadmin → **admin**. Hosts role → can edit Spot and Episodes (independent of admin). Skater role → **skater**, and a `/team` profile is created (Discord name, linked user id). In the guild otherwise → **member**. Not in the guild → **pending** (request access at `/access`; approve at `/admin/access`). Duplicate Discord/YouTube users: **Admin → Users** → merge into the Discord row. Re-login with Discord after a hosts-role change.
+Scopes used: `identify`, `guilds.members.read`. Restart the server after saving `.env`. Sign in with Discord. Guild hub-admin role or superadmin → **admin**. Hosts role → can edit Spot and Episodes (independent of admin). Skater role → **skater**, and a `/team` profile is created (Discord name, linked user id). Friends role → **friend**, and a `/friends` profile is created. In the guild with none of those roles → **pending** (request access at `/access`; approve at `/admin/access` grants **friend**, not team). Not in the guild → **pending** as well (login still succeeds). Duplicate Discord/YouTube users: **Admin → Users** → merge into the Discord row. Re-login with Discord after a hosts-role change. Existing `member` rows migrate to **friend**; on Discord login, `DISCORD_SKATER_ROLE_ID` still promotes them to team.
 
 ### YouTube login and skater videos
 
-One Google OAuth client. That is login, linking a channel, and (for team skaters) refreshing their latest public uploads onto their profile and `/videos`.
+One Google OAuth client. That is login, linking a channel, and (for team skaters and friends) refreshing their latest public uploads onto their profile and `/videos`.
 
 1. [Google Cloud Console](https://console.cloud.google.com/) → new project (or reuse one).
 2. Enable **YouTube Data API v3** (OAuth calls it).
@@ -88,9 +88,9 @@ One Google OAuth client. That is login, linking a channel, and (for team skaters
 6. OAuth consent screen: add yourself as a test user while the app is in Testing.
 7. Scope: `https://www.googleapis.com/auth/youtube.readonly`. We ask offline access so we can refresh uploads while the skater is logged in.
 
-YouTube-only accounts start as **pending**. After an admin approves (or Discord guild RBAC applies), open **Account** and connect the other provider. Discord-first users connect YouTube the same way. Re-using a Discord or YouTube identity already on another SeshHub user is rejected.
+YouTube-only accounts start as **pending**. After an admin approves they become **friend** (public `/friends` profile). They cannot be made team skaters from the queue — team requires Discord `DISCORD_SKATER_ROLE_ID`. Discord-first users connect YouTube from **Account**. Re-using a Discord or YouTube identity already on another SeshHub user is rejected.
 
-Team skaters (Discord `DISCORD_SKATER_ROLE_ID`, after they log in) with a linked YouTube channel: while they are logged in, SeshHub pulls up to 50 latest uploads (at most once an hour) onto `/team/{slug}` and the public `/videos` list. Guests see the last snapshot. The skater profile row is created on Discord login.
+Team skaters (`DISCORD_SKATER_ROLE_ID`) and friends (Discord friends role, queue approval, or a migrated former member) with a linked YouTube channel: while they are logged in, SeshHub pulls up to 50 latest uploads (at most once an hour) onto `/team/{slug}` or `/friends/{slug}` and the public `/videos` list. Guests see the last snapshot. Team profiles are created on Discord skater/admin login; friend profiles on friends-role login, queue approve, or the member→friend migration.
 
 Restart after `.env` changes. Production: add the live `https://…/auth/…/callback` URIs and set `APP_ENV=production` and `BASE_URL` to the public https origin.
 
@@ -156,7 +156,7 @@ SeshHub is engineered around specific design principles:
 - **Separately Hosted Web Assets**: HTML templates, CSS, JavaScript assets, icons, and SQL migrations are loaded from the configured web and migrations folders at runtime. This keeps the Go server binary separate from content and presentation changes, so templates and assets can be updated without rebuilding the binary.
 - **Cross-Platform Parity**: Developed locally on **Windows** and deployed directly to **Linux** VPS instances. Paths, file separators, and system calls must remain platform-agnostic.
 - **No Passwords / Pure OAuth**: User identity is federated exclusively through **Discord** and **YouTube** OAuth 2.0. No password hashes, email verification loops, or reset tokens are stored.
-- **Discord Guild-Driven RBAC**: Permissions (Admin, Team Skater, Member) are dynamically resolved or validated against user membership and roles within the official Sesh Sofa Discord server. Users who do not match Guild RBAC, including YouTube-authenticated users, can request access for case-by-case approval by a site admin.
+- **Discord Guild-Driven RBAC**: Permissions (Admin, Team Skater, Friend) are resolved from Discord guild roles. Users who do not match those roles, including YouTube-authenticated users, can request access; approval grants Friend, not Team.
 - **Embedded libSQL Database**: Operates using embedded SQLite-compatible libSQL (file-backed locally, optionally synced to Turso Cloud in production) with zero external database server overhead.
 - **Server-Driven Dynamic UI**: Frontend powered by Go standard `html/template` and a single hand-written stylesheet (`web/static/css/app.css`). HTMX / Alpine.js only if a page actually needs them.
 
@@ -246,20 +246,20 @@ flowchart TD
 
 ### Role-Based Access Control (RBAC)
 
-Users who do not match a Discord guild role, as well as users authenticated through YouTube, are shown an option to request user access. Requests remain pending until a site admin reviews and approves or rejects them individually in the admin UI. Approval is explicit and does not automatically grant Admin or Team Skater privileges.
+Users who do not match a Discord guild role (hub-admin, skater, or friends), as well as users authenticated through YouTube, are shown an option to request access. Requests remain pending until a site admin reviews and approves or rejects them individually in the admin UI. Approval grants **friend** and does not grant Admin or Team Skater. Team still requires Discord.
 
 | Role | Hierarchy Level | Determination Logic | Capabilities |
 | :--- | :--- | :--- | :--- |
 | **Admin** | Level 3 | Discord user has configured `DISCORD_HUB_ADMIN_ROLE_ID` in the Sesh Sofa Discord guild, OR user ID matches `SUPERADMIN_DISCORD_IDS`. | Hub access: FS Team (status), edit articles/pages, users, access queue. Not Spot/Episodes. |
 | **Host** | (flag) | Discord user has `DISCORD_HOSTS_ROLE_ID` in the guild (checked on Discord login; not granted by superadmin). | Edit Spot (`/admin/spot`) and Episodes (`/admin/episodes`). Edit links only show for this flag. |
-| **Team Skater** | Level 2 | Discord user has configured `DISCORD_SKATER_ROLE_ID` in the guild, OR manually designated by an Admin. | Edit own skater profile, update personal links/sponsors/clips, draft articles. |
-| **Member** | Level 1 | A Discord guild member with the member role, or a user whose access request was individually approved by an Admin. | View member-exclusive media, comment/react (if enabled), link secondary OAuth accounts. |
-| **Access Pending** | N/A | A user who does not match Guild RBAC or is authenticated through YouTube and has submitted an access request. | View public content while awaiting an Admin decision; no member-only access. |
-| **Guest / Anonymous** | Level 0 | Unauthenticated public visitor. | View public pages, read published articles, browse the team, watch embedded videos. |
+| **Team Skater** | Level 2 | Discord user has configured `DISCORD_SKATER_ROLE_ID` in the guild. | Edit own profile, clips, draft articles. Public `/team`. |
+| **Friend** | Level 1 | Discord `DISCORD_FRIENDS_ROLE_ID`, an approved access request, or a former `member` row (promoted to skater on Discord login if they hold the skater role). No Discord required. | Edit own `/friends` profile and YouTube Feed Filter. Clips on `/videos`. |
+| **Access Pending** | N/A | Not in the guild, or in the guild without hub-admin/skater/friends roles, or YouTube-only and not yet approved. Login still succeeds. | View public content; request access at `/access`. |
+| **Guest / Anonymous** | Level 0 | Unauthenticated public visitor. | View public pages, read published articles, browse FS Team and Friends, watch embedded videos. |
 
 ### Chrome: visitor vs Sesh Hub
 
-Two header modes. Same public nav (Spot / Episodes / FS Team / News / Videos / About) in the dark well either way.
+Two header modes. Same public nav (Spot / Episodes / FS Team / Friends / News / Videos / About) in the dark well either way.
 
 - **Visitor mode** (logged out): 16:9 sofa hero, click to play `seshsofa.mp4` (local `web/static/vid/`, not in git), Close restores the poster. Header: Discord / Twitch / YouTube icons then a Sesh Hub square to `/login`.
 - **Sesh Hub mode** (logged in): same `background.png`. Hero folds into a translucent panel — `seshhub.png` (click plays the same intro; Close folds it back), then role links, **Account**, Discord avatar (also `/account`; name on hover). Display name is on the `/account` heading. **Log out** is at the bottom of `/account`. Public nav still has Discord / Twitch / YouTube icons, not the Hub square. No 16:9 until the logo is clicked. `/login` redirects home.
@@ -269,16 +269,17 @@ Two header modes. Same public nav (Spot / Episodes / FS Team / News / Videos / A
 ## Core Functional Modules
 
 ### 1. Skater Profiles & Team Roster
-- **Team Directory (`/team` / `/skaters`)**: People who hold `DISCORD_SKATER_ROLE_ID` in the guild and have logged in with Discord. Name comes from Discord; optional display name, stance, status, location, bio.
-- **Skater Detail Page (`/team/{slug}`)**: Bio, stance, status, location, Discord avatar, and clips from a linked YouTube channel (optional featured pin).
-- **Skater profile (`/dashboard/profile`)**: Own profile only — display name, user slug (`/team/{slug}`), stance, location, bio, featured clip, YouTube Feed Filter. Display name and slug default from Discord (YouTube if Discord is not connected); Reset restores those. Typing a display name sets the slug until the slug field is edited. Changing slug 302s the old URL to the new one until that slug is claimed again (not reserved).
+- **Team Directory (`/team` / `/skaters`)**: People who hold `DISCORD_SKATER_ROLE_ID` (or admin) and have a linked profile. Name comes from Discord; optional display name, stance, status, location, bio.
+- **Friends Directory (`/friends`)**: Internal Friends — Discord `DISCORD_FRIENDS_ROLE_ID`, queue approval (including YouTube-only), or migrated former members. Same profile fields as team. Detail URL `/friends/{slug}`. Hitting the wrong prefix 302s.
+- **Detail Page (`/team/{slug}` or `/friends/{slug}`)**: Bio, stance, status, location, avatar, and clips from a linked YouTube channel (optional featured pin).
+- **Profile (`/dashboard/profile`)**: Own profile only — display name, user slug, stance, location, bio, featured clip, YouTube Feed Filter. Display name and slug default from Discord (YouTube if Discord is not connected); Reset restores those. Typing a display name sets the slug until the slug field is edited. Changing slug 302s the old URL to the new one until that slug is claimed again (not reserved).
 - **FS Team (`/admin/skaters`)**: Superadmin / Discord hub-admin role only. Set another skater’s status. No add-skater form.
 
 ### 2. YouTube clips from skaters
-- **No site-wide channel crawler**: `/videos` is still the union of clips pulled from team skaters who have connected YouTube. An optional `YOUTUBE_DATA_API_KEY` poller only refreshes public stats on those existing rows (hourly).
+- **No site-wide channel crawler**: `/videos` is the union of clips pulled from team skaters and friends who have connected YouTube. An optional `YOUTUBE_DATA_API_KEY` poller only refreshes public stats on those existing rows (hourly).
 - **Logged-in refresh**: If the user has a `skater_profiles` row, a YouTube refresh token, and last sync is older than 60 minutes, a request while they are logged in refreshes up to 50 latest uploads.
-- **YouTube Feed Filter**: On `/dashboard/profile`, each skater saves AND-ed rows (field, operator, value) plus optional upload-type checkboxes (video / short / live / premiere). Operators: contains, does not contain, starts with, ends with, regexp. Only that user’s matching clips appear on public `/videos` and their team page. Test lists Keep then Hidden without saving. Empty filter publishes all of theirs. Other skaters’ clips are unchanged.
-- **Manual pin**: Admins/skaters can still set `featured_video_id` from that channel’s synced rows.
+- **YouTube Feed Filter**: On `/dashboard/profile`, each owner saves AND-ed rows (field, operator, value) plus optional upload-type checkboxes (video / short / live / premiere). Operators: contains, does not contain, starts with, ends with, regexp. Only that user’s matching clips appear on public `/videos` and their roster page. Test lists Keep then Hidden without saving. Empty filter publishes all of theirs. Other people’s clips are unchanged.
+- **Manual pin**: Admins/skaters/friends can still set `featured_video_id` from that channel’s synced rows.
 
 ### 3. Articles, News & Blog CMS
 - **Publishing Workflow**: Supports `Draft`, `Published`, and `Archived` statuses.
@@ -563,6 +564,7 @@ DISCORD_GUILD_ID=your_sesh_sofa_discord_guild_id
 DISCORD_HUB_ADMIN_ROLE_ID=your_hub_admin_role_id
 DISCORD_HOSTS_ROLE_ID=your_hosts_role_id
 DISCORD_SKATER_ROLE_ID=your_team_skater_role_id
+DISCORD_FRIENDS_ROLE_ID=your_friends_role_id
 SUPERADMIN_DISCORD_IDS=123456789012345678,987654321098765432
 
 # ==============================================================================

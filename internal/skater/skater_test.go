@@ -20,6 +20,9 @@ func TestCanEdit(t *testing.T) {
 	if !CanEdit("admin", "u1", "u1") || !CanEdit("skater", "u1", "u1") {
 		t.Fatal("own")
 	}
+	if !CanEdit("friend", "u1", "u1") {
+		t.Fatal("friend own")
+	}
 	if CanEdit("admin", "u1", "u2") || CanEdit("skater", "u1", "u2") || CanEdit("member", "u1", "u1") {
 		t.Fatal("denied")
 	}
@@ -146,5 +149,17 @@ func TestEnsureForUser(t *testing.T) {
 	all, err2 := List(sqldb)
 	if err != nil || err2 != nil || len(team) != 1 || len(all) != 2 {
 		t.Fatalf("linked vs all team=%d all=%d %v %v", len(team), len(all), err, err2)
+	}
+	_, err = sqldb.Exec(`INSERT INTO users (id, username, display_name, role) VALUES ('u2','pal','Pal','friend')`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := EnsureForUser(sqldb, "u2", "pal"); err != nil {
+		t.Fatal(err)
+	}
+	team, err = ListTeam(sqldb)
+	friends, err3 := ListFriends(sqldb)
+	if err != nil || err3 != nil || len(team) != 1 || len(friends) != 1 || friends[0].UserID != "u2" {
+		t.Fatalf("roster team=%d friends=%d %v %v", len(team), len(friends), err, err3)
 	}
 }
