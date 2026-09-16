@@ -12,4 +12,4 @@ Sesh Hub **uses YouTube API Services**. By using Sesh Hub you also agree to be b
 
 We may refuse, suspend or delete an account that is abusive, under 18, or used to break the law. Content you publish (articles, skater profile fields) is public. We may keep published articles after an account is deleted, shown as "Former member".
 
-Questions: `GoatOps@stupid.systems`
+Questions: `tewmten@gmail.com`

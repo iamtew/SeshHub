@@ -10,7 +10,7 @@ Sesh Hub ("we", "us" or "our") operates the website and web application availabl
 
 We are based in the Netherlands. For the purposes of the General Data Protection Regulation (GDPR) and the Dutch Implementation Act (Uitvoeringswet AVG), we are the controller of the personal data described in this policy.
 
-**Contact.** Privacy questions and data subject requests: `GoatOps@stupid.systems`
+**Contact.** Privacy questions and data subject requests: `tewmten@gmail.com`
 
 **Postal address.** Louwesweg 1, 1066EA Amsterdam, The Netherlands.
 
