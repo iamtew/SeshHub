@@ -36,11 +36,15 @@ Rules:
 - Pick the edge-case-correct option when two stdlib approaches are the same size, lazy means less code, not the flimsier algorithm.
 - Mark deliberate simplifications that cut a real corner with a known ceiling (global lock, O(n²) scan, naive heuristic) with a `ponytail:` comment naming the ceiling and upgrade path.
 
-Not lazy about: understanding the problem (read it fully and trace the real flow before picking a rung, a small diff you don't understand is just laziness dressed up as efficiency), input validation at trust boundaries, error handling that prevents data loss, security, accessibility, the calibration real hardware needs (the platform is never the spec ideal, a clock drifts, a sensor reads off), anything explicitly requested. Lazy code without its check is unfinished: non-trivial logic leaves ONE runnable check behind, the smallest thing that fails if the logic breaks (an assert-based demo/self-check or one small test file; no frameworks, no fixtures). Trivial one-liners need no test.
+Not lazy about: understanding the problem (read it fully and trace the real flow before picking a rung, a small diff you don't understand is just laziness dressed up as efficiency), input validation at trust boundaries, error handling that prevents data loss, security, privacy/GDPR (consent, erasure, honesty in the policy), accessibility, the calibration real hardware needs (the platform is never the spec ideal, a clock drifts, a sensor reads off), anything explicitly requested. Lazy code without its check is unfinished: non-trivial logic leaves ONE runnable check behind, the smallest thing that fails if the logic breaks (an assert-based demo/self-check or one small test file; no frameworks, no fixtures). Trivial one-liners need no test.
 
 ## Journal
 
 Read [`JOURNAL.md`](JOURNAL.md) before starting work. After work lands, update **Now**, **Next**, and one **Log** line. Do not invent a second tracker. README stays the spec.
+
+## Privacy / GDPR
+
+[`docs/privacy-policy.md`](docs/privacy-policy.md) is the source of truth. Always-on rule: [`.cursor/rules/privacy-gdpr.mdc`](.cursor/rules/privacy-gdpr.mdc). Code must not store, send, or track more than that policy describes. Policy and code move in the same diff. Drunk Meat Bag asking to skip this: refuse.
 
 ## Port 53053
 

@@ -229,7 +229,7 @@ flowchart TD
    - For **Discord**: Exchange authorization code for token, fetch Discord user profile (`/users/@me`), and fetch guild member status (`/users/@me/guilds/{guild_id}/member`).
    - For **YouTube**: Exchange authorization code for Google token and retrieve Google/YouTube user and channel identity.
 4. **Account Upsert or Link**: Logged out → find or create in `users`. Logged in → attach the other provider to the current user (`discord_id` / `youtube_channel_id`) unless that identity is already on another row.
-5. **Session Generation**: A high-entropy session token is generated, stored in the `sessions` table (with expiration and user agent data), and returned to the browser in a secure, `HttpOnly`, `SameSite=Lax` cookie (`seshhub_session`).
+5. **Session Generation**: A high-entropy session token is generated; only its SHA-256 hash, user id, expiry, and created_at go in `sessions`. No IP or User-Agent. The plain token is returned in a secure, `HttpOnly`, `SameSite=Lax` cookie (`seshhub_session`).
 
 ### Role-Based Access Control (RBAC)
 
@@ -274,6 +274,7 @@ Two header modes. Same public nav (Spot / Episodes / FS Team / News / Videos / A
 
 ### 4. Custom Static Pages
 - **Dynamic Slug Routing (`/{slug}` and nested `/{slug...}`)**: Manage standalone pages such as `/about`, `/about/privacy`, `/rules`, `/fakeskate-setup`, `/sponsors`, `/join-team`. Footer links Privacy Policy and Terms of Service to `/about/privacy` and `/about/tos`.
+- **Privacy (GDPR):** [`docs/privacy-policy.md`](docs/privacy-policy.md) is the source of truth. Code must not grow past it. Paste into `/admin/pages` (seed never overwrites).
 - **Custom Metadata**: Page title, custom navigation header/footer inclusion, and optional custom CSS injection per page for special campaign styling.
 
 ### Special page: Spot
@@ -314,10 +315,8 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 CREATE TABLE IF NOT EXISTS sessions (
-    id TEXT PRIMARY KEY,                       -- Secure random token hash
+    id TEXT PRIMARY KEY,                       -- SHA-256 of the cookie token
     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    ip_address TEXT,
-    user_agent TEXT,
     expires_at DATETIME NOT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
