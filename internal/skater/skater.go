@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"fmt"
+	"html/template"
 	"strings"
 	"unicode"
 )
@@ -19,6 +20,12 @@ type Profile struct {
 	Stance          string
 	Status          string
 	AvatarURL       string
+	PhotoURL        string
+	AvatarR1        int
+	AvatarR2        int
+	AvatarR3        int
+	AvatarR4        int
+	AvatarBorder    int
 	BannerURL       string
 	Location        string
 	Sponsors        string
@@ -26,6 +33,19 @@ type Profile struct {
 	SignatureTricks string
 	FeaturedVideoID string
 	Role            string
+}
+
+func FrameCSS(r1, r2, r3, r4, border int) template.CSS {
+	r1, r2, r3, r4 = ClampRadius(r1), ClampRadius(r2), ClampRadius(r3), ClampRadius(r4)
+	s := fmt.Sprintf("border-radius:%d%% %d%% %d%% %d%%", r1, r2, r3, r4)
+	if border != 0 {
+		s += ";border:3px solid #E5F20D"
+	}
+	return template.CSS(s)
+}
+
+func (p Profile) AvatarStyle() template.CSS {
+	return FrameCSS(p.AvatarR1, p.AvatarR2, p.AvatarR3, p.AvatarR4, p.AvatarBorder)
 }
 
 func (p Profile) PublicName() string {
@@ -106,7 +126,9 @@ func uniqueSlug(db *sql.DB, base, exceptID string) (string, error) {
 
 const profileSelect = `
 		SELECT p.id, IFNULL(p.user_id,''), p.slug, p.skater_name, IFNULL(p.real_name,''), IFNULL(p.bio,''),
-			IFNULL(p.stance,'regular'), IFNULL(p.status,'active'), IFNULL(NULLIF(p.avatar_url,''), IFNULL(u.avatar_url,'')), IFNULL(p.banner_url,''),
+			IFNULL(p.stance,'regular'), IFNULL(p.status,'active'), IFNULL(NULLIF(p.avatar_url,''), IFNULL(u.avatar_url,'')), IFNULL(p.avatar_url,''),
+			IFNULL(p.avatar_r1,50), IFNULL(p.avatar_r2,50), IFNULL(p.avatar_r3,50), IFNULL(p.avatar_r4,50), IFNULL(p.avatar_border,0),
+			IFNULL(p.banner_url,''),
 			IFNULL(p.location,''), IFNULL(p.sponsors,''), IFNULL(p.social_links,''), IFNULL(p.signature_tricks,''),
 			IFNULL(p.featured_video_id,''), IFNULL(u.role,'')
 		FROM skater_profiles p LEFT JOIN users u ON u.id = p.user_id`
@@ -150,7 +172,8 @@ func list(db *sql.DB, roster string) ([]Profile, error) {
 func scanProfile(sc interface{ Scan(dest ...any) error }) (Profile, error) {
 	var p Profile
 	err := sc.Scan(&p.ID, &p.UserID, &p.Slug, &p.SkaterName, &p.RealName, &p.Bio, &p.Stance, &p.Status,
-		&p.AvatarURL, &p.BannerURL, &p.Location, &p.Sponsors, &p.SocialLinks, &p.SignatureTricks, &p.FeaturedVideoID, &p.Role)
+		&p.AvatarURL, &p.PhotoURL, &p.AvatarR1, &p.AvatarR2, &p.AvatarR3, &p.AvatarR4, &p.AvatarBorder,
+		&p.BannerURL, &p.Location, &p.Sponsors, &p.SocialLinks, &p.SignatureTricks, &p.FeaturedVideoID, &p.Role)
 	return p, err
 }
 
@@ -216,21 +239,30 @@ func Save(db *sql.DB, p Profile) (Profile, error) {
 	if p.Status == "" {
 		p.Status = "active"
 	}
+	if p.ID == "" && p.AvatarR1 == 0 && p.AvatarR2 == 0 && p.AvatarR3 == 0 && p.AvatarR4 == 0 {
+		p.AvatarR1, p.AvatarR2, p.AvatarR3, p.AvatarR4 = 50, 50, 50, 50
+	}
+	p.AvatarR1, p.AvatarR2, p.AvatarR3, p.AvatarR4 = ClampRadius(p.AvatarR1), ClampRadius(p.AvatarR2), ClampRadius(p.AvatarR3), ClampRadius(p.AvatarR4)
+	if p.AvatarBorder != 0 {
+		p.AvatarBorder = 1
+	}
 	uid := any(nil)
 	if p.UserID != "" {
 		uid = p.UserID
 	}
 	if p.ID == "" {
 		p.ID = newID()
-		_, err = db.Exec(`INSERT INTO skater_profiles (id, user_id, slug, skater_name, real_name, bio, stance, status, avatar_url, banner_url, location, sponsors, social_links, signature_tricks, featured_video_id)
-			VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+		_, err = db.Exec(`INSERT INTO skater_profiles (id, user_id, slug, skater_name, real_name, bio, stance, status, avatar_url, avatar_r1, avatar_r2, avatar_r3, avatar_r4, avatar_border, banner_url, location, sponsors, social_links, signature_tricks, featured_video_id)
+			VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 			p.ID, uid, p.Slug, p.SkaterName, nullEmpty(p.RealName), nullEmpty(p.Bio), p.Stance, p.Status,
-			nullEmpty(p.AvatarURL), nullEmpty(p.BannerURL), nullEmpty(p.Location), nullEmpty(p.Sponsors),
+			nullEmpty(p.PhotoURL), p.AvatarR1, p.AvatarR2, p.AvatarR3, p.AvatarR4, p.AvatarBorder,
+			nullEmpty(p.BannerURL), nullEmpty(p.Location), nullEmpty(p.Sponsors),
 			nullEmpty(p.SocialLinks), nullEmpty(p.SignatureTricks), nullEmpty(p.FeaturedVideoID))
 	} else {
-		_, err = db.Exec(`UPDATE skater_profiles SET user_id=?, slug=?, skater_name=?, real_name=?, bio=?, stance=?, status=?, avatar_url=?, banner_url=?, location=?, sponsors=?, social_links=?, signature_tricks=?, featured_video_id=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`,
+		_, err = db.Exec(`UPDATE skater_profiles SET user_id=?, slug=?, skater_name=?, real_name=?, bio=?, stance=?, status=?, avatar_url=?, avatar_r1=?, avatar_r2=?, avatar_r3=?, avatar_r4=?, avatar_border=?, banner_url=?, location=?, sponsors=?, social_links=?, signature_tricks=?, featured_video_id=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`,
 			uid, p.Slug, p.SkaterName, nullEmpty(p.RealName), nullEmpty(p.Bio), p.Stance, p.Status,
-			nullEmpty(p.AvatarURL), nullEmpty(p.BannerURL), nullEmpty(p.Location), nullEmpty(p.Sponsors),
+			nullEmpty(p.PhotoURL), p.AvatarR1, p.AvatarR2, p.AvatarR3, p.AvatarR4, p.AvatarBorder,
+			nullEmpty(p.BannerURL), nullEmpty(p.Location), nullEmpty(p.Sponsors),
 			nullEmpty(p.SocialLinks), nullEmpty(p.SignatureTricks), nullEmpty(p.FeaturedVideoID), p.ID)
 	}
 	if err != nil {
@@ -288,6 +320,7 @@ func FormerSlugs(db *sql.DB, profileID string) ([]string, error) {
 }
 
 func Delete(db *sql.DB, id string) error {
+	RemovePhoto(id)
 	_, _ = db.Exec(`DELETE FROM skater_slug_redirects WHERE profile_id = ?`, id)
 	_, err := db.Exec(`DELETE FROM skater_profiles WHERE id = ?`, id)
 	return err

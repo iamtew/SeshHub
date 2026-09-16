@@ -2,7 +2,7 @@
 
 **Website:** https://hub.seshsofa.nl
 
-**Last updated:** 16 September 2026
+**Last updated:** 17 September 2026
 
 ## 1. Who we are
 
@@ -95,17 +95,17 @@ We do **not** store your IP address or User-Agent.
 
 ### 4.3 Your skater profile (`skater_profiles` table)
 
-**What:** a public slug, your skater name, your real name, a biography, your stance, a roster status, avatar and banner URLs, your location, sponsors, social links, signature tricks, a featured video ID, and **former slugs** (only while nobody else is using that URL).
+**What:** a public slug, your skater name, your real name, a biography, your stance, a roster status, avatar and banner URLs, optional **corner-radius and border flags** for how the public photo is framed, your location, sponsors, social links, signature tricks, a featured video ID, and **former slugs** (only while nobody else is using that URL). If you upload a site photo, we also store a re-encoded JPEG file on the same Amsterdam server (`data/avatars/{id}.jpg`, shown at `/media/avatars/{id}.jpg`). The original upload is not kept. We strip metadata by re-encoding. Maximum upload size is 10 MB; we store a square JPEG at most 1024 pixels on a side.
 
 **Why:** to show the FS Team roster at `/team` and the Friends roster at `/friends`, and your own profile page at `/team/{slug}` or `/friends/{slug}`. Former slugs 302 to your current page so old links keep working, until that slug is claimed again.
 
 **Created:** automatically when you hold the skater or admin role in the Sesh Sofa Discord and sign in; when you hold the Discord friends role; when an administrator approves your access request (Friends); or when a former `member` account is migrated to Friends. Your skater name is initially taken from Discord (or your YouTube channel title if Discord is not connected), and is kept in step with it on subsequent visits. Your public slug starts as a slugified form of that name (migrated friends may start with a unique id slug until you edit it). The check that creates the profile runs on every request you make, so as long as your account exists and still holds a roster role, a profile will exist.
 
-**Read: this profile is public.** Anyone on the internet, signed in or not, can see it. Note in particular that the name shown publicly is your **display name (stored as real name) if you have filled it in**, and falls back to your skater name only if you have not. Your **slug** is the public URL `/team/{slug}` (FS Team) or `/friends/{slug}` (Friends). Former slugs are public too: visiting them redirects to your current page. Your **location** and **biography** are also shown publicly when set. Please do not put anything in these fields that you would not want a stranger to read.
+**Read: this profile is public.** Anyone on the internet, signed in or not, can see it. Note in particular that the name shown publicly is your **display name (stored as real name) if you have filled it in**, and falls back to your skater name only if you have not. Your **slug** is the public URL `/team/{slug}` (FS Team) or `/friends/{slug}` (Friends). Former slugs are public too: visiting them redirects to your current page. Your **location**, **biography**, and **profile photo** (site upload or Discord/YouTube fallback, plus the frame shape) are also shown publicly when set. Please do not put anything in these fields that you would not want a stranger to read.
 
-**Updated:** by you, at `/dashboard/profile`. That form edits your display name, slug, biography, stance, location, featured video, and YouTube Feed Filter. Changing your slug records the previous one as a redirect and frees it for anyone to claim later. Logging in still refreshes your Discord skater name; it does not overwrite a slug you chose. An administrator can separately change your roster status.
+**Updated:** by you, at `/dashboard/profile`. That form edits your display name, slug, biography, stance, location, featured video, YouTube Feed Filter, photo frame (corner roundness and an optional border), and an optional site-only profile photo. Changing your slug records the previous one as a redirect and frees it for anyone to claim later. Logging in still refreshes your Discord skater name and the provider avatar URL on your account record; it does not overwrite a slug you chose, and it does not overwrite a site photo you uploaded. Clearing the site photo falls back to Discord or YouTube. An administrator can separately change your roster status.
 
-**Deleted:** when your account is deleted, or by an administrator. Former-slug redirects are deleted with the profile. If someone else takes an old slug, that redirect row is deleted so their page wins.
+**Deleted:** when your account is deleted, or by an administrator. Former-slug redirects are deleted with the profile. The site photo file is deleted with the profile. If someone else takes an old slug, that redirect row is deleted so their page wins.
 
 ### 4.4 Your access request (`access_requests` table)
 
@@ -147,7 +147,7 @@ There is also an unused `sync_logs` table in our database schema. Nothing ever w
 
 ### 4.9 What we do not do at all
 
-We do not send email. There is no newsletter and no notification system. There is no file upload feature, so you cannot upload photos or documents to us. We do not sell, rent or trade personal data. We do not profile you, build advertising audiences, or use your data for anything beyond operating the site.
+We do not send email. There is no newsletter and no notification system. The only file you can upload is an optional square profile photo on `/dashboard/profile` (JPEG or PNG, 10 MB maximum), stored as described in section 4.3. We do not sell, rent or trade personal data. We do not profile you, build advertising audiences, or use your data for anything beyond operating the site.
 
 ## 5. Cookies
 
@@ -168,7 +168,7 @@ Any time your browser loads something from another company's server, that compan
 - **Web fonts** from `fonts.cdnfonts.com`, on every page. These faces are commercially licensed, so we load them from the CDN rather than copying the files onto our server.
 - **YouTube video thumbnails** from `img.youtube.com` and `i.ytimg.com`, on the videos gallery, episode archive and profile pages.
 - **YouTube video players** from `youtube-nocookie.com`, on skater profile pages that have clips. We deliberately use YouTube's privacy-enhanced domain, which does not set tracking cookies until you press play.
-- **Discord avatar images** from `cdn.discordapp.com`, wherever an avatar is displayed. These are loaded with `referrerpolicy="no-referrer"`, so Discord is not told which page you were on.
+- **Discord avatar images** from `cdn.discordapp.com`, wherever a Discord (or YouTube) avatar is displayed and you have not uploaded a site photo. These are loaded with `referrerpolicy="no-referrer"`, so Discord is not told which page you were on. Site photos are served from this Service at `/media/avatars/…`.
 
 Our server also talks to these services directly. In those cases your IP address is not sent; ours is.
 
@@ -193,7 +193,7 @@ Each of these companies handles your data under its own privacy policy. You can 
 
 - **Account record:** kept until you delete it at `/account`, or an administrator deletes it.
 - **Session record:** valid for 30 days. Logging out deletes every session for your account. Expired rows are purged when the server starts.
-- **Skater profile:** kept until the account is deleted, or an administrator removes the profile.
+- **Skater profile:** kept until the account is deleted, or an administrator removes the profile. A site photo file is kept for the same time and deleted with the profile.
 - **Cached YouTube clips:** kept until the owning account is deleted.
 - **Access requests:** kept until the account is deleted.
 - **Articles and episode entries:** kept as part of the site's published archive. Deleted authors are shown as "Former member".
@@ -202,11 +202,11 @@ Each of these companies handles your data under its own privacy policy. You can 
 
 You have the right of access (Art. 15), rectification (Art. 16), erasure (Art. 17), restriction (Art. 18), data portability (Art. 20), and objection (Art. 21).
 
-**How to exercise these rights.** Most of them are on `/account` while you are signed in: unlink a provider, download a JSON export of your account, profile, former slugs, YouTube Feed Filter and access request, or delete the account. Logging out ends every session. You can also email the contact address in section 1. We will respond within one month, as Art. 12(3) requires.
+**How to exercise these rights.** Most of them are on `/account` while you are signed in: unlink a provider, download a JSON export of your account, profile (including photo URL and frame settings), former slugs, YouTube Feed Filter and access request, or delete the account. Logging out ends every session. You can also email the contact address in section 1. We will respond within one month, as Art. 12(3) requires.
 
-- **Access or portability:** use **Download my data** on `/account`, or ask us by email.
-- **Erasure:** use **Delete my account** on `/account`. That removes your account record (including the YouTube Feed Filter), sessions, access request, skater profile, former-slug redirects, and cached clips. Articles stay published as "Former member".
-- **Rectification:** most profile fields update themselves from Discord or YouTube on your next sign-in. Your display name, slug, biography, location, featured clip and YouTube Feed Filter are yours to edit at `/dashboard/profile`.
+- **Access or portability:** use **Download my data** on `/account`, or ask us by email. The export includes the public URL of a site photo if you uploaded one, not the image bytes.
+- **Erasure:** use **Delete my account** on `/account`. That removes your account record (including the YouTube Feed Filter), sessions, access request, skater profile, former-slug redirects, cached clips, and any site profile photo file. Articles stay published as "Former member".
+- **Rectification:** most profile fields update themselves from Discord or YouTube on your next sign-in. Your display name, slug, biography, location, featured clip, YouTube Feed Filter, site photo and photo frame are yours to edit at `/dashboard/profile`.
 - **Objection or restriction:** tell us what you object to and we will stop it or explain why we believe we may continue.
 
 Some of the underlying personal data also lives with Discord and Google, and we cannot reach into their systems. Revoking our OAuth access from their settings pages is immediate and does not require us.
@@ -235,7 +235,7 @@ We do not verify anyone's age, and we have no practical way to do so. If we beco
 
 ## 12. Where your data is processed
 
-The Service runs on a single virtual private server in Amsterdam, the Netherlands. The database file sits on that server.
+The Service runs on a single virtual private server in Amsterdam, the Netherlands. The database file and any site profile photos sit on that server.
 
 Some of the third parties in section 6 are based in the United States, including Google and Discord. When your browser loads their resources, or when our server calls their APIs, data reaches them there. Those transfers rely on the safeguards those companies provide, such as the EU-US Data Privacy Framework and standard contractual clauses. We have no separate transfer mechanism of our own to offer beyond choosing not to send them more than is necessary.
 

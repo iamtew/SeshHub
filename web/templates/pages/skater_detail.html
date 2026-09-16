@@ -1,8 +1,12 @@
 {{define "content"}}
 <article>
-    {{if .P.AvatarURL}}<img class="avatar" src="{{.P.AvatarURL}}" alt="" referrerpolicy="no-referrer">{{end}}
-    <h1>{{.P.PublicName}}</h1>
-    <p class="who">{{.P.Stance}} · {{.P.Status}}{{if .P.Location}} · {{.P.Location}}{{end}}</p>
+    <div class="profile-head">
+        {{if .P.AvatarURL}}<img class="avatar" src="{{.P.AvatarURL}}" alt="" referrerpolicy="no-referrer" style="{{.P.AvatarStyle}}">{{end}}
+        <div>
+            <h1>{{.P.PublicName}}</h1>
+            <p class="who">{{.P.Stance}} · {{.P.Status}}{{if .P.Location}} · {{.P.Location}}{{end}}</p>
+        </div>
+    </div>
     {{if .P.Bio}}<p>{{.P.Bio}}</p>{{end}}
     {{if .Featured}}
     <div class="embed"><iframe src="https://www.youtube-nocookie.com/embed/{{.Featured.ID}}" title="{{.Featured.Title}}" allowfullscreen loading="lazy"></iframe></div>

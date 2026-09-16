@@ -25,6 +25,7 @@ func New(cfg config.Config, db *sql.DB) *Server {
 	yt.RefreshAccess = auth.RefreshGoogle
 	s := &Server{cfg: cfg, db: db, webDir: cfg.WebDir, mux: http.NewServeMux()}
 	s.mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir(filepath.Join(cfg.WebDir, "static")))))
+	s.mux.HandleFunc("GET /media/avatars/{file}", s.mediaAvatar)
 	s.mux.HandleFunc("GET /healthz", s.healthz)
 	s.mux.HandleFunc("GET /{$}", s.home)
 	s.mux.HandleFunc("GET /team", s.team)

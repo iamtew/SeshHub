@@ -30,13 +30,14 @@ func (s *Server) injectUser(r *http.Request) *http.Request {
 	if err != nil {
 		return r
 	}
-	s.maybeEnsureProfile(u)
+	s.attachProfile(&u)
 	s.maybeSyncSkater(u.ID)
 	return r.WithContext(context.WithValue(r.Context(), userKey, &u))
 }
 
-// ponytail: site role is admin-first, so Discord skater role is invisible after login. Admins with Discord show on /team; drop if a non-skater admin appears.
-func (s *Server) maybeEnsureProfile(u auth.User) {
+func (s *Server) attachProfile(u *auth.User) {
+	u.ProviderAvatar = u.AvatarURL
+	u.AvatarR1, u.AvatarR2, u.AvatarR3, u.AvatarR4 = 50, 50, 50, 50
 	if !auth.HasPublicRoster(u.Role) {
 		return
 	}
@@ -47,9 +48,15 @@ func (s *Server) maybeEnsureProfile(u auth.User) {
 	if name == "" {
 		name = u.DisplayName
 	}
-	if _, err := skater.EnsureForUser(s.db, u.ID, name); err != nil {
+	p, err := skater.EnsureForUser(s.db, u.ID, name)
+	if err != nil {
 		slog.Error("skater profile", "err", err, "user", u.ID)
+		return
 	}
+	if p.AvatarURL != "" {
+		u.AvatarURL = p.AvatarURL
+	}
+	u.AvatarR1, u.AvatarR2, u.AvatarR3, u.AvatarR4, u.AvatarBorder = p.AvatarR1, p.AvatarR2, p.AvatarR3, p.AvatarR4, p.AvatarBorder
 }
 
 func (s *Server) maybeSyncSkater(userID string) {

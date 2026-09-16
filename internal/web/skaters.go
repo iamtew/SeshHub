@@ -12,16 +12,46 @@ import (
 )
 
 func formProfile(r *http.Request, existing skater.Profile) skater.Profile {
-	_ = r.ParseForm()
 	existing.RealName = r.FormValue("display_name")
 	existing.Slug = strings.TrimSpace(r.FormValue("slug"))
 	existing.Bio = r.FormValue("bio")
 	existing.Stance = r.FormValue("stance")
 	existing.Location = r.FormValue("location")
+	existing.AvatarR1, _ = strconv.Atoi(r.FormValue("avatar_r1"))
+	existing.AvatarR2, _ = strconv.Atoi(r.FormValue("avatar_r2"))
+	existing.AvatarR3, _ = strconv.Atoi(r.FormValue("avatar_r3"))
+	existing.AvatarR4, _ = strconv.Atoi(r.FormValue("avatar_r4"))
+	if r.FormValue("avatar_border") == "1" {
+		existing.AvatarBorder = 1
+	} else {
+		existing.AvatarBorder = 0
+	}
 	if _, ok := r.PostForm["featured_video_id"]; ok {
 		existing.FeaturedVideoID = r.FormValue("featured_video_id")
 	}
 	return existing
+}
+
+func applyPhoto(r *http.Request, p skater.Profile) (skater.Profile, error) {
+	f, hdr, err := r.FormFile("avatar")
+	if err == nil {
+		defer f.Close()
+		if hdr.Size > 0 {
+			url, err := skater.SavePhoto(p.ID, f)
+			if err != nil {
+				return p, err
+			}
+			p.PhotoURL = url
+			return p, nil
+		}
+	} else if err != http.ErrMissingFile && err != http.ErrNotMultipart {
+		return p, err
+	}
+	if r.FormValue("avatar_reset") == "1" {
+		skater.RemovePhoto(p.ID)
+		p.PhotoURL = ""
+	}
+	return p, nil
 }
 
 func skaterView(p skater.Profile) map[string]any {
@@ -29,6 +59,15 @@ func skaterView(p skater.Profile) map[string]any {
 		"P": p, "Sponsors": skater.Lines(p.Sponsors), "Tricks": skater.Lines(p.SignatureTricks),
 		"Social": skater.Lines(p.SocialLinks),
 	}
+}
+
+func (s *Server) mediaAvatar(w http.ResponseWriter, r *http.Request) {
+	path, ok := skater.PhotoFile(r.PathValue("file"))
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+	http.ServeFile(w, r, path)
 }
 
 func (s *Server) team(w http.ResponseWriter, r *http.Request) {
@@ -174,7 +213,18 @@ func (s *Server) dashboardProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if r.Method == http.MethodPost {
-		saved, err := skater.Save(s.db, formProfile(r, p))
+		r.Body = http.MaxBytesReader(w, r.Body, skater.PhotoMax+1<<20)
+		if err := r.ParseMultipartForm(skater.PhotoMax); err != nil {
+			http.Error(w, "too large", http.StatusRequestEntityTooLarge)
+			return
+		}
+		next := formProfile(r, p)
+		next, err := applyPhoto(r, next)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		saved, err := skater.Save(s.db, next)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return

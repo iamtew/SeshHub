@@ -1,6 +1,35 @@
 {{define "content"}}
 <h1>{{.Title}}</h1>
-<form method="post" action="{{.Action}}" class="form" id="profile-form" data-default-name="{{.DefaultName}}" data-default-slug="{{.DefaultSlug}}">
+<form method="post" action="{{.Action}}" class="form" id="profile-form" enctype="multipart/form-data" data-default-name="{{.DefaultName}}" data-default-slug="{{.DefaultSlug}}" data-default-avatar="{{or .User.ProviderAvatar .User.AvatarURL}}">
+    <div class="avatar-tools">
+        <div class="profile-head">
+            <div class="avatar-drop" id="avatar-drop">
+                <img id="avatar-preview" class="avatar" {{if .P.AvatarURL}}src="{{.P.AvatarURL}}"{{end}} alt="" referrerpolicy="no-referrer" style="{{.P.AvatarStyle}}">
+                <input type="file" name="avatar" accept="image/jpeg,image/png" hidden>
+            </div>
+            <div>
+                <p class="who">Drop a JPEG or PNG on the picture, or click it (10MB). Drag the square, then Use crop.</p>
+                <div id="avatar-crop" hidden>
+                    <canvas width="320" height="320"></canvas>
+                    <button type="button" id="avatar-crop-ok">Use crop</button>
+                </div>
+                <div class="field-reset">
+                    <span class="who">Site photo</span>
+                    <button type="button" data-reset="avatar">Reset</button>
+                </div>
+                <input type="hidden" name="avatar_reset" value="">
+            </div>
+        </div>
+        <label>Roundness <input type="range" id="avatar-round" min="0" max="50" value="{{.P.AvatarR1}}"></label>
+        <label><input type="checkbox" id="avatar-unlock"> Unlock corners</label>
+        <div id="avatar-corners" hidden>
+            <label>Top left <input type="range" name="avatar_r1" min="0" max="50" value="{{.P.AvatarR1}}"></label>
+            <label>Top right <input type="range" name="avatar_r2" min="0" max="50" value="{{.P.AvatarR2}}"></label>
+            <label>Bottom right <input type="range" name="avatar_r3" min="0" max="50" value="{{.P.AvatarR3}}"></label>
+            <label>Bottom left <input type="range" name="avatar_r4" min="0" max="50" value="{{.P.AvatarR4}}"></label>
+        </div>
+        <label><input type="checkbox" name="avatar_border" value="1" {{if .P.AvatarBorder}}checked{{end}} id="avatar-border"> Border</label>
+    </div>
     <div class="field-reset">
         <label>Display name <input name="display_name" value="{{or .P.RealName .DefaultName}}"></label>
         <button type="button" data-reset="name">Reset</button>
@@ -59,13 +88,163 @@
   form.addEventListener('click', function (e) {
     var b = e.target.closest('[data-reset]');
     if (!b) return;
-    if (b.getAttribute('data-reset') === 'name') {
+    var kind = b.getAttribute('data-reset');
+    if (kind === 'name') {
       name.value = defName;
       if (follow) slug.value = slugify(name.value);
-    } else {
+    } else if (kind === 'slug') {
       slug.value = defSlug;
       follow = false;
     }
+  });
+  var prev = document.getElementById('avatar-preview');
+  var round = document.getElementById('avatar-round');
+  var unlock = document.getElementById('avatar-unlock');
+  var corners = document.getElementById('avatar-corners');
+  var rs = ['avatar_r1','avatar_r2','avatar_r3','avatar_r4'].map(function (n) { return form.elements.namedItem(n); });
+  var border = document.getElementById('avatar-border');
+  function paint() {
+    if (!prev) return;
+    prev.style.borderRadius = rs[0].value + '% ' + rs[1].value + '% ' + rs[2].value + '% ' + rs[3].value + '%';
+    prev.style.border = border && border.checked ? '3px solid #E5F20D' : '';
+  }
+  function setAll(v) {
+    rs.forEach(function (el) { el.value = v; });
+    paint();
+  }
+  if (rs[0] && (rs[0].value !== rs[1].value || rs[0].value !== rs[2].value || rs[0].value !== rs[3].value)) {
+    unlock.checked = true;
+    corners.hidden = false;
+  }
+  round.addEventListener('input', function () {
+    if (!unlock.checked) setAll(round.value);
+  });
+  unlock.addEventListener('change', function () {
+    corners.hidden = !unlock.checked;
+    if (!unlock.checked) setAll(round.value);
+  });
+  rs.forEach(function (el) { el.addEventListener('input', paint); });
+  if (border) border.addEventListener('change', paint);
+  paint();
+  var file = form.elements.namedItem('avatar');
+  var resetFlag = form.elements.namedItem('avatar_reset');
+  var drop = document.getElementById('avatar-drop');
+  var stage = document.getElementById('avatar-crop');
+  var canvas = stage && stage.querySelector('canvas');
+  var cropOk = document.getElementById('avatar-crop-ok');
+  var defAvatar = form.getAttribute('data-default-avatar') || '';
+  var cropImg = null, sx = 0, sy = 0, side = 0, dragging = false, lastX = 0, lastY = 0, cropReady = false;
+  function drawCrop() {
+    if (!canvas || !cropImg) return;
+    var ctx = canvas.getContext('2d');
+    var cw = canvas.width, ch = canvas.height;
+    var scale = Math.min(cw / cropImg.naturalWidth, ch / cropImg.naturalHeight);
+    var dw = cropImg.naturalWidth * scale, dh = cropImg.naturalHeight * scale;
+    var ox = (cw - dw) / 2, oy = (ch - dh) / 2;
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, cw, ch);
+    ctx.drawImage(cropImg, ox, oy, dw, dh);
+    var sq = Math.min(dw, dh);
+    var rx = ox + sx * scale, ry = oy + sy * scale;
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.fillRect(ox, oy, dw, dh);
+    ctx.clearRect(rx, ry, sq, sq);
+    ctx.drawImage(cropImg, sx, sy, side, side, rx, ry, sq, sq);
+    ctx.strokeStyle = '#E5F20D';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(rx + 1, ry + 1, sq - 2, sq - 2);
+  }
+  function applyCrop(then) {
+    if (!cropReady || !cropImg) { if (then) then(); return; }
+    var out = document.createElement('canvas');
+    out.width = Math.min(1024, side);
+    out.height = out.width;
+    out.getContext('2d').drawImage(cropImg, sx, sy, side, side, 0, 0, out.width, out.height);
+    out.toBlob(function (blob) {
+      if (blob) {
+        var dt = new DataTransfer();
+        dt.items.add(new File([blob], 'avatar.jpg', { type: 'image/jpeg' }));
+        file.files = dt.files;
+        prev.src = URL.createObjectURL(blob);
+        if (resetFlag) resetFlag.value = '';
+      }
+      cropReady = false;
+      cropImg = null;
+      if (stage) stage.hidden = true;
+      if (then) then();
+    }, 'image/jpeg', 0.9);
+  }
+  function loadCrop(f) {
+    if (!f) return;
+    var ok = f.type === 'image/jpeg' || f.type === 'image/png' || /\.jpe?g$|\.png$/i.test(f.name || '');
+    if (!ok || f.size > 10 * 1024 * 1024) { alert('Photo must be a JPEG or PNG under 10MB'); return; }
+    var img = new Image();
+    img.onload = function () {
+      cropImg = img;
+      side = Math.min(img.naturalWidth, img.naturalHeight);
+      sx = (img.naturalWidth - side) / 2;
+      sy = (img.naturalHeight - side) / 2;
+      cropReady = true;
+      if (stage) stage.hidden = false;
+      drawCrop();
+    };
+    img.src = URL.createObjectURL(f);
+  }
+  if (file && canvas) {
+    file.addEventListener('change', function () { loadCrop(file.files && file.files[0]); });
+    canvas.addEventListener('pointerdown', function (e) {
+      dragging = true;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      canvas.setPointerCapture(e.pointerId);
+    });
+    canvas.addEventListener('pointerup', function () { dragging = false; });
+    canvas.addEventListener('pointermove', function (e) {
+      if (!dragging || !cropImg) return;
+      var scale = Math.min(canvas.width / cropImg.naturalWidth, canvas.height / cropImg.naturalHeight);
+      sx = Math.max(0, Math.min(cropImg.naturalWidth - side, sx + (e.clientX - lastX) / scale));
+      sy = Math.max(0, Math.min(cropImg.naturalHeight - side, sy + (e.clientY - lastY) / scale));
+      lastX = e.clientX;
+      lastY = e.clientY;
+      drawCrop();
+    });
+  }
+  if (cropOk) cropOk.addEventListener('click', function () { applyCrop(); });
+  if (drop && file) {
+    drop.addEventListener('click', function (e) {
+      if (e.target.closest('button') || e.target === file) return;
+      file.click();
+    });
+    drop.addEventListener('dragover', function (e) {
+      e.preventDefault();
+      drop.classList.add('drag');
+    });
+    drop.addEventListener('dragleave', function () { drop.classList.remove('drag'); });
+    drop.addEventListener('drop', function (e) {
+      e.preventDefault();
+      drop.classList.remove('drag');
+      loadCrop(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]);
+    });
+  }
+  form.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-reset="avatar"]');
+    if (!b) return;
+    if (resetFlag) resetFlag.value = '1';
+    cropReady = false;
+    cropImg = null;
+    if (stage) stage.hidden = true;
+    try { file.files = new DataTransfer().files; } catch (err) {}
+    file.value = '';
+    if (defAvatar) {
+      prev.src = defAvatar;
+    } else {
+      prev.removeAttribute('src');
+    }
+  });
+  form.addEventListener('submit', function (e) {
+    if (!cropReady || !cropImg) return;
+    e.preventDefault();
+    applyCrop(function () { form.submit(); });
   });
 })();
 </script>

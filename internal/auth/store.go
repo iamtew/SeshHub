@@ -6,7 +6,10 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"fmt"
+	"html/template"
 	"time"
+
+	"seshhub/internal/skater"
 )
 
 const CookieName = "seshhub_session"
@@ -26,6 +29,16 @@ type User struct {
 	DiscordID           string
 	YouTubeChannelID    string
 	YouTubeChannelTitle string
+	ProviderAvatar      string `json:"-"`
+	AvatarR1            int    `json:"-"`
+	AvatarR2            int    `json:"-"`
+	AvatarR3            int    `json:"-"`
+	AvatarR4            int    `json:"-"`
+	AvatarBorder        int    `json:"-"`
+}
+
+func (u User) AvatarStyle() template.CSS {
+	return skater.FrameCSS(u.AvatarR1, u.AvatarR2, u.AvatarR3, u.AvatarR4, u.AvatarBorder)
 }
 
 const userCols = `id, username, display_name, IFNULL(avatar_url,''), role, host, IFNULL(discord_id,''), IFNULL(youtube_channel_id,''), IFNULL(youtube_channel_title,'')`
@@ -193,10 +206,11 @@ func DeleteUser(db *sql.DB, id, actorID string) error {
 	}
 	defer tx.Rollback()
 
-	var channel string
+	var channel, photoID string
 	if err := tx.QueryRow(`SELECT IFNULL(youtube_channel_id,'') FROM users WHERE id=?`, id).Scan(&channel); err != nil {
 		return err
 	}
+	_ = tx.QueryRow(`SELECT id FROM skater_profiles WHERE user_id=?`, id).Scan(&photoID)
 
 	if _, err := tx.Exec(`UPDATE articles SET author_id=? WHERE author_id=?`, TombstoneID, id); err != nil {
 		return err
@@ -224,7 +238,13 @@ func DeleteUser(db *sql.DB, id, actorID string) error {
 			return err
 		}
 	}
-	return tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	if photoID != "" {
+		skater.RemovePhoto(photoID)
+	}
+	return nil
 }
 
 func MergeUsers(db *sql.DB, keepID, fromID string) error {

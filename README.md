@@ -271,8 +271,8 @@ Two header modes. Same public nav (Spot / Episodes / FS Team / Friends / News / 
 ### 1. Skater Profiles & Team Roster
 - **Team Directory (`/team` / `/skaters`)**: People who hold `DISCORD_SKATER_ROLE_ID` (or admin) and have a linked profile. Name comes from Discord; optional display name, stance, status, location, bio.
 - **Friends Directory (`/friends`)**: Internal Friends — Discord `DISCORD_FRIENDS_ROLE_ID`, queue approval (including YouTube-only), or migrated former members. Same profile fields as team. Detail URL `/friends/{slug}`. Hitting the wrong prefix 302s.
-- **Detail Page (`/team/{slug}` or `/friends/{slug}`)**: Bio, stance, status, location, avatar, and clips from a linked YouTube channel (optional featured pin).
-- **Profile (`/dashboard/profile`)**: Own profile only — display name, user slug, stance, location, bio, featured clip, YouTube Feed Filter. Display name and slug default from Discord (YouTube if Discord is not connected); Reset restores those. Typing a display name sets the slug until the slug field is edited. Changing slug 302s the old URL to the new one until that slug is claimed again (not reserved).
+- **Detail Page (`/team/{slug}` or `/friends/{slug}`)**: Bio, stance, status, location, avatar (name and who-line beside a larger photo), and clips from a linked YouTube channel (optional featured pin).
+- **Profile (`/dashboard/profile`)**: Own profile only — display name, user slug, stance, location, bio, featured clip, YouTube Feed Filter, optional site photo (JPEG/PNG, 10 MB, square crop), and photo frame (circle-to-square slider, optional per-corner radii, optional border). Display name and slug default from Discord (YouTube if Discord is not connected); Reset restores those. Typing a display name sets the slug until the slug field is edited. Changing slug 302s the old URL to the new one until that slug is claimed again (not reserved). Site photo is Hub-only; Discord/YouTube remain the fallback.
 - **FS Team (`/admin/skaters`)**: Superadmin / Discord hub-admin role only. Set another skater’s status. No add-skater form.
 
 ### 2. YouTube clips from skaters
@@ -347,7 +347,12 @@ CREATE TABLE IF NOT EXISTS skater_profiles (
     bio TEXT,
     stance TEXT DEFAULT 'regular',             -- 'regular', 'goofy', 'mongo'
     status TEXT DEFAULT 'active',             -- 'pro', 'am', 'flow', 'legend', 'inactive'
-    avatar_url TEXT,
+    avatar_url TEXT,                           -- site photo URL, else Discord/YouTube
+    avatar_r1 INTEGER NOT NULL DEFAULT 50,     -- corner % 0=square 50=circle (TL, TR, BR, BL)
+    avatar_r2 INTEGER NOT NULL DEFAULT 50,
+    avatar_r3 INTEGER NOT NULL DEFAULT 50,
+    avatar_r4 INTEGER NOT NULL DEFAULT 50,
+    avatar_border INTEGER NOT NULL DEFAULT 0,
     banner_url TEXT,
     location TEXT,
     sponsors TEXT,                             -- JSON array of sponsor objects
