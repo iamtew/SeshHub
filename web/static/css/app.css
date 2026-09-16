@@ -332,34 +332,50 @@ hr {
 .md-css summary { cursor: pointer; font-weight: 600; }
 .md-css textarea { margin-top: 0.4rem; width: 100%; }
 .md-insert {
+    display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.4rem; align-items: center;
     background: var(--black); color: var(--fg); border: 1px solid var(--violet);
-    border-radius: 0.4rem; padding: 0.2rem 0.45rem; cursor: pointer; font: inherit;
+    border-radius: 0.4rem; padding: 0.28rem 0.45rem; cursor: pointer;
+    font: 0.8rem/1.25 ui-monospace, monospace; text-align: left; width: 100%;
 }
 .md-insert:hover { border-color: var(--chartreuse); }
-.md-chips { max-height: 40vh; overflow: auto; }
+.md-insert code { overflow: hidden; text-overflow: ellipsis; color: var(--cyan); }
+.md-insert span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font: 0.8rem/1.25 inherit; }
+.md-chips {
+    list-style: none; padding: 0; margin: 0.4rem 0 0;
+    display: flex; flex-direction: column; gap: 0.3rem; max-height: 40vh; overflow: auto;
+}
+.md-chips li { margin: 0; }
+.md-date-chips { display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem; align-items: stretch; max-width: none; }
+.md-date-chips .who { grid-column: 1 / -1; margin: 0; }
 .md-overlay {
-    width: calc(100vw - 1.5rem); height: calc(100dvh - 1.5rem); max-width: none; max-height: none;
-    margin: auto; padding: 0; border: 2px solid var(--violet); border-radius: 0.75rem;
-    background: var(--black); color: var(--fg); z-index: 40;
+    inset: 0.6rem; width: auto; height: auto; max-width: none; max-height: none;
+    margin: 0; padding: 0; border: 2px solid var(--violet); border-radius: 0.75rem;
+    background: var(--black); color: var(--fg); overflow: hidden;
 }
 .md-overlay[open] { display: flex; flex-direction: column; }
 .md-overlay::backdrop { background: rgb(0 0 0 / 0.85); }
 .md-overlay-bar {
     display: flex; justify-content: flex-end; gap: 0.6rem; padding: 0.6rem 0.75rem;
-    border-bottom: 2px solid var(--dusty);
+    border-bottom: 2px solid var(--dusty); flex: 0 0 auto;
 }
 .md-overlay-body {
     flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr; gap: 0.75rem; padding: 0.75rem;
 }
-.md-overlay-body > * { min-height: 0; }
-.md-side { overflow: auto; display: flex; flex-direction: column; gap: 0.85rem; }
+.md-overlay-body > * { min-height: 0; min-width: 0; overflow: auto; }
+.md-side { overflow: auto; display: flex; flex-direction: column; gap: 0.65rem; }
+.md-side .who, .md-side p { max-width: none; margin: 0; font-size: 0.9rem; }
+.md-side .md-chips { max-height: none; overflow: visible; }
+.md-side .md-date-chips {
+    position: sticky; top: 0; z-index: 1; background: var(--black);
+    padding-bottom: 0.5rem; border-bottom: 1px solid var(--dusty);
+}
 .md-side label { display: flex; flex-direction: column; gap: 0.4rem; }
 .md-side input:not([type="checkbox"]), .md-side textarea, .md-side select {
     background: var(--black); color: var(--fg); border: 2px solid var(--violet);
     padding: 0.5rem 0.65rem; font: inherit; border-radius: 0.6rem;
 }
 #monaco-mount { min-height: 16rem; height: 100%; border: 2px solid var(--dusty); border-radius: 0.6rem; overflow: hidden; }
-.md-overlay-preview { min-height: 12rem; }
+.md-overlay #monaco-mount, .md-overlay .md-preview { min-height: 0; }
 .banner { max-width: 100%; }
 .prose :is(h2,h3) { margin-top: 1.5rem; }
 .prose img { max-width: 100%; }
@@ -382,7 +398,7 @@ input, select, textarea { accent-color: var(--green); }
 }
 @media (min-width: 800px) {
     .md-basic { grid-template-columns: 1fr 1fr; }
-    .md-overlay-body { grid-template-columns: minmax(13rem, 16rem) 1fr 1fr; }
+    .md-overlay-body { grid-template-columns: minmax(18rem, 22rem) 1fr 1fr; }
 }
 @media (min-width: 960px) {
     .grid { grid-template-columns: repeat(3, 1fr); }

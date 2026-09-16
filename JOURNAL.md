@@ -15,6 +15,7 @@ Status, not spec. Spec lives in `README.md`.
 
 ## Log
 
+- 2026-09-16 — Overlay sidebar: date tags first and sticky; one-line key + value chips.
 - 2026-09-16 — Spot edit: Subotto fields sit under markdown/preview.
 - 2026-09-16 — Public nav always shows; no mobile Menu burger.
 - 2026-09-16 — Markdown editor: live goldmark preview, CDN Monaco overlay, Save / Save and close / Discard. Custom CSS folded. Bounce `just dev` for `POST /preview`.

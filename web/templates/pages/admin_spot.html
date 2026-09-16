@@ -4,20 +4,21 @@
 <form method="post" action="/admin/spot" class="form">
     {{template "md_editor" .}}
     <div data-md-meta>
+    <div class="md-date-chips">
+        <p class="who">Date tags</p>
+        <button type="button" class="md-insert" data-insert="[date_count:{{"{{air_datetime}}"}}]" title="[date_count:{{"{{air_datetime}}"}}]"><code>date_count</code></button>
+        <button type="button" class="md-insert" data-insert="[date_local:{{"{{air_datetime}}"}}]" title="[date_local:{{"{{air_datetime}}"}}]"><code>date_local</code></button>
+        <button type="button" class="md-insert" data-insert="[date_24h:{{"{{air_datetime}}"}}]" title="[date_24h:{{"{{air_datetime}}"}}]"><code>date_24h</code></button>
+        <button type="button" class="md-insert" data-insert="[date_12h:{{"{{air_datetime}}"}}]" title="[date_12h:{{"{{air_datetime}}"}}]"><code>date_12h</code></button>
+    </div>
     {{if .Items}}
-    <p class="who">Subotto fields. Click a placeholder to insert it at the cursor.</p>
-    <ul class="queue md-chips">
-        {{range .Items}}<li><button type="button" class="md-insert" data-insert="{{.Placeholder}}"><code>{{.Placeholder}}</code></button> <span class="who">{{.Val}}</span></li>{{end}}
+    <p class="who">Click to insert</p>
+    <ul class="md-chips">
+        {{range .Items}}<li><button type="button" class="md-insert" data-insert="{{.Placeholder}}" title="{{.Val}}"><code>{{.Placeholder}}</code> <span>{{.Val}}</span></button></li>{{end}}
     </ul>
     {{else}}
     <p class="who">Subotto did not answer. Markdown still saves; placeholders stay empty on the public page until it does.</p>
     {{end}}
-    <p class="who">Date tags:
-        <button type="button" class="md-insert" data-insert="[date_count:{{"{{air_datetime}}"}}]"><code>[date_count:{{"{{air_datetime}}"}}]</code></button>
-        <button type="button" class="md-insert" data-insert="[date_local:{{"{{air_datetime}}"}}]"><code>[date_local:{{"{{air_datetime}}"}}]</code></button>
-        <button type="button" class="md-insert" data-insert="[date_24h:{{"{{air_datetime}}"}}]"><code>[date_24h:{{"{{air_datetime}}"}}]</code></button>
-        <button type="button" class="md-insert" data-insert="[date_12h:{{"{{air_datetime}}"}}]"><code>[date_12h:{{"{{air_datetime}}"}}]</code></button>
-    </p>
     </div>
     {{template "md_actions" .}}
 </form>
