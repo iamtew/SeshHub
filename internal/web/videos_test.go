@@ -1,8 +1,10 @@
 package web
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -96,7 +98,7 @@ func TestOwnerFilterOnPublicVideos(t *testing.T) {
 
 	rec = httptest.NewRecorder()
 	s.dashboardProfile(rec, with(a, httptest.NewRequest(http.MethodGet, "/dashboard/profile", nil)))
-	if rec.Code != 200 || !strings.Contains(rec.Body.String(), "YouTube Feed Filter") {
+	if rec.Code != 200 || !strings.Contains(rec.Body.String(), "YouTube Feed Filter") || !strings.Contains(rec.Body.String(), "You have unsaved changes") {
 		t.Fatalf("profile %d %s", rec.Code, rec.Body.String())
 	}
 
@@ -165,5 +167,41 @@ func TestRosterVideoPager(t *testing.T) {
 	}
 	if !strings.Contains(p2, "10–10 of 10") {
 		t.Fatalf("range %s", p2)
+	}
+}
+
+func TestProfileSaveStaysOnDashboard(t *testing.T) {
+	sqldb, err := db.Open(":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = sqldb.Close() })
+	if err := db.Migrate(sqldb, "../db/migrations"); err != nil {
+		t.Fatal(err)
+	}
+	u, err := auth.UpsertDiscord(sqldb, "d1", "alice", "Alice", "", auth.RoleSkater, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, err := skater.EnsureForUser(sqldb, u.ID, "Alice")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var buf bytes.Buffer
+	mw := multipart.NewWriter(&buf)
+	_ = mw.WriteField("display_name", "Alice")
+	_ = mw.WriteField("slug", p.Slug)
+	_ = mw.WriteField("stance", "regular")
+	if err := mw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	req := httptest.NewRequest(http.MethodPost, "/dashboard/profile", &buf)
+	req.Header.Set("Content-Type", mw.FormDataContentType())
+	req = req.WithContext(context.WithValue(req.Context(), userKey, &u))
+	rec := httptest.NewRecorder()
+	s := &Server{db: sqldb, webDir: filepath.Join("..", "..", "web")}
+	s.dashboardProfile(rec, req)
+	if rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/dashboard/profile" {
+		t.Fatalf("save %d %s", rec.Code, rec.Header().Get("Location"))
 	}
 }

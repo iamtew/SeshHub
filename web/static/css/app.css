@@ -449,6 +449,15 @@ p:has(+ ul.grid), p.who { max-width: 42rem; }
 .pager > a:hover { box-shadow: 0 0 12px var(--violet); text-shadow: none; }
 .pager > span[aria-disabled] { background: rgb(255 255 255 / 0.12); opacity: 0.55; }
 .pager-range { color: var(--chartreuse); font-weight: 700; letter-spacing: 0.02em; }
+.save-bar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+    display: flex; flex-wrap: wrap; gap: 0.65rem; align-items: center;
+    justify-content: center; padding: 0.85rem 1.1rem;
+    background: rgb(0 0 0 / 0.92); border-top: 2px solid var(--chartreuse);
+}
+.save-bar[hidden] { display: none; }
+.save-bar p { margin: 0; }
+body.has-save-bar { padding-bottom: 5.5rem; }
 .consent {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
     padding: 0.85rem 1.1rem; background: rgb(0 0 0 / 0.92);

@@ -224,12 +224,11 @@ func (s *Server) dashboardProfile(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		saved, err := skater.Save(s.db, next)
-		if err != nil {
+		if _, err := skater.Save(s.db, next); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		http.Redirect(w, r, skater.RosterPath(u.Role)+"/"+saved.Slug, http.StatusSeeOther)
+		http.Redirect(w, r, "/dashboard/profile", http.StatusSeeOther)
 		return
 	}
 	s.renderSkaterProfile(w, r, u, p, nil, false)

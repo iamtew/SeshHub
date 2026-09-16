@@ -8,9 +8,10 @@
                 <input type="file" name="avatar" accept="image/jpeg,image/png" hidden>
             </div>
             <div>
-                <p class="who">Drop a JPEG or PNG on the picture, or click it (10MB). Drag the square, then Use crop.</p>
+                <p class="who">Drop a JPEG or PNG on the picture, or click it (10MB). Drag to pan, scroll or slider to zoom, then Use crop.</p>
                 <div id="avatar-crop" hidden>
                     <canvas width="320" height="320"></canvas>
+                    <label>Zoom <input type="range" id="avatar-zoom" min="0" max="100" value="0"></label>
                     <button type="button" id="avatar-crop-ok">Use crop</button>
                 </div>
                 <div class="field-reset">
@@ -57,12 +58,30 @@
         </select>
     </label>
     {{end}}
-    <button type="submit">Save</button>
 </form>
+<div id="profile-dirty" class="save-bar" hidden>
+    <p>You have unsaved changes</p>
+    <button type="button" id="profile-discard">Discard</button>
+    <button type="submit" form="profile-form">Save</button>
+</div>
 <script>
 (function () {
   var form = document.getElementById('profile-form');
   if (!form) return;
+  var bar = document.getElementById('profile-dirty');
+  function snap() {
+    var fd = new FormData(form), parts = [];
+    fd.forEach(function (v, k) {
+      parts.push(k + '=' + (v && v.name != null ? v.name + ':' + v.size : v));
+    });
+    return parts.join('\n');
+  }
+  var baseline = '';
+  function syncBar() {
+    var on = cropReady || snap() !== baseline;
+    if (bar) bar.hidden = !on;
+    document.body.classList.toggle('has-save-bar', on);
+  }
   var name = form.elements.namedItem('display_name');
   var slug = form.elements.namedItem('slug');
   var defName = form.getAttribute('data-default-name') || '';
@@ -95,7 +114,10 @@
     } else if (kind === 'slug') {
       slug.value = defSlug;
       follow = false;
+    } else {
+      return;
     }
+    syncBar();
   });
   var prev = document.getElementById('avatar-preview');
   var round = document.getElementById('avatar-round');
@@ -132,8 +154,32 @@
   var stage = document.getElementById('avatar-crop');
   var canvas = stage && stage.querySelector('canvas');
   var cropOk = document.getElementById('avatar-crop-ok');
+  var zoomEl = document.getElementById('avatar-zoom');
   var defAvatar = form.getAttribute('data-default-avatar') || '';
   var cropImg = null, sx = 0, sy = 0, side = 0, dragging = false, lastX = 0, lastY = 0, cropReady = false;
+  function maxSide() { return Math.min(cropImg.naturalWidth, cropImg.naturalHeight); }
+  function minSide() { var m = maxSide(); return m < 64 ? m : 64; }
+  function clampBox() {
+    var max = maxSide(), min = minSide();
+    side = Math.max(min, Math.min(max, side));
+    sx = Math.max(0, Math.min(cropImg.naturalWidth - side, sx));
+    sy = Math.max(0, Math.min(cropImg.naturalHeight - side, sy));
+  }
+  function syncZoom() {
+    if (!zoomEl || !cropImg) return;
+    var span = maxSide() - minSide();
+    zoomEl.value = span <= 0 ? 0 : Math.round(100 * (maxSide() - side) / span);
+  }
+  function setSide(next) {
+    if (!cropImg) return;
+    var cx = sx + side / 2, cy = sy + side / 2;
+    side = next;
+    sx = cx - side / 2;
+    sy = cy - side / 2;
+    clampBox();
+    syncZoom();
+    drawCrop();
+  }
   function drawCrop() {
     if (!canvas || !cropImg) return;
     var ctx = canvas.getContext('2d');
@@ -144,7 +190,7 @@
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, cw, ch);
     ctx.drawImage(cropImg, ox, oy, dw, dh);
-    var sq = Math.min(dw, dh);
+    var sq = side * scale;
     var rx = ox + sx * scale, ry = oy + sy * scale;
     ctx.fillStyle = 'rgba(0,0,0,0.45)';
     ctx.fillRect(ox, oy, dw, dh);
@@ -171,6 +217,7 @@
       cropReady = false;
       cropImg = null;
       if (stage) stage.hidden = true;
+      syncBar();
       if (then) then();
     }, 'image/jpeg', 0.9);
   }
@@ -186,7 +233,9 @@
       sy = (img.naturalHeight - side) / 2;
       cropReady = true;
       if (stage) stage.hidden = false;
+      if (zoomEl) zoomEl.value = 0;
       drawCrop();
+      syncBar();
     };
     img.src = URL.createObjectURL(f);
   }
@@ -208,7 +257,17 @@
       lastY = e.clientY;
       drawCrop();
     });
+    canvas.addEventListener('wheel', function (e) {
+      if (!cropImg) return;
+      e.preventDefault();
+      setSide(side * (e.deltaY > 0 ? 1.08 : 1 / 1.08));
+    }, { passive: false });
   }
+  if (zoomEl) zoomEl.addEventListener('input', function () {
+    if (!cropImg) return;
+    var span = maxSide() - minSide();
+    setSide(maxSide() - (Number(zoomEl.value) / 100) * span);
+  });
   if (cropOk) cropOk.addEventListener('click', function () { applyCrop(); });
   if (drop && file) {
     drop.addEventListener('click', function (e) {
@@ -240,12 +299,19 @@
     } else {
       prev.removeAttribute('src');
     }
+    syncBar();
   });
   form.addEventListener('submit', function (e) {
     if (!cropReady || !cropImg) return;
     e.preventDefault();
     applyCrop(function () { form.submit(); });
   });
+  form.addEventListener('input', syncBar);
+  form.addEventListener('change', syncBar);
+  var discard = document.getElementById('profile-discard');
+  if (discard) discard.addEventListener('click', function () { location.reload(); });
+  baseline = snap();
+  syncBar();
 })();
 </script>
 <h2>YouTube Feed Filter</h2>
