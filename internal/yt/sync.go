@@ -265,17 +265,27 @@ func upsert(db *sql.DB, v Video) (inserted bool, err error) {
 }
 
 func ListPublic(db *sql.DB) ([]Video, error) {
-	return list(db, "", 0)
+	return list(db, "", 0, 0)
+}
+
+func ListPublicPage(db *sql.DB, limit, offset int) ([]Video, error) {
+	return list(db, "", limit, offset)
+}
+
+func CountPublic(db *sql.DB) (int, error) {
+	var n int
+	err := db.QueryRow(`SELECT COUNT(*) FROM youtube_videos WHERE is_hidden = 0`).Scan(&n)
+	return n, err
 }
 
 func ListByChannel(db *sql.DB, channelID string, limit int) ([]Video, error) {
 	if channelID == "" {
 		return nil, nil
 	}
-	return list(db, channelID, limit)
+	return list(db, channelID, limit, 0)
 }
 
-func list(db *sql.DB, channelID string, limit int) ([]Video, error) {
+func list(db *sql.DB, channelID string, limit, offset int) ([]Video, error) {
 	q := `SELECT id, channel_id, title, IFNULL(description,''), published_at, thumbnail_url, duration_seconds, view_count, like_count, IFNULL(tags,''), IFNULL(category,'') FROM youtube_videos WHERE is_hidden = 0`
 	var args []any
 	if channelID != "" {
@@ -286,6 +296,10 @@ func list(db *sql.DB, channelID string, limit int) ([]Video, error) {
 	if limit > 0 {
 		q += ` LIMIT ?`
 		args = append(args, limit)
+		if offset > 0 {
+			q += ` OFFSET ?`
+			args = append(args, offset)
+		}
 	}
 	rows, err := db.Query(q, args...)
 	if err != nil {

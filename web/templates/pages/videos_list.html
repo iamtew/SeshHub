@@ -14,5 +14,21 @@
 </li>
 {{end}}
 </ul>
+<nav class="pager" aria-label="Videos pagination">
+    <span class="pager-size">Rows per page:
+        <details>
+            <summary>{{.Per}}</summary>
+            <div>
+                <a href="/videos?n=9" {{if eq .Per 9}}aria-current="true"{{end}}>9</a>
+                <a href="/videos?n=18" {{if eq .Per 18}}aria-current="true"{{end}}>18</a>
+                <a href="/videos?n=27" {{if eq .Per 27}}aria-current="true"{{end}}>27</a>
+            </div>
+        </details>
+    </span>
+    <span class="pager-range">{{.From}}–{{.To}} of {{.Total}}</span>
+    {{if .HasPrev}}<a href="/videos?n={{.Per}}&amp;p=1" aria-label="First page">|‹</a>{{else}}<span aria-disabled="true">|‹</span>{{end}}
+    {{if .HasPrev}}<a href="/videos?n={{.Per}}&amp;p={{.Prev}}" aria-label="Previous page">‹</a>{{else}}<span aria-disabled="true">‹</span>{{end}}
+    {{if .HasNext}}<a href="/videos?n={{.Per}}&amp;p={{.Next}}" aria-label="Next page">›</a>{{else}}<span aria-disabled="true">›</span>{{end}}
+</nav>
 {{end}}
 {{end}}

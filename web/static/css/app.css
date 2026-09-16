@@ -384,6 +384,36 @@ time.md-date[data-fmt="count"] { font-variant-numeric: tabular-nums; }
 .embed { position: relative; width: 100%; max-width: none; aspect-ratio: 16 / 9; }
 .embed iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; border-radius: 0.5rem; }
 p:has(+ ul.grid), p.who { max-width: 42rem; }
+.pager {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.55rem 0.75rem;
+    margin: 1.5rem 0 0; padding: 0.75rem 1rem;
+    border: 2px solid var(--chartreuse); border-radius: 0.85rem;
+    background: rgb(0 0 0 / 0.55); color: var(--fg); font-size: 1.05rem;
+    box-shadow: 0 0 12px rgb(229 242 13 / 0.25);
+}
+.pager-size { display: flex; align-items: center; gap: 0.5rem; margin-right: auto; }
+.pager-size details { position: relative; }
+.pager-size summary {
+    list-style: none; cursor: pointer; color: var(--black); font-weight: 700;
+    padding: 0.35rem 0.75rem; border-radius: 0.45rem; background: var(--chartreuse);
+}
+.pager-size summary::-webkit-details-marker { display: none; }
+.pager-size details div {
+    position: absolute; left: 0; bottom: calc(100% + 0.25rem); z-index: 2;
+    display: flex; flex-direction: column; min-width: 3.4rem;
+    background: var(--black); border: 2px solid var(--chartreuse); border-radius: 0.5rem; overflow: hidden;
+}
+.pager-size details a { padding: 0.45rem 0.75rem; text-align: center; }
+.pager-size details a[aria-current] { background: var(--chartreuse); color: var(--black); }
+.pager-size details a:hover { text-shadow: none; background: var(--violet); }
+.pager > a, .pager > span[aria-disabled] {
+    min-width: 2.2rem; min-height: 2.2rem; display: inline-flex; align-items: center; justify-content: center;
+    text-align: center; font-size: 1.35rem; font-weight: 700; border-radius: 0.45rem;
+}
+.pager > a { background: var(--violet); }
+.pager > a:hover { box-shadow: 0 0 12px var(--violet); text-shadow: none; }
+.pager > span[aria-disabled] { background: rgb(255 255 255 / 0.12); opacity: 0.55; }
+.pager-range { color: var(--chartreuse); font-weight: 700; letter-spacing: 0.02em; }
 .consent {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
     padding: 0.85rem 1.1rem; background: rgb(0 0 0 / 0.92);
