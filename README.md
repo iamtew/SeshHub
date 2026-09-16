@@ -271,13 +271,13 @@ Two header modes. Same public nav (Spot / Episodes / FS Team / News / Videos / A
 ### 1. Skater Profiles & Team Roster
 - **Team Directory (`/team` / `/skaters`)**: People who hold `DISCORD_SKATER_ROLE_ID` in the guild and have logged in with Discord. Name comes from Discord; optional display name, stance, status, location, bio.
 - **Skater Detail Page (`/team/{slug}`)**: Bio, stance, status, location, Discord avatar, and clips from a linked YouTube channel (optional featured pin).
-- **Skater profile (`/dashboard/profile`)**: Own profile only — display name, stance, location, bio, featured clip, clip publish filter.
+- **Skater profile (`/dashboard/profile`)**: Own profile only — display name, stance, location, bio, featured clip, YouTube Feed Filter.
 - **FS Team (`/admin/skaters`)**: Superadmin / Discord hub-admin role only. Set another skater’s status. No add-skater form.
 
 ### 2. YouTube clips from skaters
 - **No site-wide channel crawler**: `/videos` is still the union of clips pulled from team skaters who have connected YouTube. An optional `YOUTUBE_DATA_API_KEY` poller only refreshes public stats on those existing rows (hourly).
 - **Logged-in refresh**: If the user has a `skater_profiles` row, a YouTube refresh token, and last sync is older than 60 minutes, a request while they are logged in refreshes up to 50 latest uploads.
-- **Clip publish filter**: On `/dashboard/profile`, each skater saves AND-ed rules (title / channel / category / tags). Only that user’s matching clips appear on public `/videos` and their team page. Test labels Keep / Hidden without saving. Empty filter publishes all of theirs.
+- **YouTube Feed Filter**: On `/dashboard/profile`, each skater saves AND-ed rows (field, operator, value) plus optional upload-type checkboxes (video / short / live / premiere). Operators: contains, does not contain, starts with, ends with, regexp. Only that user’s matching clips appear on public `/videos` and their team page. Test lists Keep then Hidden without saving. Empty filter publishes all of theirs. Other skaters’ clips are unchanged.
 - **Manual pin**: Admins/skaters can still set `featured_video_id` from that channel’s synced rows.
 
 ### 3. Articles, News & Blog CMS
@@ -324,7 +324,7 @@ CREATE TABLE IF NOT EXISTS users (
     youtube_channel_title TEXT,
     youtube_refresh_token TEXT,
     youtube_synced_at DATETIME,
-    video_filter TEXT,                         -- JSON allowlist for this user's clips on /videos
+    video_filter TEXT,                         -- YouTube Feed Filter JSON {rules, kinds}
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -402,6 +402,7 @@ CREATE TABLE IF NOT EXISTS youtube_videos (
     channel_title TEXT,
     tags TEXT,                                 -- JSON array of video tags
     category TEXT,                             -- 'session', 'part', 'contest', 'short'
+    live_broadcast TEXT,                       -- YouTube liveBroadcastContent: none/live/upcoming
     is_featured BOOLEAN NOT NULL DEFAULT 0,
     is_hidden BOOLEAN NOT NULL DEFAULT 0,
     synced_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP

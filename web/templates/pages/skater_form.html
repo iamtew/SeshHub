@@ -24,34 +24,40 @@
     {{end}}
     <button type="submit">Save</button>
 </form>
-<h2>My clips on /videos</h2>
+<h2>YouTube Feed Filter</h2>
 <form method="post" action="/dashboard/profile/filter" class="form video-filter">
-    <p class="who">Rules apply only to your linked YouTube uploads. Clips that match every rule appear on /videos (and your team page) for everyone. Empty filter publishes all of yours. Test labels Keep or Hidden without saving.</p>
+    <p class="who">YouTube Feed Filter applies only to your linked uploads. Every rule is AND. Clips that pass appear on /videos and your team page. Other skaters’ clips are unchanged. Empty filter publishes all of yours. Test lists Keep then Hidden (Hidden still listed so you can see misses). Not saved until you hit Save.</p>
     {{range .FilterRows}}
     <div class="filter-row">
         <label>Field
             <select name="field">
-                <option value="title" {{if or (eq .Field "title") (eq .Field "")}}selected{{end}}>Title contains</option>
-                <option value="channel" {{if eq .Field "channel"}}selected{{end}}>Channel contains</option>
-                <option value="tags" {{if eq .Field "tags"}}selected{{end}}>Tags contain</option>
-                <option value="category" {{if eq .Field "category"}}selected{{end}}>Category is</option>
+                <option value="title" {{if or (eq .Field "title") (eq .Field "")}}selected{{end}}>Title</option>
+                <option value="tags" {{if eq .Field "tags"}}selected{{end}}>Tags</option>
+                <option value="category" {{if eq .Field "category"}}selected{{end}}>Category</option>
+            </select>
+        </label>
+        <label>Operator
+            <select name="op">
+                <option value="contains" {{if or (eq .Op "contains") (eq .Op "")}}selected{{end}}>contains</option>
+                <option value="not_contains" {{if eq .Op "not_contains"}}selected{{end}}>does not contain</option>
+                <option value="prefix" {{if eq .Op "prefix"}}selected{{end}}>starts with</option>
+                <option value="suffix" {{if eq .Op "suffix"}}selected{{end}}>ends with</option>
+                <option value="regexp" {{if eq .Op "regexp"}}selected{{end}}>regexp</option>
             </select>
         </label>
         <label>Value
-            {{if eq .Field "category"}}
-            <select name="value">
-                <option value="">Pick</option>
-                <option value="session" {{if eq .Value "session"}}selected{{end}}>session</option>
-                <option value="short" {{if eq .Value "short"}}selected{{end}}>short</option>
-                <option value="contest" {{if eq .Value "contest"}}selected{{end}}>contest</option>
-                <option value="part" {{if eq .Value "part"}}selected{{end}}>part</option>
-            </select>
-            {{else}}
             <input name="value" value="{{.Value}}" maxlength="80">
-            {{end}}
         </label>
     </div>
     {{end}}
+    <fieldset class="filter-kinds">
+        <legend>Upload type</legend>
+        <label><input type="checkbox" name="kind" value="video" {{if index .KindOn "video"}}checked{{end}}> Video</label>
+        <label><input type="checkbox" name="kind" value="short" {{if index .KindOn "short"}}checked{{end}}> Short</label>
+        <label><input type="checkbox" name="kind" value="live" {{if index .KindOn "live"}}checked{{end}}> Live</label>
+        <label><input type="checkbox" name="kind" value="premiere" {{if index .KindOn "premiere"}}checked{{end}}> Premiere</label>
+        <p class="who">Unchecked = all types. Short is duration ≤ 3 minutes; live/premiere from YouTube’s broadcast status.</p>
+    </fieldset>
     <div class="form-actions">
         <button type="submit" name="action" value="save">Save</button>
         <button type="submit" name="action" value="test">Test</button>
@@ -60,12 +66,13 @@
     </div>
 </form>
 {{if .Test}}
-<p class="who">{{if .User.YouTubeChannelID}}Test against your cached uploads.{{else}}Connect YouTube to test against your clips.{{end}} Not saved.</p>
+<p class="who">{{if .User.YouTubeChannelID}}Your cached uploads only.{{else}}Connect YouTube to test against your clips.{{end}}</p>
 {{if .TestClips}}
 <ul class="grid">
 {{range .TestClips}}
 <li>
     {{if .Keep}}<span class="filter-keep">Keep</span>{{else}}<span class="filter-hide">Hidden</span>{{end}}
+    <span class="who">{{.Kind}}</span>
     <a href="https://www.youtube.com/watch?v={{.ID}}">
         {{if .Thumb}}<img src="{{.Thumb}}" alt="" class="thumb">{{end}}
         <strong>{{.Title}}</strong>

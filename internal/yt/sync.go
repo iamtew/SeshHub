@@ -32,7 +32,24 @@ type Video struct {
 	Comments     int
 	Tags         string
 	Category     string
+	Live         string
 }
+
+// ponytail: Shorts ≤180s (YouTube's 3min cap); live/upcoming from snippet.liveBroadcastContent, not a stored kind column.
+func UploadType(v Video) string {
+	switch strings.ToLower(v.Live) {
+	case "live":
+		return "live"
+	case "upcoming":
+		return "premiere"
+	}
+	if v.Duration > 0 && v.Duration <= 180 {
+		return "short"
+	}
+	return "video"
+}
+
+func (v Video) Kind() string { return UploadType(v) }
 
 func (v Video) StatsLine() string {
 	var parts []string
@@ -234,13 +251,14 @@ func (c Client) upsertChunk(ctx context.Context, db *sql.DB, ids []string, out *
 		Items []struct {
 			ID      string `json:"id"`
 			Snippet struct {
-				Title        string   `json:"title"`
-				Description  string   `json:"description"`
-				ChannelID    string   `json:"channelId"`
-				ChannelTitle string   `json:"channelTitle"`
-				PublishedAt  string   `json:"publishedAt"`
-				Tags         []string `json:"tags"`
-				Thumbnails   map[string]struct {
+				Title                string   `json:"title"`
+				Description          string   `json:"description"`
+				ChannelID            string   `json:"channelId"`
+				ChannelTitle         string   `json:"channelTitle"`
+				PublishedAt          string   `json:"publishedAt"`
+				Tags                 []string `json:"tags"`
+				LiveBroadcastContent string   `json:"liveBroadcastContent"`
+				Thumbnails           map[string]struct {
 					URL string `json:"url"`
 				} `json:"thumbnails"`
 			} `json:"snippet"`
@@ -271,6 +289,7 @@ func (c Client) upsertChunk(ctx context.Context, db *sql.DB, ids []string, out *
 			PublishedAt: it.Snippet.PublishedAt, Thumb: thumbURL(it.Snippet.Thumbnails),
 			Duration: DurationSeconds(it.ContentDetails.Duration), Views: views, Likes: likes, Comments: comments,
 			Tags: strings.Join(it.Snippet.Tags, ", "), Category: Classify(it.Snippet.Title, it.Snippet.Description),
+			Live: it.Snippet.LiveBroadcastContent,
 		}
 		ins, err := upsert(db, v)
 		if err != nil {
@@ -289,12 +308,12 @@ func upsert(db *sql.DB, v Video) (inserted bool, err error) {
 	var exists int
 	_ = db.QueryRow(`SELECT 1 FROM youtube_videos WHERE id = ?`, v.ID).Scan(&exists)
 	if exists == 1 {
-		_, err = db.Exec(`UPDATE youtube_videos SET title=?, channel_title=?, description=?, published_at=?, thumbnail_url=?, duration_seconds=?, view_count=?, like_count=?, comment_count=?, tags=?, category=?, synced_at=CURRENT_TIMESTAMP WHERE id=?`,
-			v.Title, nullEmpty(v.ChannelTitle), v.Description, v.PublishedAt, v.Thumb, v.Duration, v.Views, v.Likes, v.Comments, nullEmpty(v.Tags), v.Category, v.ID)
+		_, err = db.Exec(`UPDATE youtube_videos SET title=?, channel_title=?, description=?, published_at=?, thumbnail_url=?, duration_seconds=?, view_count=?, like_count=?, comment_count=?, tags=?, category=?, live_broadcast=?, synced_at=CURRENT_TIMESTAMP WHERE id=?`,
+			v.Title, nullEmpty(v.ChannelTitle), v.Description, v.PublishedAt, v.Thumb, v.Duration, v.Views, v.Likes, v.Comments, nullEmpty(v.Tags), v.Category, nullEmpty(v.Live), v.ID)
 		return false, err
 	}
-	_, err = db.Exec(`INSERT INTO youtube_videos (id, channel_id, channel_title, title, description, published_at, thumbnail_url, duration_seconds, view_count, like_count, comment_count, tags, category) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-		v.ID, v.ChannelID, nullEmpty(v.ChannelTitle), v.Title, nullEmpty(v.Description), v.PublishedAt, v.Thumb, v.Duration, v.Views, v.Likes, v.Comments, nullEmpty(v.Tags), v.Category)
+	_, err = db.Exec(`INSERT INTO youtube_videos (id, channel_id, channel_title, title, description, published_at, thumbnail_url, duration_seconds, view_count, like_count, comment_count, tags, category, live_broadcast) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+		v.ID, v.ChannelID, nullEmpty(v.ChannelTitle), v.Title, nullEmpty(v.Description), v.PublishedAt, v.Thumb, v.Duration, v.Views, v.Likes, v.Comments, nullEmpty(v.Tags), v.Category, nullEmpty(v.Live))
 	return true, err
 }
 
@@ -320,7 +339,7 @@ func ListByChannel(db *sql.DB, channelID string, limit int) ([]Video, error) {
 }
 
 func list(db *sql.DB, channelID string, limit, offset int) ([]Video, error) {
-	q := `SELECT id, channel_id, IFNULL(channel_title,''), title, IFNULL(description,''), published_at, thumbnail_url, duration_seconds, view_count, like_count, comment_count, IFNULL(tags,''), IFNULL(category,'') FROM youtube_videos WHERE is_hidden = 0`
+	q := `SELECT id, channel_id, IFNULL(channel_title,''), title, IFNULL(description,''), published_at, thumbnail_url, duration_seconds, view_count, like_count, comment_count, IFNULL(tags,''), IFNULL(category,''), IFNULL(live_broadcast,'') FROM youtube_videos WHERE is_hidden = 0`
 	var args []any
 	if channelID != "" {
 		q += ` AND channel_id = ?`
@@ -343,7 +362,7 @@ func list(db *sql.DB, channelID string, limit, offset int) ([]Video, error) {
 	var out []Video
 	for rows.Next() {
 		var v Video
-		if err := rows.Scan(&v.ID, &v.ChannelID, &v.ChannelTitle, &v.Title, &v.Description, &v.PublishedAt, &v.Thumb, &v.Duration, &v.Views, &v.Likes, &v.Comments, &v.Tags, &v.Category); err != nil {
+		if err := rows.Scan(&v.ID, &v.ChannelID, &v.ChannelTitle, &v.Title, &v.Description, &v.PublishedAt, &v.Thumb, &v.Duration, &v.Views, &v.Likes, &v.Comments, &v.Tags, &v.Category, &v.Live); err != nil {
 			return nil, err
 		}
 		out = append(out, v)
@@ -356,8 +375,8 @@ func Get(db *sql.DB, id string) (Video, error) {
 	if id == "" {
 		return v, sql.ErrNoRows
 	}
-	err := db.QueryRow(`SELECT id, channel_id, IFNULL(channel_title,''), title, IFNULL(description,''), published_at, thumbnail_url, duration_seconds, view_count, like_count, comment_count, IFNULL(tags,''), IFNULL(category,'') FROM youtube_videos WHERE id = ? AND is_hidden = 0`, id).
-		Scan(&v.ID, &v.ChannelID, &v.ChannelTitle, &v.Title, &v.Description, &v.PublishedAt, &v.Thumb, &v.Duration, &v.Views, &v.Likes, &v.Comments, &v.Tags, &v.Category)
+	err := db.QueryRow(`SELECT id, channel_id, IFNULL(channel_title,''), title, IFNULL(description,''), published_at, thumbnail_url, duration_seconds, view_count, like_count, comment_count, IFNULL(tags,''), IFNULL(category,''), IFNULL(live_broadcast,'') FROM youtube_videos WHERE id = ? AND is_hidden = 0`, id).
+		Scan(&v.ID, &v.ChannelID, &v.ChannelTitle, &v.Title, &v.Description, &v.PublishedAt, &v.Thumb, &v.Duration, &v.Views, &v.Likes, &v.Comments, &v.Tags, &v.Category, &v.Live)
 	return v, err
 }
 
@@ -374,7 +393,7 @@ func GetMany(db *sql.DB, ids []string) map[string]Video {
 	if len(uniq) == 0 {
 		return nil
 	}
-	q := `SELECT id, channel_id, IFNULL(channel_title,''), title, IFNULL(description,''), published_at, thumbnail_url, duration_seconds, view_count, like_count, comment_count, IFNULL(tags,''), IFNULL(category,'') FROM youtube_videos WHERE is_hidden = 0 AND id IN (` + strings.Repeat("?,", len(uniq)-1) + `?)`
+	q := `SELECT id, channel_id, IFNULL(channel_title,''), title, IFNULL(description,''), published_at, thumbnail_url, duration_seconds, view_count, like_count, comment_count, IFNULL(tags,''), IFNULL(category,''), IFNULL(live_broadcast,'') FROM youtube_videos WHERE is_hidden = 0 AND id IN (` + strings.Repeat("?,", len(uniq)-1) + `?)`
 	args := make([]any, len(uniq))
 	for i, id := range uniq {
 		args[i] = id
@@ -387,7 +406,7 @@ func GetMany(db *sql.DB, ids []string) map[string]Video {
 	out := map[string]Video{}
 	for rows.Next() {
 		var v Video
-		if err := rows.Scan(&v.ID, &v.ChannelID, &v.ChannelTitle, &v.Title, &v.Description, &v.PublishedAt, &v.Thumb, &v.Duration, &v.Views, &v.Likes, &v.Comments, &v.Tags, &v.Category); err != nil {
+		if err := rows.Scan(&v.ID, &v.ChannelID, &v.ChannelTitle, &v.Title, &v.Description, &v.PublishedAt, &v.Thumb, &v.Duration, &v.Views, &v.Likes, &v.Comments, &v.Tags, &v.Category, &v.Live); err != nil {
 			return out
 		}
 		out[v.ID] = v
@@ -502,7 +521,7 @@ func (c Client) Poll(ctx context.Context, db *sql.DB) (int, error) {
 }
 
 func (c Client) pollChunk(ctx context.Context, db *sql.DB, ids []string) (int, error) {
-	vb, err := c.get(ctx, "/videos", url.Values{"part": {"snippet,statistics"}, "id": {strings.Join(ids, ",")}})
+	vb, err := c.get(ctx, "/videos", url.Values{"part": {"snippet,contentDetails,statistics"}, "id": {strings.Join(ids, ",")}})
 	if err != nil {
 		return 0, err
 	}
@@ -510,9 +529,13 @@ func (c Client) pollChunk(ctx context.Context, db *sql.DB, ids []string) (int, e
 		Items []struct {
 			ID      string `json:"id"`
 			Snippet struct {
-				Title        string `json:"title"`
-				ChannelTitle string `json:"channelTitle"`
+				Title                string `json:"title"`
+				ChannelTitle         string `json:"channelTitle"`
+				LiveBroadcastContent string `json:"liveBroadcastContent"`
 			} `json:"snippet"`
+			ContentDetails struct {
+				Duration string `json:"duration"`
+			} `json:"contentDetails"`
 			Statistics struct {
 				ViewCount    string `json:"viewCount"`
 				LikeCount    string `json:"likeCount"`
@@ -528,8 +551,9 @@ func (c Client) pollChunk(ctx context.Context, db *sql.DB, ids []string) (int, e
 		views, _ := strconv.Atoi(it.Statistics.ViewCount)
 		likes, _ := strconv.Atoi(it.Statistics.LikeCount)
 		comments, _ := strconv.Atoi(it.Statistics.CommentCount)
-		res, err := db.Exec(`UPDATE youtube_videos SET title=COALESCE(NULLIF(?, ''), title), channel_title=?, view_count=?, like_count=?, comment_count=?, synced_at=CURRENT_TIMESTAMP WHERE id=?`,
-			it.Snippet.Title, nullEmpty(it.Snippet.ChannelTitle), views, likes, comments, it.ID)
+		dur := DurationSeconds(it.ContentDetails.Duration)
+		res, err := db.Exec(`UPDATE youtube_videos SET title=COALESCE(NULLIF(?, ''), title), channel_title=?, duration_seconds=CASE WHEN ? > 0 THEN ? ELSE duration_seconds END, live_broadcast=COALESCE(NULLIF(?, ''), live_broadcast), view_count=?, like_count=?, comment_count=?, synced_at=CURRENT_TIMESTAMP WHERE id=?`,
+			it.Snippet.Title, nullEmpty(it.Snippet.ChannelTitle), dur, dur, nullEmpty(it.Snippet.LiveBroadcastContent), views, likes, comments, it.ID)
 		if err != nil {
 			return n, err
 		}

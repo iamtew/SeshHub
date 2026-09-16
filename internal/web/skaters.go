@@ -154,7 +154,7 @@ func (s *Server) profileFilter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	_ = r.ParseForm()
-	rows := yt.FormRules(r.Form["field"], r.Form["value"])
+	spec := yt.FormSpec(r.Form["field"], r.Form["op"], r.Form["value"], r.Form["kind"])
 	switch r.FormValue("action") {
 	case "clear":
 		if err := auth.SetVideoFilter(s.db, u.ID, ""); err != nil {
@@ -163,18 +163,18 @@ func (s *Server) profileFilter(w http.ResponseWriter, r *http.Request) {
 		}
 		http.Redirect(w, r, "/dashboard/profile", http.StatusSeeOther)
 	case "save":
-		if err := auth.SetVideoFilter(s.db, u.ID, yt.EncodeRules(rows)); err != nil {
+		if err := auth.SetVideoFilter(s.db, u.ID, yt.EncodeSpec(spec)); err != nil {
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
 		http.Redirect(w, r, "/dashboard/profile", http.StatusSeeOther)
 	case "add":
-		if len(rows) < yt.MaxRules {
-			rows = append(rows, yt.Rule{})
+		if len(spec.Rules) < yt.MaxRules {
+			spec.Rules = append(spec.Rules, yt.Rule{})
 		}
-		s.renderSkaterProfile(w, r, u, p, rows, false)
+		s.renderSkaterProfile(w, r, u, p, &spec, false)
 	default:
-		s.renderSkaterProfile(w, r, u, p, yt.WithBlank(rows), true)
+		s.renderSkaterProfile(w, r, u, p, &spec, true)
 	}
 }
 
@@ -208,23 +208,36 @@ func (s *Server) ownProfile(w http.ResponseWriter, r *http.Request) (*auth.User,
 	return u, p, true
 }
 
-func (s *Server) renderSkaterProfile(w http.ResponseWriter, r *http.Request, u *auth.User, p skater.Profile, rows []yt.Rule, test bool) {
-	if rows == nil {
+func (s *Server) renderSkaterProfile(w http.ResponseWriter, r *http.Request, u *auth.User, p skater.Profile, spec *yt.Spec, test bool) {
+	var sspec yt.Spec
+	if spec != nil {
+		sspec = *spec
+	} else {
 		raw, _ := auth.GetVideoFilter(s.db, u.ID)
-		rows = yt.WithBlank(yt.ParseRules(raw))
+		sspec = yt.ParseSpec(raw)
+	}
+	sspec.Rules = yt.WithBlank(sspec.Rules)
+	kindOn := map[string]bool{}
+	for _, k := range sspec.Kinds {
+		kindOn[k] = true
 	}
 	vids := userChannelVideos(s.db, u.ID, 50)
 	data := map[string]any{
 		"Title": "Skater profile", "Path": "/dashboard/profile", "P": p, "Action": "/dashboard/profile",
-		"Videos": vids, "FilterRows": rows, "Test": test,
+		"Videos": vids, "FilterRows": sspec.Rules, "KindOn": kindOn, "Test": test,
 	}
 	if test {
-		rules := yt.Normalize(rows)
-		var items []clipTest
+		check := yt.NormalizeSpec(sspec)
+		var keep, hide []clipTest
 		for _, v := range vids {
-			items = append(items, clipTest{Video: v, Keep: yt.Match(v, rules)})
+			item := clipTest{Video: v, Keep: yt.Match(v, check)}
+			if item.Keep {
+				keep = append(keep, item)
+			} else {
+				hide = append(hide, item)
+			}
 		}
-		data["TestClips"] = items
+		data["TestClips"] = append(keep, hide...)
 	}
 	s.render(w, r, "skater_form.html", data)
 }

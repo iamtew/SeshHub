@@ -73,12 +73,12 @@ func TestOwnerFilterOnPublicVideos(t *testing.T) {
 	rec := httptest.NewRecorder()
 	s.videos(rec, httptest.NewRequest(http.MethodGet, "/videos", nil))
 	body := rec.Body.String()
-	if rec.Code != 200 || strings.Contains(body, "My clips on /videos") || !strings.Contains(body, "Wheel Session") || !strings.Contains(body, "Other") || !strings.Contains(body, "B Clip") {
+	if rec.Code != 200 || strings.Contains(body, "YouTube Feed Filter") || !strings.Contains(body, "Wheel Session") || !strings.Contains(body, "Other") || !strings.Contains(body, "B Clip") {
 		t.Fatalf("guest all %d %s", rec.Code, body)
 	}
 
 	rec = httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodPost, "/dashboard/profile/filter", strings.NewReader("action=save&field=title&value=wheel"))
+	req := httptest.NewRequest(http.MethodPost, "/dashboard/profile/filter", strings.NewReader("action=save&field=title&op=contains&value=wheel"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	s.profileFilter(rec, with(a, req))
 	if rec.Code != http.StatusSeeOther {
@@ -94,12 +94,12 @@ func TestOwnerFilterOnPublicVideos(t *testing.T) {
 
 	rec = httptest.NewRecorder()
 	s.dashboardProfile(rec, with(a, httptest.NewRequest(http.MethodGet, "/dashboard/profile", nil)))
-	if rec.Code != 200 || !strings.Contains(rec.Body.String(), "My clips on /videos") {
+	if rec.Code != 200 || !strings.Contains(rec.Body.String(), "YouTube Feed Filter") {
 		t.Fatalf("profile %d %s", rec.Code, rec.Body.String())
 	}
 
 	rec = httptest.NewRecorder()
-	req = httptest.NewRequest(http.MethodPost, "/dashboard/profile/filter", strings.NewReader("action=test&field=title&value=wheel"))
+	req = httptest.NewRequest(http.MethodPost, "/dashboard/profile/filter", strings.NewReader("action=test&field=title&op=contains&value=wheel"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	s.profileFilter(rec, with(a, req))
 	body = rec.Body.String()
