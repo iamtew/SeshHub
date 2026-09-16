@@ -43,6 +43,15 @@ func TestMatchAndFilter(t *testing.T) {
 	if len(keep) != 1 || keep[0].Title != v.Title {
 		t.Fatalf("filter %#v", keep)
 	}
+	owned := []Video{
+		{ChannelID: "a", Title: "Wheel Session"},
+		{ChannelID: "a", Title: "Other"},
+		{ChannelID: "b", Title: "Other"},
+	}
+	shown := FilterOwned(owned, map[string][]Rule{"a": {{Field: "title", Value: "wheel"}}})
+	if len(shown) != 2 || shown[0].Title != "Wheel Session" || shown[1].ChannelID != "b" {
+		t.Fatalf("owned %#v", shown)
+	}
 	if n := len(Normalize(append(FormRules([]string{"title", "title"}, []string{"a", ""}), Rule{Field: "category", Value: "nope"}))); n != 1 {
 		t.Fatalf("normalize %d", n)
 	}

@@ -61,10 +61,11 @@ func (s *Server) skaterDetail(w http.ResponseWriter, r *http.Request) {
 	if p.AvatarURL != "" {
 		data["OGImage"] = p.AvatarURL
 	}
-	if v, err := yt.Get(s.db, p.FeaturedVideoID); err == nil {
+	by, _ := yt.OwnerFilters(s.db)
+	if v, err := yt.Get(s.db, p.FeaturedVideoID); err == nil && yt.Match(v, by[v.ChannelID]) {
 		data["Featured"] = v
 	}
-	clips := userChannelVideos(s.db, p.UserID, 6)
+	clips := yt.FilterOwned(userChannelVideos(s.db, p.UserID, 6), by)
 	if feat, ok := data["Featured"].(yt.Video); ok {
 		var rest []yt.Video
 		for _, c := range clips {

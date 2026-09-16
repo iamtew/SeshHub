@@ -138,6 +138,21 @@ func GetUser(db *sql.DB, id string) (User, error) {
 	return scanUser(db.QueryRow(`SELECT `+userCols+` FROM users WHERE id = ?`, id))
 }
 
+func GetVideoFilter(db *sql.DB, userID string) (string, error) {
+	var s sql.NullString
+	err := db.QueryRow(`SELECT video_filter FROM users WHERE id=?`, userID).Scan(&s)
+	return s.String, err
+}
+
+func SetVideoFilter(db *sql.DB, userID, raw string) error {
+	if raw == "" {
+		_, err := db.Exec(`UPDATE users SET video_filter=NULL, updated_at=CURRENT_TIMESTAMP WHERE id=?`, userID)
+		return err
+	}
+	_, err := db.Exec(`UPDATE users SET video_filter=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`, raw, userID)
+	return err
+}
+
 func ListUsers(db *sql.DB) ([]User, error) {
 	rows, err := db.Query(`SELECT `+userCols+` FROM users WHERE id != ? ORDER BY created_at`, TombstoneID)
 	if err != nil {

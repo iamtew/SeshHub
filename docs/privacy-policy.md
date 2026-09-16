@@ -61,17 +61,17 @@ Our database is a SQLite file on the server that runs the Service.
 
 ### 4.1 Your account (`users` table)
 
-**What:** an internal account ID, your username, display name, avatar URL, role label, host flag, Discord ID, Discord username, YouTube channel ID, YouTube channel title, your **YouTube OAuth refresh token**, the time of your last YouTube sync, and creation and last-updated timestamps.
+**What:** an internal account ID, your username, display name, avatar URL, role label, host flag, Discord ID, Discord username, YouTube channel ID, YouTube channel title, your **YouTube OAuth refresh token**, the time of your last YouTube sync, an optional **clip publish filter** (JSON of field/value rules you set so only matching uploads from your linked YouTube channel appear on `/videos` and your team page), and creation and last-updated timestamps.
 
-**Why:** to recognise you across visits, to show your name and avatar in the interface, to decide what you are allowed to see and edit, and to fetch your clips if you have linked YouTube.
+**Why:** to recognise you across visits, to show your name and avatar in the interface, to decide what you are allowed to see and edit, to fetch your clips if you have linked YouTube, and to apply your clip publish filter to the public gallery.
 
-**Created:** the first time you sign in with Discord or YouTube.
+**Created:** the first time you sign in with Discord or YouTube. The clip filter is created when you save one on `/account`.
 
-**Read:** on every request you make while signed in, to resolve your session to an account. Your display name is also shown publicly as the author of any article you write.
+**Read:** on every request you make while signed in, to resolve your session to an account. Your display name is also shown publicly as the author of any article you write. The clip filter is read to decide which of your cached clips appear on `/videos` and your team page.
 
-**Updated:** on **every** subsequent sign-in. We re-copy your current username, display name, avatar and roles from the provider, so changing your name or avatar on Discord changes it here the next time you log in. Linking or unlinking a provider also updates this record.
+**Updated:** on **every** subsequent sign-in. We re-copy your current username, display name, avatar and roles from the provider, so changing your name or avatar on Discord changes it here the next time you log in. Linking or unlinking a provider also updates this record. Saving or clearing the clip filter on `/account` updates this record.
 
-**Deleted:** by you at `/account`, or by an administrator. Articles you wrote stay published with the byline "Former member". See section 4.5.
+**Deleted:** by you at `/account`, or by an administrator. The clip filter is deleted with the account. Articles you wrote stay published with the byline "Former member". See section 4.5.
 
 The refresh token deserves a specific mention: it is a long-lived credential that lets us request read-only access to your YouTube channel without you signing in again. It is stored in the database in plain text. It is cleared when a YouTube account is unlinked or the account is deleted. You can also revoke it yourself at any time from [Google's security settings](https://security.google.com/settings/security/permissions), which invalidates it immediately regardless of what we hold.
 
@@ -202,11 +202,11 @@ Each of these companies handles your data under its own privacy policy. You can 
 
 You have the right of access (Art. 15), rectification (Art. 16), erasure (Art. 17), restriction (Art. 18), data portability (Art. 20), and objection (Art. 21).
 
-**How to exercise these rights.** Most of them are on `/account` while you are signed in: unlink a provider, download a JSON export of your account, profile and access request, or delete the account. Logging out ends every session. You can also email the contact address in section 1. We will respond within one month, as Art. 12(3) requires.
+**How to exercise these rights.** Most of them are on `/account` while you are signed in: unlink a provider, download a JSON export of your account, profile, clip publish filter and access request, or delete the account. Logging out ends every session. You can also email the contact address in section 1. We will respond within one month, as Art. 12(3) requires.
 
 - **Access or portability:** use **Download my data** on `/account`, or ask us by email.
-- **Erasure:** use **Delete my account** on `/account`. That removes your account record, sessions, access request, skater profile and cached clips. Articles stay published as "Former member".
-- **Rectification:** most profile fields update themselves from Discord or YouTube on your next sign-in. Your biography and location are yours to edit at `/dashboard/profile`.
+- **Erasure:** use **Delete my account** on `/account`. That removes your account record (including the clip filter), sessions, access request, skater profile and cached clips. Articles stay published as "Former member".
+- **Rectification:** most profile fields update themselves from Discord or YouTube on your next sign-in. Your biography and location are yours to edit at `/dashboard/profile`. Your clip publish filter is yours to edit or clear on `/account`.
 - **Objection or restriction:** tell us what you object to and we will stop it or explain why we believe we may continue.
 
 Some of the underlying personal data also lives with Discord and Google, and we cannot reach into their systems. Revoking our OAuth access from their settings pages is immediate and does not require us.

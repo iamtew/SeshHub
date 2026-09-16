@@ -35,7 +35,7 @@ func TestVideoPage(t *testing.T) {
 	}
 }
 
-func TestVideosFeedFilter(t *testing.T) {
+func TestOwnerFilterOnPublicVideos(t *testing.T) {
 	sqldb, err := db.Open(":memory:")
 	if err != nil {
 		t.Fatal(err)
@@ -44,60 +44,64 @@ func TestVideosFeedFilter(t *testing.T) {
 	if err := db.Migrate(sqldb, "../db/migrations"); err != nil {
 		t.Fatal(err)
 	}
-	_, err = sqldb.Exec(`INSERT INTO youtube_videos (id, channel_id, channel_title, title, published_at, thumbnail_url, tags, category) VALUES
-		('v1','ch','Sofa TV','Wheel Session','2026-01-01','http://t','street','session'),
-		('v2','ch','Sofa TV','Other','2026-01-02','http://t','','short')`)
+	a, err := auth.UpsertDiscord(sqldb, "da", "a", "A", "", auth.RoleMember, false)
 	if err != nil {
 		t.Fatal(err)
 	}
-	u, err := auth.UpsertDiscord(sqldb, "d1", "u", "U", "", auth.RoleMember, false)
+	b, err := auth.UpsertDiscord(sqldb, "db", "b", "B", "", auth.RoleMember, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := auth.LinkYouTube(sqldb, a.ID, "cha", "A TV", "", "r"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := auth.LinkYouTube(sqldb, b.ID, "chb", "B TV", "", "r"); err != nil {
+		t.Fatal(err)
+	}
+	_, err = sqldb.Exec(`INSERT INTO youtube_videos (id, channel_id, channel_title, title, published_at, thumbnail_url, tags, category) VALUES
+		('v1','cha','A TV','Wheel Session','2026-01-01','http://t','street','session'),
+		('v2','cha','A TV','Other','2026-01-02','http://t','','short'),
+		('v3','chb','B TV','B Clip','2026-01-03','http://t','','session')`)
 	if err != nil {
 		t.Fatal(err)
 	}
 	s := &Server{db: sqldb, webDir: filepath.Join("..", "..", "web")}
-	withUser := func(req *http.Request) *http.Request {
+	with := func(u auth.User, req *http.Request) *http.Request {
 		return req.WithContext(context.WithValue(req.Context(), userKey, &u))
 	}
 
 	rec := httptest.NewRecorder()
 	s.videos(rec, httptest.NewRequest(http.MethodGet, "/videos", nil))
 	body := rec.Body.String()
-	if rec.Code != 200 || strings.Contains(body, "Feed filter") || !strings.Contains(body, "Wheel Session") || !strings.Contains(body, "Other") {
-		t.Fatalf("guest %d %s", rec.Code, body)
+	if rec.Code != 200 || strings.Contains(body, "My clips on /videos") || !strings.Contains(body, "Wheel Session") || !strings.Contains(body, "Other") || !strings.Contains(body, "B Clip") {
+		t.Fatalf("guest all %d %s", rec.Code, body)
 	}
 
 	rec = httptest.NewRecorder()
-	s.videos(rec, withUser(httptest.NewRequest(http.MethodGet, "/videos", nil)))
-	if rec.Code != 200 || !strings.Contains(rec.Body.String(), "Feed filter") {
-		t.Fatalf("logged in %d %s", rec.Code, rec.Body.String())
-	}
-
-	rec = httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodPost, "/videos/filter", strings.NewReader("action=save&field=title&value=wheel"))
+	req := httptest.NewRequest(http.MethodPost, "/account/filter", strings.NewReader("action=save&field=title&value=wheel"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	s.videosFilter(rec, withUser(req))
+	s.accountFilter(rec, with(a, req))
 	if rec.Code != http.StatusSeeOther {
 		t.Fatalf("save %d", rec.Code)
 	}
 
 	rec = httptest.NewRecorder()
-	s.videos(rec, withUser(httptest.NewRequest(http.MethodGet, "/videos", nil)))
-	body = rec.Body.String()
-	if !strings.Contains(body, "Wheel Session") || strings.Contains(body, ">Other<") {
-		t.Fatalf("saved filter %s", body)
-	}
-
-	rec = httptest.NewRecorder()
 	s.videos(rec, httptest.NewRequest(http.MethodGet, "/videos", nil))
 	body = rec.Body.String()
-	if rec.Code != 200 || !strings.Contains(body, "Wheel Session") || strings.Contains(body, ">Other<") || strings.Contains(body, "Feed filter") {
-		t.Fatalf("guest filtered %d %s", rec.Code, body)
+	if !strings.Contains(body, "Wheel Session") || strings.Contains(body, ">Other<") || !strings.Contains(body, "B Clip") {
+		t.Fatalf("public after A filter %s", body)
 	}
 
 	rec = httptest.NewRecorder()
-	req = httptest.NewRequest(http.MethodPost, "/videos/filter", strings.NewReader("action=test&field=title&value=wheel"))
+	s.accountPage(rec, with(a, httptest.NewRequest(http.MethodGet, "/account", nil)))
+	if rec.Code != 200 || !strings.Contains(rec.Body.String(), "My clips on /videos") {
+		t.Fatalf("account %d %s", rec.Code, rec.Body.String())
+	}
+
+	rec = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodPost, "/account/filter", strings.NewReader("action=test&field=title&value=wheel"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	s.videosFilter(rec, withUser(req))
+	s.accountFilter(rec, with(a, req))
 	body = rec.Body.String()
 	if rec.Code != 200 || !strings.Contains(body, "Keep") || !strings.Contains(body, "Hidden") || !strings.Contains(body, "Other") {
 		t.Fatalf("test %d %s", rec.Code, body)

@@ -3,7 +3,6 @@ package yt
 import (
 	"database/sql"
 	"encoding/json"
-	"net/url"
 	"strings"
 )
 
@@ -135,31 +134,32 @@ func Filter(list []Video, rules []Rule) []Video {
 	return out
 }
 
-func Query(rules []Rule) string {
-	q := url.Values{}
-	q.Set("test", "1")
-	for _, r := range Normalize(rules) {
-		q.Add("field", r.Field)
-		q.Add("value", r.Value)
+func OwnerFilters(db *sql.DB) (map[string][]Rule, error) {
+	rows, err := db.Query(`SELECT youtube_channel_id, IFNULL(video_filter,'') FROM users WHERE IFNULL(youtube_channel_id,'') != ''`)
+	if err != nil {
+		return nil, err
 	}
-	return "&" + q.Encode()
+	defer rows.Close()
+	out := map[string][]Rule{}
+	for rows.Next() {
+		var ch, raw string
+		if err := rows.Scan(&ch, &raw); err != nil {
+			return nil, err
+		}
+		out[ch] = ParseRules(raw)
+	}
+	return out, rows.Err()
 }
 
-func GetFilter(db *sql.DB) (string, error) {
-	var s sql.NullString
-	err := db.QueryRow(`SELECT rules FROM site_video_filter WHERE id=1`).Scan(&s)
-	if err == sql.ErrNoRows {
-		return "", nil
+func FilterOwned(list []Video, byChannel map[string][]Rule) []Video {
+	if len(byChannel) == 0 {
+		return list
 	}
-	return s.String, err
-}
-
-func SetFilter(db *sql.DB, raw string) error {
-	// ponytail: one site row, last save wins; per-editor history if two people fight over it
-	var arg any
-	if raw != "" {
-		arg = raw
+	var out []Video
+	for _, v := range list {
+		if Match(v, byChannel[v.ChannelID]) {
+			out = append(out, v)
+		}
 	}
-	_, err := db.Exec(`INSERT INTO site_video_filter (id, rules) VALUES (1, ?) ON CONFLICT(id) DO UPDATE SET rules=excluded.rules`, arg)
-	return err
+	return out
 }
