@@ -537,4 +537,5 @@ input, select, textarea { accent-color: var(--green); }
     .profile-head--list .avatar { width: 6rem; height: 6rem; aspect-ratio: auto; }
     .field-reset { grid-template-columns: 1fr; }
     .filter-row { grid-template-columns: 1fr; }
+    .md-toolbar { display: none; }
 }

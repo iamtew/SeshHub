@@ -19,7 +19,7 @@
     <div class="md-basic">
         <div class="md-col">
             <span>Markdown</span>
-            <textarea name="content_raw" rows="16" {{if not .Cfg}}required{{end}}>{{if .A}}{{.A.ContentRaw}}{{else if .P}}{{.P.ContentRaw}}{{else if .Cfg}}{{.Cfg.ContentRaw}}{{end}}</textarea>
+            <textarea name="{{if .BioEdit}}bio{{else}}content_raw{{end}}" rows="16" {{if and (not .Cfg) (not .BioEdit)}}required{{end}}>{{if .A}}{{.A.ContentRaw}}{{else if .BioEdit}}{{.P.Bio}}{{else if .P}}{{.P.ContentRaw}}{{else if .Cfg}}{{.Cfg.ContentRaw}}{{end}}</textarea>
         </div>
         <div class="md-col">
             <span>Preview</span>

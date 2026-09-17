@@ -2,10 +2,12 @@ package web
 
 import (
 	"database/sql"
+	"html/template"
 	"net/http"
 	"strconv"
 	"strings"
 
+	"seshhub/internal/article"
 	"seshhub/internal/auth"
 	"seshhub/internal/skater"
 	"seshhub/internal/yt"
@@ -120,7 +122,10 @@ func (s *Server) skaterDetail(w http.ResponseWriter, r *http.Request) {
 	data["Title"] = name
 	data["Path"] = wantPath
 	data["OGTitle"] = name
-	data["OGDesc"] = p.Bio
+	data["OGDesc"] = article.Excerpt(p.Bio, "")
+	if strings.TrimSpace(p.Bio) != "" {
+		data["BioHTML"] = template.HTML(article.Render(p.Bio))
+	}
 	if p.AvatarURL != "" {
 		data["OGImage"] = p.AvatarURL
 	}
@@ -307,7 +312,7 @@ func (s *Server) renderSkaterProfile(w http.ResponseWriter, r *http.Request, u *
 	vids := userChannelVideos(s.db, u.ID, 50)
 	defName := providerName(u)
 	data := map[string]any{
-		"Title": "Skater profile", "Path": "/dashboard/profile", "P": p, "Action": "/dashboard/profile",
+		"Title": "Skater profile", "Path": "/dashboard/profile", "P": p, "Action": "/dashboard/profile", "BioEdit": true,
 		"Videos": vids, "FilterRows": sspec.Rules, "KindOn": kindOn, "Test": test,
 		"DefaultName": defName, "DefaultSlug": skater.Slugify(defName), "SlugPrefix": skater.RosterPath(u.Role) + "/",
 	}

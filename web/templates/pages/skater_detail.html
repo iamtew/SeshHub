@@ -7,7 +7,7 @@
             <p class="who">{{.P.Stance}} · {{.P.Status}}{{if .P.Location}} · {{.P.Location}}{{end}}</p>
         </div>
     </div>
-    {{if .P.Bio}}<p>{{.P.Bio}}</p>{{end}}
+    {{if .BioHTML}}<div class="prose">{{.BioHTML}}</div>{{end}}
     {{if .Featured}}
     <div class="embed"><iframe src="https://www.youtube-nocookie.com/embed/{{.Featured.ID}}" title="{{.Featured.Title}}" allowfullscreen loading="lazy"></iframe></div>
     {{end}}

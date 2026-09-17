@@ -1,9 +1,9 @@
 (function () {
-  var ta = document.querySelector("textarea[name=content_raw]");
+  var wrap = document.querySelector(".md-edit");
+  var ta = wrap && wrap.querySelector("textarea");
   if (!ta) return;
-  var wrap = ta.closest(".md-edit");
-  var basicPrev = wrap && wrap.querySelector(".md-preview");
-  var fill = wrap && wrap.getAttribute("data-fill");
+  var basicPrev = wrap.querySelector(".md-preview");
+  var fill = wrap.getAttribute("data-fill");
   var form = ta.form;
   var meta = document.querySelector("[data-md-meta]");
   var dialog = document.querySelector("dialog.md-overlay");

@@ -269,10 +269,10 @@ Two header modes. Same public nav (Spot / Episodes / FS Team / Friends / News / 
 ## Core Functional Modules
 
 ### 1. Skater Profiles & Team Roster
-- **Team Directory (`/team` / `/skaters`)**: People who hold `DISCORD_SKATER_ROLE_ID` (or admin) and have a linked profile. Name comes from Discord; optional display name, stance, status, location, bio.
+- **Team Directory (`/team` / `/skaters`)**: People who hold `DISCORD_SKATER_ROLE_ID` (or admin) and have a linked profile. Name comes from Discord; optional display name, stance, status, location, markdown bio (same goldmark + sanitizer as news).
 - **Friends Directory (`/friends`)**: Internal Friends — Discord `DISCORD_FRIENDS_ROLE_ID`, queue approval (including YouTube-only), or migrated former members. Same profile fields as team. Detail URL `/friends/{slug}`. Hitting the wrong prefix 302s.
-- **Detail Page (`/team/{slug}` or `/friends/{slug}`)**: Bio, stance, status, location, avatar (name and who-line beside a larger photo), and clips from a linked YouTube channel (optional featured pin).
-- **Profile (`/dashboard/profile`)**: Own profile only — display name, user slug, stance, location, bio, featured clip, YouTube Feed Filter, optional site photo (JPEG/PNG, 10 MB, square crop), and photo frame (circle-to-square slider, optional per-corner radii, border style). Border styles: none, Color Default (chartreuse), Color Custom (hex via the same iro.js wheel as sesh-helpers), Pulse, Strobe, Fire, Neon, Orbit. Display name and slug default from Discord (YouTube if Discord is not connected); Reset restores those. Typing a display name sets the slug until the slug field is edited. Changing slug 302s the old URL to the new one until that slug is claimed again (not reserved). Site photo is Hub-only; Discord/YouTube remain the fallback. A dirty field shows a bottom Discard / Save bar; Save stays on `/dashboard/profile`.
+- **Detail Page (`/team/{slug}` or `/friends/{slug}`)**: Markdown bio, stance, status, location, avatar (name and who-line beside a larger photo), and clips from a linked YouTube channel (optional featured pin).
+- **Profile (`/dashboard/profile`)**: Own profile only — display name, user slug, stance, location, markdown bio with live preview (same editor as news/pages), featured clip, YouTube Feed Filter, optional site photo (JPEG/PNG, 10 MB, square crop), and photo frame (circle-to-square slider, optional per-corner radii, border style). Border styles: none, Color Default (chartreuse), Color Custom (hex via the same iro.js wheel as sesh-helpers), Pulse, Strobe, Fire, Neon, Orbit. Display name and slug default from Discord (YouTube if Discord is not connected); Reset restores those. Typing a display name sets the slug until the slug field is edited. Changing slug 302s the old URL to the new one until that slug is claimed again (not reserved). Site photo is Hub-only; Discord/YouTube remain the fallback. A dirty field shows a bottom Discard / Save bar; Save stays on `/dashboard/profile`.
 - **FS Team (`/admin/skaters`)**: Superadmin / Discord hub-admin role only. Set another skater’s status. No add-skater form.
 
 ### 2. YouTube clips from skaters
@@ -305,7 +305,7 @@ Two header modes. Same public nav (Spot / Episodes / FS Team / Friends / News / 
 ### 5. Admin UI & Markdown editor
 - **Admin Control Center (`/admin`)**: Metric overviews, access queue, and **Users** (see who has Discord/YouTube, merge duplicate accounts, unlink, delete).
 - **Basic editor**: `textarea[name=content_raw]` on articles, custom pages, and Spot, with a live HTML preview beside it (under it below 800px). Preview is `POST /preview` → goldmark + bluemonday (Spot also fills `{{placeholders}}`).
-- **Advanced editor**: button opens a near-fullscreen `<dialog>`. Left sidebar is the rest of the document (slug, published, …; Spot: insert chips). Center is Monaco from jsDelivr. Right is the same live preview. Palette theme `sesh-sofa`.
+- **Advanced editor**: from 640px up, a button opens a near-fullscreen `<dialog>`. Hidden on smaller screens (phone stays on the basic textarea + preview). Left sidebar is the rest of the document (slug, published, …; Spot: insert chips). Center is Monaco from jsDelivr. Right is the same live preview. Palette theme `sesh-sofa`.
 
 ---
 
