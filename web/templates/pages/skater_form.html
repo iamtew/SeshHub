@@ -10,8 +10,8 @@
     <input type="hidden" name="tab" value="photo">
     <div class="avatar-tools" id="panel-photo" role="tabpanel" data-panel="photo" aria-labelledby="tab-photo">
         <div class="profile-head">
-            <div class="avatar-drop" id="avatar-drop">
-                <img id="avatar-preview" class="avatar {{.P.AvatarClass}}" {{if .P.AvatarURL}}src="{{.P.AvatarURL}}"{{end}} alt="" referrerpolicy="no-referrer" style="{{.P.AvatarStyle}}">
+            <div class="avatar-drop {{.P.AvatarClass}}" id="avatar-drop" style="{{.P.AvatarStyle}}">
+                <img id="avatar-preview" class="avatar" {{if .P.AvatarURL}}src="{{.P.AvatarURL}}"{{end}} alt="" referrerpolicy="no-referrer">
                 <input type="file" name="avatar" accept="image/jpeg,image/png" hidden>
             </div>
             <div>
@@ -157,6 +157,7 @@
     syncBar();
   });
   var prev = document.getElementById('avatar-preview');
+  var drop = document.getElementById('avatar-drop');
   var round = document.getElementById('avatar-round');
   var unlock = document.getElementById('avatar-unlock');
   var corners = document.getElementById('avatar-corners');
@@ -192,21 +193,24 @@
   }
   function paint() {
     if (!prev) return;
-    prev.style.borderRadius = rs[0].value + '% ' + rs[1].value + '% ' + rs[2].value + '% ' + rs[3].value + '%';
-    prev.style.border = '';
+    var rad = rs[0].value + '% ' + rs[1].value + '% ' + rs[2].value + '% ' + rs[3].value + '%';
+    prev.style.borderRadius = rad;
+    prev.className = 'avatar';
+    var host = drop || prev;
     var st = styleSel ? styleSel.value : 'off';
-    prev.className = 'avatar' + (st && st !== 'off' ? ' avb-' + st : '');
-    if (st === 'custom' && colorInp) prev.style.setProperty('--avb', colorInp.value);
-    else prev.style.removeProperty('--avb');
+    host.className = (drop ? 'avatar-drop' : 'avatar') + (st && st !== 'off' ? ' avb-' + st : '') + (drop && drop.classList.contains('drag') ? ' drag' : '');
+    host.style.borderRadius = rad;
+    if (st === 'custom' && colorInp) host.style.setProperty('--avb', colorInp.value);
+    else host.style.removeProperty('--avb');
     if (ring[st]) {
-      prev.style.setProperty('--avw', ((widthEl && widthEl.value) || '3') + 'px');
-      prev.style.setProperty('--avblur', ((blurEl && blurEl.value) || '0') + 'px');
+      host.style.setProperty('--avw', ((widthEl && widthEl.value) || '3') + 'px');
+      host.style.setProperty('--avblur', ((blurEl && blurEl.value) || '0') + 'px');
     } else if (st === 'chroma') {
-      prev.style.removeProperty('--avw');
-      prev.style.setProperty('--avblur', ((blurEl && blurEl.value) || '0') + 'px');
+      host.style.removeProperty('--avw');
+      host.style.setProperty('--avblur', ((blurEl && blurEl.value) || '0') + 'px');
     } else {
-      prev.style.removeProperty('--avw');
-      prev.style.removeProperty('--avblur');
+      host.style.removeProperty('--avw');
+      host.style.removeProperty('--avblur');
     }
     if (iroWrap) iroWrap.hidden = st !== 'custom';
     if (widthLab) widthLab.hidden = !ring[st];
@@ -242,7 +246,6 @@
   paint();
   var file = form.elements.namedItem('avatar');
   var resetFlag = form.elements.namedItem('avatar_reset');
-  var drop = document.getElementById('avatar-drop');
   var stage = document.getElementById('avatar-crop');
   var canvas = stage && stage.querySelector('canvas');
   var cropOk = document.getElementById('avatar-crop-ok');
