@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS gallery_photos (
+    id TEXT PRIMARY KEY,
+    profile_id TEXT NOT NULL REFERENCES skater_profiles(id) ON DELETE CASCADE,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

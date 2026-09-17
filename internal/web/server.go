@@ -26,6 +26,7 @@ func New(cfg config.Config, db *sql.DB) *Server {
 	s := &Server{cfg: cfg, db: db, webDir: cfg.WebDir, mux: http.NewServeMux()}
 	s.mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir(filepath.Join(cfg.WebDir, "static")))))
 	s.mux.HandleFunc("GET /media/avatars/{file}", s.mediaAvatar)
+	s.mux.HandleFunc("GET /media/gallery/{file}", s.mediaGallery)
 	s.mux.HandleFunc("GET /healthz", s.healthz)
 	s.mux.HandleFunc("GET /{$}", s.home)
 	s.mux.HandleFunc("GET /team", s.team)
@@ -36,6 +37,7 @@ func New(cfg config.Config, db *sql.DB) *Server {
 	s.mux.HandleFunc("GET /news", s.news)
 	s.mux.HandleFunc("GET /news/{slug}", s.articleDetail)
 	s.mux.HandleFunc("GET /videos", s.videos)
+	s.mux.HandleFunc("GET /photos", s.photos)
 	s.mux.HandleFunc("GET /episodes", s.episodes)
 	s.mux.HandleFunc("GET /login", s.loginPage)
 	s.mux.HandleFunc("GET /auth/discord", s.startOAuth("discord"))
@@ -67,6 +69,10 @@ func New(cfg config.Config, db *sql.DB) *Server {
 	s.mux.HandleFunc("GET /dashboard/profile", s.dashboardProfile)
 	s.mux.HandleFunc("POST /dashboard/profile", s.dashboardProfile)
 	s.mux.HandleFunc("POST /dashboard/profile/filter", s.profileFilter)
+	s.mux.HandleFunc("GET /dashboard/gallery", s.dashboardGallery)
+	s.mux.HandleFunc("POST /dashboard/gallery", s.dashboardGalleryAdd)
+	s.mux.HandleFunc("POST /dashboard/gallery/order", s.dashboardGalleryOrder)
+	s.mux.HandleFunc("POST /dashboard/gallery/{id}/delete", s.dashboardGalleryDelete)
 	s.mux.HandleFunc("GET /admin/articles", s.adminArticles)
 	s.mux.HandleFunc("GET /admin/articles/new", s.articleCreate(true))
 	s.mux.HandleFunc("POST /admin/articles", s.articleCreate(true))
@@ -142,6 +148,7 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, dat
 		filepath.Join(s.webDir, "templates", "partials", "consent.html"),
 		filepath.Join(s.webDir, "templates", "partials", "md_editor.html"),
 		filepath.Join(s.webDir, "templates", "partials", "pager.html"),
+		filepath.Join(s.webDir, "templates", "partials", "slideshow.html"),
 		filepath.Join(s.webDir, "templates", "pages", page),
 	}
 	t, err := template.ParseFiles(files...)

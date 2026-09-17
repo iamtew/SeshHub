@@ -1,0 +1,19 @@
+{{define "content"}}
+<h1>Photos</h1>
+{{if not .Gallery}}
+<p>No photos yet.</p>
+{{else}}
+{{template "slideshow.html" .}}
+<ul class="grid" id="photos-grid">
+{{range $i, $p := .Photos}}
+<li>
+    <a href="#" data-idx="{{$i}}">
+        <img src="{{$p.URL}}" alt="" class="thumb">
+    </a>
+    {{if $p.Href}}<a href="{{$p.Href}}">{{$p.Name}}</a>{{else}}<strong>{{$p.Name}}</strong>{{end}}
+</li>
+{{end}}
+</ul>
+{{template "pager.html" .}}
+{{end}}
+{{end}}

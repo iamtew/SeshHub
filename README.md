@@ -259,7 +259,7 @@ Users who do not match a Discord guild role (hub-admin, skater, or friends), as 
 
 ### Chrome: visitor vs Sesh Hub
 
-Two header modes. Same public nav (Spot / Episodes / FS Team / Friends / News / Videos / About) in the dark well either way.
+Two header modes. Same public nav (Spot / Episodes / FS Team / Friends / News / Videos / Photos / About) in the dark well either way.
 
 - **Visitor mode** (logged out): 16:9 sofa hero, click to play `seshsofa.mp4` (local `web/static/vid/`, not in git), Close restores the poster. Header: Discord / Twitch / YouTube icons then a Sesh Hub square to `/login`.
 - **Sesh Hub mode** (logged in): same `background.png`. Hero folds into a translucent panel — `seshhub.png` (click plays the same intro; Close folds it back), then role links, **Account**, Discord avatar (also `/account`; name on hover). Display name is on the `/account` heading. **Log out** is at the bottom of `/account`. Public nav still has Discord / Twitch / YouTube icons, not the Hub square. No 16:9 until the logo is clicked. `/login` redirects home.
@@ -271,8 +271,8 @@ Two header modes. Same public nav (Spot / Episodes / FS Team / Friends / News / 
 ### 1. Skater Profiles & Team Roster
 - **Team Directory (`/team` / `/skaters`)**: People who hold `DISCORD_SKATER_ROLE_ID` (or admin) and have a linked profile. Name comes from Discord; optional display name, stance, status, location, markdown bio (same goldmark + sanitizer as news).
 - **Friends Directory (`/friends`)**: Internal Friends — Discord `DISCORD_FRIENDS_ROLE_ID`, queue approval (including YouTube-only), or migrated former members. Same profile fields as team. Detail URL `/friends/{slug}`. Hitting the wrong prefix 302s.
-- **Detail Page (`/team/{slug}` or `/friends/{slug}`)**: Markdown bio, stance, status, location, avatar (name and who-line beside a larger photo), and clips from a linked YouTube channel (optional featured pin).
-- **Profile (`/dashboard/profile`)**: Own profile only — display name, user slug, stance, location, markdown bio with live preview (same editor as news/pages), featured clip, YouTube Feed Filter, optional site photo (JPEG/PNG, 10 MB, square crop), and photo frame (circle-to-square slider, optional per-corner radii, border style, thickness, blur). Border styles: none, Color Default (chartreuse), Color Custom (hex via the same iro.js wheel as sesh-helpers), Pulse, Strobe, Fire, Neon, Orbit, Chromatic aberration. Thickness (1–12px, default 3) and blur (0–16px, default 0) show for the ring styles; Chromatic aberration gets blur only; Orbit has neither. Display name and slug default from Discord (YouTube if Discord is not connected); Reset restores those. Typing a display name sets the slug until the slug field is edited. Changing slug 302s the old URL to the new one until that slug is claimed again (not reserved). Site photo is Hub-only; Discord/YouTube remain the fallback. A dirty field shows a bottom Discard / Save bar; Save stays on `/dashboard/profile`.
+- **Detail Page (`/team/{slug}` or `/friends/{slug}`)**: Markdown bio, stance, status, location, avatar (name and who-line beside a larger photo), optional gallery slideshow (up to 10 photos, 6s auto-advance, prev/next, 3 thumbs in a column on the right), and clips from a linked YouTube channel (optional featured pin).
+- **Profile (`/dashboard/profile`)**: Own profile only — display name, user slug, stance, location, markdown bio with live preview (same editor as news/pages), featured clip, YouTube Feed Filter, optional site photo (JPEG/PNG, 10 MB, square crop), and photo frame (circle-to-square slider, optional per-corner radii, border style, thickness, blur). Border styles: none, Color Default (chartreuse), Color Custom (hex via the same iro.js wheel as sesh-helpers), Pulse, Strobe, Fire, Neon, Orbit, Chromatic aberration. Thickness (1–12px, default 3) and blur (0–16px, default 0) show for the ring styles; Chromatic aberration gets blur only; Orbit has neither. Display name and slug default from Discord (YouTube if Discord is not connected); Reset restores those. Typing a display name sets the slug until the slug field is edited. Changing slug 302s the old URL to the new one until that slug is claimed again (not reserved). Site photo is Hub-only; Discord/YouTube remain the fallback. A dirty field shows a bottom Discard / Save bar; Save stays on `/dashboard/profile`. Logged-in menu label is **Profile**.
 - **FS Team (`/admin/skaters`)**: Superadmin / Discord hub-admin role only. Set another skater’s status. No add-skater form.
 
 ### 2. YouTube clips from skaters
@@ -280,6 +280,10 @@ Two header modes. Same public nav (Spot / Episodes / FS Team / Friends / News / 
 - **Logged-in refresh**: If the user has a `skater_profiles` row, a YouTube refresh token, and last sync is older than 60 minutes, a request while they are logged in refreshes up to 50 latest uploads.
 - **YouTube Feed Filter**: On `/dashboard/profile`, each owner saves AND-ed rows (field, operator, value) plus optional upload-type checkboxes (video / short / live / premiere). Operators: contains, does not contain, starts with, ends with, regexp. Only that user’s matching clips appear on public `/videos` and their roster page. Test lists Keep then Hidden without saving. Empty filter publishes all of theirs. Other people’s clips are unchanged.
 - **Manual pin**: Admins/skaters/friends can still set `featured_video_id` from that channel’s synced rows.
+
+### 2.1 Photo gallery
+- **Own gallery (`/dashboard/gallery`)**: Roster users (FS Team / Friends / admin with a profile) can keep up to 10 photos (JPEG/PNG, 10 MB, original aspect, long edge ≤ 1600). Drop or click to add. Drag to reorder (that order is the profile slideshow). Logged-in menu item next to Profile. Public on the roster page as a slideshow and on `/photos`.
+- **`/photos`**: Union of those photos, newest first. Big slideshow on top (prev/next only; the paginated grid is the rest of the photos). Grid below paginates 6/12/18/24 (default 6) via `?n=&p=` without a page reload; clicking a grid image puts it in the slideshow slot. Caption is the owner’s display name (link to their roster page).
 
 ### 3. Articles, News & Blog CMS
 - **Publishing Workflow**: Supports `Draft`, `Published`, and `Archived` statuses.
@@ -369,6 +373,13 @@ CREATE TABLE IF NOT EXISTS skater_profiles (
 CREATE TABLE IF NOT EXISTS skater_slug_redirects (
     slug TEXT PRIMARY KEY,
     profile_id TEXT NOT NULL REFERENCES skater_profiles(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS gallery_photos (
+    id TEXT PRIMARY KEY,
+    profile_id TEXT NOT NULL REFERENCES skater_profiles(id) ON DELETE CASCADE,
+    pos INTEGER NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Articles and announcements

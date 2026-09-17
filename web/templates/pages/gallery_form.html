@@ -1,0 +1,115 @@
+{{define "content"}}
+<h1>{{.Title}}</h1>
+<p class="who">Up to 10 photos on your public page and /photos. JPEG or PNG, 10MB. Aspect kept (not square). Drag photos to reorder.</p>
+{{if .Gallery}}
+<ul class="gallery-edit-list" id="gallery-list">
+{{range .Gallery}}
+<li draggable="true" data-id="{{.ID}}">
+    <img src="{{.URL}}" alt="" class="thumb" draggable="false">
+    <form method="post" action="/dashboard/gallery/{{.ID}}/delete"><button type="submit">Delete</button></form>
+</li>
+{{end}}
+</ul>
+<script>
+(function () {
+  var list = document.getElementById('gallery-list');
+  if (!list) return;
+  var drag;
+  function ids() {
+    return Array.prototype.map.call(list.querySelectorAll('li[data-id]'), function (li) { return li.getAttribute('data-id'); });
+  }
+  function save() {
+    var body = ids().map(function (id) { return 'id=' + encodeURIComponent(id); }).join('&');
+    fetch('/dashboard/gallery/order', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body });
+  }
+  list.addEventListener('dragstart', function (e) {
+    var li = e.target.closest('li');
+    if (!li || e.target.closest('button, form, a')) { e.preventDefault(); return; }
+    drag = li;
+    li.classList.add('drag');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', li.getAttribute('data-id'));
+  });
+  list.addEventListener('dragend', function () {
+    if (drag) drag.classList.remove('drag');
+    drag = null;
+  });
+  list.addEventListener('dragover', function (e) {
+    if (!drag) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    var over = e.target.closest('li');
+    if (!over || over === drag) return;
+    var mid = over.getBoundingClientRect();
+    var before = e.clientX < mid.left + mid.width / 2;
+    list.insertBefore(drag, before ? over : over.nextSibling);
+  });
+  list.addEventListener('drop', function (e) {
+    e.preventDefault();
+    if (!drag) return;
+    save();
+  });
+})();
+</script>
+{{end}}
+{{if lt (len .Gallery) 10}}
+<form method="post" action="/dashboard/gallery" enctype="multipart/form-data" class="form" id="gallery-add" data-count="{{len .Gallery}}">
+    <label class="gallery-drop" id="gallery-drop">
+        Drop JPEG or PNG here, or click (10MB).
+        <input type="file" name="photo" accept="image/jpeg,image/png" multiple>
+    </label>
+    <button type="submit">Add photo</button>
+</form>
+<script>
+(function () {
+  var form = document.getElementById('gallery-add');
+  var drop = document.getElementById('gallery-drop');
+  var input = form && form.querySelector('input[type="file"]');
+  if (!form || !drop || !input) return;
+  var left = 10 - (parseInt(form.getAttribute('data-count') || '0', 10) || 0);
+  function ok(f) {
+    return f && (f.type === 'image/jpeg' || f.type === 'image/png') && f.size <= 10 * 1024 * 1024;
+  }
+  function send(files) {
+    var list = [];
+    for (var i = 0; i < files.length && list.length < left; i++) {
+      if (!ok(files[i])) { alert('Photo must be a JPEG or PNG under 10MB'); return; }
+      list.push(files[i]);
+    }
+    if (!list.length) return;
+    if (list.length === 1) {
+      try {
+        var dt = new DataTransfer();
+        dt.items.add(list[0]);
+        input.files = dt.files;
+      } catch (e) {}
+      form.submit();
+      return;
+    }
+    (async function () {
+      for (var j = 0; j < list.length; j++) {
+        var fd = new FormData();
+        fd.append('photo', list[j]);
+        var res = await fetch('/dashboard/gallery', { method: 'POST', body: fd });
+        if (!res.ok && !res.redirected) { alert('Upload failed'); break; }
+      }
+      location.reload();
+    })();
+  }
+  drop.addEventListener('dragover', function (e) {
+    e.preventDefault();
+    drop.classList.add('drag');
+  });
+  drop.addEventListener('dragleave', function () { drop.classList.remove('drag'); });
+  drop.addEventListener('drop', function (e) {
+    e.preventDefault();
+    drop.classList.remove('drag');
+    send(e.dataTransfer && e.dataTransfer.files);
+  });
+  input.addEventListener('change', function () { send(input.files); });
+})();
+</script>
+{{else}}
+<p class="who">Gallery is full (10).</p>
+{{end}}
+{{end}}

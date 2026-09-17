@@ -397,6 +397,8 @@ func FormerSlugs(db *sql.DB, profileID string) ([]string, error) {
 }
 
 func Delete(db *sql.DB, id string) error {
+	RemoveGalleries(GalleryIDs(db, id))
+	_, _ = db.Exec(`DELETE FROM gallery_photos WHERE profile_id = ?`, id)
 	RemovePhoto(id)
 	_, _ = db.Exec(`DELETE FROM skater_slug_redirects WHERE profile_id = ?`, id)
 	_, err := db.Exec(`DELETE FROM skater_profiles WHERE id = ?`, id)

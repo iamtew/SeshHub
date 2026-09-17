@@ -8,6 +8,7 @@
         </div>
     </div>
     {{if .BioHTML}}<div class="prose">{{.BioHTML}}</div>{{end}}
+    {{template "slideshow.html" .}}
     {{if .Featured}}
     <div class="embed"><iframe src="https://www.youtube-nocookie.com/embed/{{.Featured.ID}}" title="{{.Featured.Title}}" allowfullscreen loading="lazy"></iframe></div>
     {{end}}

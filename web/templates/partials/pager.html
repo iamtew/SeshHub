@@ -1,5 +1,5 @@
 {{define "pager.html"}}
-<nav class="pager" aria-label="Videos pagination">
+<nav class="pager" aria-label="{{or .PagerLabel "Videos pagination"}}">
     <span class="pager-size">Rows per page:
         <details>
             <summary>{{.Per}}</summary>

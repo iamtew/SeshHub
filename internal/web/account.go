@@ -83,6 +83,16 @@ func (s *Server) accountExport(w http.ResponseWriter, r *http.Request) {
 	out["video_filter"] = raw
 	if p, err := skater.Get(s.db, "user_id", fresh.ID); err == nil {
 		out["profile"] = p
+		if photos, err := skater.ListByProfile(s.db, p.ID); err != nil {
+			http.Error(w, "db error", http.StatusInternalServerError)
+			return
+		} else if len(photos) > 0 {
+			urls := make([]string, len(photos))
+			for i, ph := range photos {
+				urls[i] = ph.URL
+			}
+			out["gallery"] = urls
+		}
 		if slugs, err := skater.FormerSlugs(s.db, p.ID); err != nil {
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return

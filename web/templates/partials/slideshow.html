@@ -1,0 +1,20 @@
+{{define "slideshow.html"}}
+{{if .Gallery}}
+<div class="slideshow" data-gallery data-json="#{{.GalleryScript}}"{{if .PhotosLive}} data-live="1" data-grid="#photos-grid" data-pager=".pager"{{end}}>
+    <div class="slideshow-main">
+        <button type="button" class="slideshow-prev" aria-label="Previous photo">◀</button>
+        <img class="slideshow-img" alt="">
+        <button type="button" class="slideshow-next" aria-label="Next photo">▶</button>
+    </div>
+    {{if not .PhotosLive}}
+    <div class="slideshow-thumbs">
+        <button type="button" class="slideshow-tprev" aria-label="Previous thumbnails">▲</button>
+        <div class="slideshow-strip"></div>
+        <button type="button" class="slideshow-tnext" aria-label="Next thumbnails">▼</button>
+    </div>
+    {{end}}
+</div>
+<script type="application/json" id="{{.GalleryScript}}">{{.GalleryJSON}}</script>
+<script src="/static/js/gallery.js" defer></script>
+{{end}}
+{{end}}

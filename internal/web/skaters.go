@@ -148,6 +148,11 @@ func (s *Server) skaterDetail(w http.ResponseWriter, r *http.Request) {
 	n, _ := strconv.Atoi(r.URL.Query().Get("n"))
 	pn, _ := strconv.Atoi(r.URL.Query().Get("p"))
 	data["Clips"] = videoPager(wantPath+"/"+p.Slug, n, pn, clips, data)
+	if photos, err := skater.ListByProfile(s.db, p.ID); err == nil && len(photos) > 0 {
+		data["Gallery"] = photos
+		data["GalleryJSON"] = galleryJSON(photos)
+		data["GalleryScript"] = "gallery-json"
+	}
 	if u != nil {
 		data["CanEdit"] = skater.CanEdit(u.Role, u.ID, p.UserID)
 	}
@@ -318,7 +323,7 @@ func (s *Server) renderSkaterProfile(w http.ResponseWriter, r *http.Request, u *
 		tab = "youtube"
 	}
 	data := map[string]any{
-		"Title": "Skater profile", "Path": "/dashboard/profile", "P": p, "Action": "/dashboard/profile", "BioEdit": true,
+		"Title": "Profile", "Path": "/dashboard/profile", "P": p, "Action": "/dashboard/profile", "BioEdit": true,
 		"Videos": vids, "FilterRows": sspec.Rules, "KindOn": kindOn, "Test": test, "Tab": tab,
 		"DefaultName": defName, "DefaultSlug": skater.Slugify(defName), "SlugPrefix": skater.RosterPath(u.Role) + "/",
 	}

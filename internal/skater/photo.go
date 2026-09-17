@@ -73,19 +73,22 @@ func SavePhoto(id string, r io.Reader) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	sq := squareJPEG(img)
-	if err := os.MkdirAll(filepath.Dir(PhotoPath(id)), 0o755); err != nil {
-		return "", err
-	}
-	f, err := os.Create(PhotoPath(id))
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
-	if err := jpeg.Encode(f, sq, &jpeg.Options{Quality: 88}); err != nil {
+	if err := writeJPEG(PhotoPath(id), squareJPEG(img)); err != nil {
 		return "", err
 	}
 	return PhotoURL(id), nil
+}
+
+func writeJPEG(path string, img image.Image) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	return jpeg.Encode(f, img, &jpeg.Options{Quality: 88})
 }
 
 func decodePhoto(raw []byte) (image.Image, error) {

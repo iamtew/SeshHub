@@ -220,6 +220,27 @@ func DeleteUser(db *sql.DB, id, actorID string) error {
 		return err
 	}
 	_ = tx.QueryRow(`SELECT id FROM skater_profiles WHERE user_id=?`, id).Scan(&photoID)
+	var galleryIDs []string
+	if photoID != "" {
+		rows, err := tx.Query(`SELECT id FROM gallery_photos WHERE profile_id=?`, photoID)
+		if err != nil {
+			return err
+		}
+		for rows.Next() {
+			var gid string
+			if err := rows.Scan(&gid); err != nil {
+				rows.Close()
+				return err
+			}
+			galleryIDs = append(galleryIDs, gid)
+		}
+		if err := rows.Close(); err != nil {
+			return err
+		}
+		if _, err := tx.Exec(`DELETE FROM gallery_photos WHERE profile_id=?`, photoID); err != nil {
+			return err
+		}
+	}
 
 	if _, err := tx.Exec(`UPDATE articles SET author_id=? WHERE author_id=?`, TombstoneID, id); err != nil {
 		return err
@@ -253,6 +274,7 @@ func DeleteUser(db *sql.DB, id, actorID string) error {
 	if photoID != "" {
 		skater.RemovePhoto(photoID)
 	}
+	skater.RemoveGalleries(galleryIDs)
 	return nil
 }
 

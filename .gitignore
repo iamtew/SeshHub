@@ -33,8 +33,9 @@ web/static/monaco/
 # Spot uploads
 web/static/uploads/
 
-# Site profile photos
+# Site profile photos and gallery
 data/avatars/
+data/gallery/
 
 # Hero video: copy onto the VPS by hand (GitHub 100MB cap)
 web/static/vid/seshsofa.mp4
