@@ -95,7 +95,7 @@ We do **not** store your IP address or User-Agent.
 
 ### 4.3 Your skater profile (`skater_profiles` table)
 
-**What:** a public slug, your skater name, your real name, a biography, your stance, a roster status, avatar and banner URLs, optional **corner-radius values**, a **border style name** (none, a solid default or custom colour, or a named animation), and for a custom colour an optional **hex colour**, optional **border width** (pixels) and **border blur** (pixels, default 0), your location, sponsors, social links, signature tricks, a featured video ID, and **former slugs** (only while nobody else is using that URL). If you upload a site photo, we also store a re-encoded JPEG file on the same Amsterdam server (`data/avatars/{id}.jpg`, shown at `/media/avatars/{id}.jpg`). The original upload is not kept. We strip metadata by re-encoding. Maximum upload size is 10 MB; we store a square JPEG at most 1024 pixels on a side. You may also upload a public gallery of up to 10 photos; those files are stored as described in section 4.10.
+**What:** a public slug, your skater name, your real name, a biography, your stance, a roster status, avatar and banner URLs, optional **corner-radius values**, a **border style name** (none, a solid default or custom colour, or a named animation), and for a custom colour an optional **hex colour**, optional **border width** (pixels) and **border blur** (pixels, default 0), your location, sponsors, social links, signature tricks, a featured video ID, and **former slugs** (only while nobody else is using that URL). If you upload a site photo, we also store a re-encoded JPEG file on the same Amsterdam server (`data/avatars/{id}.jpg`, shown at `/media/avatars/{id}.jpg`). The original upload is not kept. We strip metadata by re-encoding. Maximum upload size is 15 MB; we store a square JPEG at most 1024 pixels on a side. You may also upload a public gallery of up to 10 photos; those files are stored as described in section 4.10.
 
 **Why:** to show the FS Team roster at `/team` and the Friends roster at `/friends`, and your own profile page at `/team/{slug}` or `/friends/{slug}`. Former slugs 302 to your current page so old links keep working, until that slug is claimed again.
 
@@ -147,11 +147,11 @@ There is also an unused `sync_logs` table in our database schema. Nothing ever w
 
 ### 4.9 What we do not do at all
 
-We do not send email. There is no newsletter and no notification system. The only files you can upload are an optional square profile photo on `/dashboard/profile` and up to 10 gallery photos on `/dashboard/gallery` (JPEG or PNG, 10 MB each), stored as described in sections 4.3 and 4.10. We do not sell, rent or trade personal data. We do not profile you, build advertising audiences, or use your data for anything beyond operating the site.
+We do not send email. There is no newsletter and no notification system. The only files you can upload are an optional square profile photo on `/dashboard/profile` (JPEG or PNG, 15 MB) and up to 10 gallery photos on `/dashboard/gallery` (JPEG or PNG, 15 MB each), stored as described in sections 4.3 and 4.10. We do not sell, rent or trade personal data. We do not profile you, build advertising audiences, or use your data for anything beyond operating the site.
 
 ### 4.10 Your gallery photos (`gallery_photos` table)
 
-**What:** up to 10 photo records per public roster profile: an internal file id, the profile id, and a created timestamp. Each photo is a re-encoded JPEG on the same Amsterdam server (`data/gallery/{id}.jpg`, shown at `/media/gallery/{id}.jpg`). The original upload is not kept. We strip metadata by re-encoding. Maximum upload size is 10 MB per photo; we keep the original aspect ratio and store a JPEG whose long edge is at most 1600 pixels.
+**What:** up to 10 photo records per public roster profile: an internal file id, the profile id, a sort position, and a created timestamp. Each photo is a re-encoded JPEG on the same Amsterdam server (`data/gallery/{id}.jpg`, shown at `/media/gallery/{id}.jpg`). The original upload is not kept. We strip metadata by re-encoding. Maximum upload size is 15 MB per photo; we keep the original aspect ratio and store a JPEG whose long edge is at most 1600 pixels.
 
 **Why:** so you can show a short public slideshow on your roster page, and so `/photos` can list everyone’s gallery.
 
@@ -159,7 +159,7 @@ We do not send email. There is no newsletter and no notification system. The onl
 
 **Read: these photos are public.** Anyone on the internet can see them on your roster page and on `/photos`.
 
-**Updated:** never. You add or delete photos; we do not edit an existing file.
+**Updated:** when you drag to reorder photos on `/dashboard/gallery`. We only change the sort position, not the image file. You add or delete photos separately.
 
 **Deleted:** when you delete a photo on `/dashboard/gallery`, when your account is deleted, or when an administrator deletes the profile. The database row and the JPEG file both go.
 

@@ -14,7 +14,7 @@ import (
 	"strings"
 )
 
-const PhotoMax = 10 << 20
+const PhotoMax = 15 << 20
 const photoEdge = 1024
 
 func PhotoURL(id string) string {

@@ -11,6 +11,7 @@ import (
 )
 
 const GalleryMax = 10
+const GalleryBytes = PhotoMax
 const galleryEdge = 1600
 
 type Photo struct {
@@ -73,14 +74,14 @@ func saveGalleryFile(id string, r io.Reader) error {
 	if !ValidPhotoID(id) {
 		return fmt.Errorf("bad id")
 	}
-	raw, err := io.ReadAll(io.LimitReader(r, PhotoMax+1))
+	raw, err := io.ReadAll(io.LimitReader(r, GalleryBytes+1))
 	if err != nil {
 		return err
 	}
 	if len(raw) == 0 {
 		return fmt.Errorf("empty")
 	}
-	if len(raw) > PhotoMax {
+	if len(raw) > GalleryBytes {
 		return fmt.Errorf("too large")
 	}
 	img, err := decodePhoto(raw)

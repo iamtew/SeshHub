@@ -1,6 +1,6 @@
 {{define "content"}}
 <h1>{{.Title}}</h1>
-<p class="who">Up to 10 photos on your public page and /photos. JPEG or PNG, 10MB. Aspect kept (not square). Drag photos to reorder.</p>
+<p class="who">Up to 10 photos on your public page and /photos. JPEG or PNG, 15MB. Aspect kept (not square). Drag photos to reorder.</p>
 {{if .Gallery}}
 <ul class="gallery-edit-list" id="gallery-list">
 {{range .Gallery}}
@@ -55,10 +55,10 @@
 {{if lt (len .Gallery) 10}}
 <form method="post" action="/dashboard/gallery" enctype="multipart/form-data" class="form" id="gallery-add" data-count="{{len .Gallery}}">
     <label class="gallery-drop" id="gallery-drop">
-        Drop JPEG or PNG here, or click (10MB).
+        Drop JPEG or PNG here, or click (15MB).
         <input type="file" name="photo" accept="image/jpeg,image/png" multiple>
     </label>
-    <button type="submit">Add photo</button>
+    <button type="button" id="gallery-pick">Add photo</button>
 </form>
 <script>
 (function () {
@@ -66,14 +66,15 @@
   var drop = document.getElementById('gallery-drop');
   var input = form && form.querySelector('input[type="file"]');
   if (!form || !drop || !input) return;
+  var pick = document.getElementById('gallery-pick');
   var left = 10 - (parseInt(form.getAttribute('data-count') || '0', 10) || 0);
   function ok(f) {
-    return f && (f.type === 'image/jpeg' || f.type === 'image/png') && f.size <= 10 * 1024 * 1024;
+    return f && (f.type === 'image/jpeg' || f.type === 'image/png') && f.size <= 15 * 1024 * 1024;
   }
   function send(files) {
     var list = [];
     for (var i = 0; i < files.length && list.length < left; i++) {
-      if (!ok(files[i])) { alert('Photo must be a JPEG or PNG under 10MB'); return; }
+      if (!ok(files[i])) { alert('Photo must be a JPEG or PNG under 15MB'); return; }
       list.push(files[i]);
     }
     if (!list.length) return;
@@ -107,6 +108,7 @@
     send(e.dataTransfer && e.dataTransfer.files);
   });
   input.addEventListener('change', function () { send(input.files); });
+  if (pick) pick.addEventListener('click', function () { input.click(); });
 })();
 </script>
 {{else}}

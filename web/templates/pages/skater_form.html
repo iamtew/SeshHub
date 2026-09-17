@@ -15,7 +15,7 @@
                 <input type="file" name="avatar" accept="image/jpeg,image/png" hidden>
             </div>
             <div>
-                <p class="who">Drop a JPEG or PNG on the picture, or click it (10MB). Drag to pan, scroll or slider to zoom, then Use crop.</p>
+                <p class="who">Drop a JPEG or PNG on the picture, or click it (15MB). Drag to pan, scroll or slider to zoom, then Use crop.</p>
                 <div id="avatar-crop" hidden>
                     <canvas width="320" height="320"></canvas>
                     <label>Zoom <input type="range" id="avatar-zoom" min="0" max="100" value="0"></label>
@@ -322,7 +322,7 @@
     file.disabled = false;
     if (resetFlag) resetFlag.value = '';
     var ok = f.type === 'image/jpeg' || f.type === 'image/png' || /\.jpe?g$|\.png$/i.test(f.name || '');
-    if (!ok || f.size > 10 * 1024 * 1024) { alert('Photo must be a JPEG or PNG under 10MB'); return; }
+    if (!ok || f.size > 15 * 1024 * 1024) { alert('Photo must be a JPEG or PNG under 15MB'); return; }
     var img = new Image();
     img.onload = function () {
       cropImg = img;

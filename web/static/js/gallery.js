@@ -27,6 +27,11 @@
     var next = root.querySelector('.slideshow-next');
     var tprev = root.querySelector('.slideshow-tprev');
     var tnext = root.querySelector('.slideshow-tnext');
+    var dlg = root.querySelector('.slideshow-full');
+    var full = root.querySelector('.slideshow-full-img');
+    var fprev = root.querySelector('.slideshow-full-prev');
+    var fnext = root.querySelector('.slideshow-full-next');
+    var fclose = root.querySelector('.slideshow-full-close');
     var i = 0;
     var win = 0;
     var timer;
@@ -68,6 +73,12 @@
       img.alt = photos[i].name || '';
       prev.hidden = photos.length < 2;
       next.hidden = photos.length < 2;
+      if (fprev) fprev.hidden = photos.length < 2;
+      if (fnext) fnext.hidden = photos.length < 2;
+      if (full) {
+        full.src = photos[i].url;
+        full.alt = photos[i].name || '';
+      }
       if (i < win || i >= win + 3) win = Math.floor(i / 3) * 3;
       showThumbs();
     }
@@ -79,7 +90,7 @@
 
     function arm() {
       clearInterval(timer);
-      if (photos.length > 1) timer = setInterval(tick, INTERVAL);
+      if (photos.length > 1 && !(dlg && dlg.open)) timer = setInterval(tick, INTERVAL);
     }
 
     function go(idx) {
@@ -90,6 +101,19 @@
 
     prev.addEventListener('click', function () { go(i - 1); });
     next.addEventListener('click', function () { go(i + 1); });
+    img.addEventListener('click', function () {
+      if (!dlg || !dlg.showModal) return;
+      paint();
+      dlg.showModal();
+      arm();
+    });
+    if (fprev) fprev.addEventListener('click', function (e) { e.stopPropagation(); go(i - 1); });
+    if (fnext) fnext.addEventListener('click', function (e) { e.stopPropagation(); go(i + 1); });
+    if (fclose) fclose.addEventListener('click', function () { dlg.close(); });
+    if (dlg) {
+      dlg.addEventListener('click', function (e) { if (e.target === dlg) dlg.close(); });
+      dlg.addEventListener('close', arm);
+    }
     if (tprev) tprev.addEventListener('click', function () {
       win -= 3;
       if (win < 0) win = Math.max(0, photos.length - 3);

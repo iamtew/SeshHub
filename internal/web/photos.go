@@ -78,8 +78,8 @@ func (s *Server) dashboardGalleryAdd(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	r.Body = http.MaxBytesReader(w, r.Body, skater.PhotoMax+1<<20)
-	if err := r.ParseMultipartForm(skater.PhotoMax); err != nil {
+	r.Body = http.MaxBytesReader(w, r.Body, skater.GalleryBytes+1<<20)
+	if err := r.ParseMultipartForm(skater.GalleryBytes); err != nil {
 		http.Error(w, "too large", http.StatusRequestEntityTooLarge)
 		return
 	}

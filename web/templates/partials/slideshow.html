@@ -13,6 +13,12 @@
         <button type="button" class="slideshow-tnext" aria-label="Next thumbnails">▼</button>
     </div>
     {{end}}
+    <dialog class="slideshow-full">
+        <button type="button" class="slideshow-full-prev" aria-label="Previous photo">◀</button>
+        <img class="slideshow-full-img" alt="">
+        <button type="button" class="slideshow-full-next" aria-label="Next photo">▶</button>
+        <button type="button" class="slideshow-full-close" aria-label="Close">Close</button>
+    </dialog>
 </div>
 <script type="application/json" id="{{.GalleryScript}}">{{.GalleryJSON}}</script>
 <script src="/static/js/gallery.js" defer></script>
