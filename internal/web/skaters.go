@@ -35,6 +35,11 @@ func formProfile(r *http.Request, existing skater.Profile) skater.Profile {
 }
 
 func applyPhoto(r *http.Request, p skater.Profile) (skater.Profile, error) {
+	if r.FormValue("avatar_reset") == "1" {
+		skater.RemovePhoto(p.ID)
+		p.PhotoURL = ""
+		return p, nil
+	}
 	f, hdr, err := r.FormFile("avatar")
 	if err == nil {
 		defer f.Close()
@@ -44,14 +49,11 @@ func applyPhoto(r *http.Request, p skater.Profile) (skater.Profile, error) {
 				return p, err
 			}
 			p.PhotoURL = url
-			return p, nil
 		}
-	} else if err != http.ErrMissingFile && err != http.ErrNotMultipart {
-		return p, err
+		return p, nil
 	}
-	if r.FormValue("avatar_reset") == "1" {
-		skater.RemovePhoto(p.ID)
-		p.PhotoURL = ""
+	if err != http.ErrMissingFile && err != http.ErrNotMultipart {
+		return p, err
 	}
 	return p, nil
 }
@@ -69,7 +71,7 @@ func (s *Server) mediaAvatar(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	http.ServeFile(w, r, path)
+	serveMedia(w, r, path)
 }
 
 func (s *Server) team(w http.ResponseWriter, r *http.Request) {

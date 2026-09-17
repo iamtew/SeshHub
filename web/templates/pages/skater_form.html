@@ -6,7 +6,7 @@
     <button type="button" role="tab" id="tab-profile" data-tab="profile" aria-controls="panel-profile" aria-selected="false" tabindex="-1">Profile</button>
     <button type="button" role="tab" id="tab-youtube" data-tab="youtube" aria-controls="panel-youtube" aria-selected="false" tabindex="-1">YouTube</button>
 </div>
-<form method="post" action="{{.Action}}" class="form" id="profile-form" enctype="multipart/form-data" data-default-name="{{.DefaultName}}" data-default-slug="{{.DefaultSlug}}" data-default-avatar="{{or .User.ProviderAvatar .User.AvatarURL}}">
+<form method="post" action="{{.Action}}" class="form" id="profile-form" enctype="multipart/form-data" data-default-name="{{.DefaultName}}" data-default-slug="{{.DefaultSlug}}" data-default-avatar="{{.User.ProviderAvatar}}">
     <input type="hidden" name="tab" value="photo">
     <div class="avatar-tools" id="panel-photo" role="tabpanel" data-panel="photo" aria-labelledby="tab-photo">
         <div class="profile-head">
@@ -305,6 +305,7 @@
       if (blob) {
         var dt = new DataTransfer();
         dt.items.add(new File([blob], 'avatar.jpg', { type: 'image/jpeg' }));
+        file.disabled = false;
         file.files = dt.files;
         prev.src = URL.createObjectURL(blob);
         if (resetFlag) resetFlag.value = '';
@@ -318,6 +319,8 @@
   }
   function loadCrop(f) {
     if (!f) return;
+    file.disabled = false;
+    if (resetFlag) resetFlag.value = '';
     var ok = f.type === 'image/jpeg' || f.type === 'image/png' || /\.jpe?g$|\.png$/i.test(f.name || '');
     if (!ok || f.size > 10 * 1024 * 1024) { alert('Photo must be a JPEG or PNG under 10MB'); return; }
     var img = new Image();
@@ -367,6 +370,7 @@
   if (drop && file) {
     drop.addEventListener('click', function (e) {
       if (e.target.closest('button') || e.target === file) return;
+      file.disabled = false;
       file.click();
     });
     drop.addEventListener('dragover', function (e) {
@@ -383,12 +387,13 @@
   form.addEventListener('click', function (e) {
     var b = e.target.closest('[data-reset="avatar"]');
     if (!b) return;
-    if (resetFlag) resetFlag.value = '1';
     cropReady = false;
     cropImg = null;
     if (stage) stage.hidden = true;
     try { file.files = new DataTransfer().files; } catch (err) {}
     file.value = '';
+    file.disabled = true;
+    if (resetFlag) resetFlag.value = '1';
     if (defAvatar) {
       prev.src = defAvatar;
     } else {

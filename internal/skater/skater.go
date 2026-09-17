@@ -249,6 +249,9 @@ func scanProfile(sc interface{ Scan(dest ...any) error }) (Profile, error) {
 	if p.AvatarBorderStyle == "off" {
 		p.AvatarBorderBlur = 0
 	}
+	if p.PhotoURL != "" {
+		p.AvatarURL = Bust(p.PhotoURL, PhotoPath(p.ID))
+	}
 	return p, nil
 }
 

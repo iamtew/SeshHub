@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -18,6 +19,17 @@ const photoEdge = 1024
 
 func PhotoURL(id string) string {
 	return "/media/avatars/" + id + ".jpg"
+}
+
+func Bust(url, path string) string {
+	if url == "" || strings.Contains(url, "?") {
+		return url
+	}
+	st, err := os.Stat(path)
+	if err != nil {
+		return url
+	}
+	return url + "?t=" + strconv.FormatInt(st.ModTime().Unix(), 10)
 }
 
 func PhotoPath(id string) string {

@@ -7,7 +7,9 @@ import (
 	"image/jpeg"
 	"image/png"
 	"os"
+	"strings"
 	"testing"
+	"time"
 )
 
 func TestFrameCSS(t *testing.T) {
@@ -79,6 +81,15 @@ func TestSavePhotoSquareJPEG(t *testing.T) {
 	b := img.Bounds()
 	if b.Dx() != b.Dy() || b.Dx() != 40 {
 		t.Fatalf("size %dx%d", b.Dx(), b.Dy())
+	}
+	if got := Bust(url, PhotoPath(id)); !strings.Contains(got, "?t=") {
+		t.Fatalf("bust %q", got)
+	}
+	_ = os.Chtimes(PhotoPath(id), time.Unix(100, 0), time.Unix(100, 0))
+	a := Bust(url, PhotoPath(id))
+	_ = os.Chtimes(PhotoPath(id), time.Unix(200, 0), time.Unix(200, 0))
+	if b := Bust(url, PhotoPath(id)); a == b {
+		t.Fatalf("same t %q", a)
 	}
 	if _, err := SavePhoto(id, bytes.NewReader([]byte("nope"))); err == nil {
 		t.Fatal("garbage")

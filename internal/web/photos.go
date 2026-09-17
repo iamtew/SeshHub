@@ -26,7 +26,7 @@ func (s *Server) mediaGallery(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	http.ServeFile(w, r, path)
+	serveMedia(w, r, path)
 }
 
 func (s *Server) photos(w http.ResponseWriter, r *http.Request) {

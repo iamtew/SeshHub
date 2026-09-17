@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"image"
+	"image/jpeg"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -203,5 +205,71 @@ func TestProfileSaveStaysOnDashboard(t *testing.T) {
 	s.dashboardProfile(rec, req)
 	if rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/dashboard/profile#photo" {
 		t.Fatalf("save %d %s", rec.Code, rec.Header().Get("Location"))
+	}
+}
+
+func TestProfilePhotoResetWins(t *testing.T) {
+	sqldb, err := db.Open(":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = sqldb.Close() })
+	if err := db.Migrate(sqldb, "../db/migrations"); err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(t.TempDir())
+	u, err := auth.UpsertDiscord(sqldb, "d1", "alice", "Alice", "https://cdn.discordapp.com/a.png", auth.RoleSkater, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, err := skater.EnsureForUser(sqldb, u.ID, "Alice")
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := &Server{db: sqldb, webDir: filepath.Join("..", "..", "web")}
+	img := image.NewRGBA(image.Rect(0, 0, 8, 8))
+	var jpg bytes.Buffer
+	if err := jpeg.Encode(&jpg, img, nil); err != nil {
+		t.Fatal(err)
+	}
+	post := func(reset bool) *httptest.ResponseRecorder {
+		var buf bytes.Buffer
+		mw := multipart.NewWriter(&buf)
+		_ = mw.WriteField("display_name", "Alice")
+		_ = mw.WriteField("slug", p.Slug)
+		_ = mw.WriteField("stance", "regular")
+		if reset {
+			_ = mw.WriteField("avatar_reset", "1")
+		}
+		w, err := mw.CreateFormFile("avatar", "avatar.jpg")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := w.Write(jpg.Bytes()); err != nil {
+			t.Fatal(err)
+		}
+		if err := mw.Close(); err != nil {
+			t.Fatal(err)
+		}
+		req := httptest.NewRequest(http.MethodPost, "/dashboard/profile", &buf)
+		req.Header.Set("Content-Type", mw.FormDataContentType())
+		req = req.WithContext(context.WithValue(req.Context(), userKey, &u))
+		rec := httptest.NewRecorder()
+		s.dashboardProfile(rec, req)
+		return rec
+	}
+	if rec := post(false); rec.Code != http.StatusSeeOther {
+		t.Fatalf("upload %d %s", rec.Code, rec.Body.String())
+	}
+	got, err := skater.Get(sqldb, "id", p.ID)
+	if err != nil || got.PhotoURL == "" || !strings.Contains(got.AvatarURL, "?t=") {
+		t.Fatalf("stored %#v %v", got, err)
+	}
+	if rec := post(true); rec.Code != http.StatusSeeOther {
+		t.Fatalf("reset %d %s", rec.Code, rec.Body.String())
+	}
+	got, err = skater.Get(sqldb, "id", p.ID)
+	if err != nil || got.PhotoURL != "" || got.AvatarURL != "https://cdn.discordapp.com/a.png" {
+		t.Fatalf("cleared %#v %v", got, err)
 	}
 }

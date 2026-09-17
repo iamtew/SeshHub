@@ -114,6 +114,11 @@ func (s *Server) healthz(w http.ResponseWriter, _ *http.Request) {
 	_, _ = w.Write([]byte("ok\n"))
 }
 
+func serveMedia(w http.ResponseWriter, r *http.Request, path string) {
+	w.Header().Set("Cache-Control", "private, max-age=0, must-revalidate")
+	http.ServeFile(w, r, path)
+}
+
 func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, data map[string]any) {
 	if data == nil {
 		data = map[string]any{}
