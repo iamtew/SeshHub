@@ -16,9 +16,15 @@ var reserved = map[string]bool{
 	"access": true, "admin": true, "dashboard": true, "static": true, "healthz": true, "spot": true, "episodes": true,
 }
 
+const TeamID = "page-team"
+
 type Page struct {
 	ID, Slug, Title, ContentRaw, ContentHTML, CSS string
 	Published                                     bool
+}
+
+func Locked(id string) bool {
+	return id == TeamID
 }
 
 func Reserved(slug string) bool {
@@ -73,6 +79,9 @@ func Save(db *sql.DB, p Page) (Page, error) {
 	if p.Title == "" || strings.TrimSpace(p.ContentRaw) == "" {
 		return p, fmt.Errorf("title and body required")
 	}
+	if Locked(p.ID) {
+		p.Slug = "team"
+	}
 	base := slugify(p.Slug)
 	if base == "" {
 		base = slugify(p.Title)
@@ -80,7 +89,7 @@ func Save(db *sql.DB, p Page) (Page, error) {
 	if base == "" {
 		return p, fmt.Errorf("slug required")
 	}
-	if Reserved(base) {
+	if Reserved(base) && !Locked(p.ID) {
 		return p, fmt.Errorf("slug reserved")
 	}
 	slug, err := unique(db, base, p.ID)
@@ -105,6 +114,9 @@ func Save(db *sql.DB, p Page) (Page, error) {
 }
 
 func Delete(db *sql.DB, id string) error {
+	if Locked(id) {
+		return fmt.Errorf("page locked")
+	}
 	_, err := db.Exec(`DELETE FROM pages WHERE id = ?`, id)
 	return err
 }

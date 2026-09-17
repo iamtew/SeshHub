@@ -10,7 +10,7 @@
     <a href="/{{.Slug}}">{{.Title}}</a>
     <span class="who">{{if .Published}}published{{else}}draft{{end}}</span>
     <a class="btn" href="/admin/pages/{{.ID}}">Edit</a>
-    <form method="post" action="/admin/pages/{{.ID}}/delete"><button type="submit">Delete</button></form>
+    {{if ne .ID "page-team"}}<form method="post" action="/admin/pages/{{.ID}}/delete"><button type="submit">Delete</button></form>{{end}}
 </li>
 {{end}}
 </ul>

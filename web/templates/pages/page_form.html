@@ -5,7 +5,7 @@
     <input type="hidden" name="id" value="{{.P.ID}}">
     <div data-md-meta>
         <label>Title <input name="title" required value="{{.P.Title}}"></label>
-        <label>Slug <input name="slug" value="{{.P.Slug}}" placeholder="auto"></label>
+        <label>Slug <input name="slug" value="{{.P.Slug}}" placeholder="auto" {{if eq .P.ID "page-team"}}readonly{{end}}></label>
         <label><input type="checkbox" name="published" value="1" {{if .P.Published}}checked{{end}}> Published</label>
     </div>
     {{template "md_editor" .}}

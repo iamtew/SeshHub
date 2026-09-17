@@ -9,6 +9,7 @@ import (
 
 	"seshhub/internal/article"
 	"seshhub/internal/auth"
+	"seshhub/internal/page"
 	"seshhub/internal/skater"
 	"seshhub/internal/yt"
 )
@@ -77,7 +78,18 @@ func (s *Server) team(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "db error", http.StatusInternalServerError)
 		return
 	}
-	s.render(w, r, "skaters_list.html", map[string]any{"Title": "FS Team", "Path": "/team", "Skaters": list})
+	data := map[string]any{"Title": "FS Team", "Path": "/team", "Skaters": list}
+	if p, err := page.Get(s.db, "slug", "team"); err == nil {
+		data["Title"] = p.Title
+		data["HTML"] = template.HTML(article.Render(p.ContentRaw))
+		if p.CSS != "" {
+			data["CSS"] = template.CSS(p.CSS)
+		}
+	}
+	if u := UserFrom(r); u != nil && u.Role == auth.RoleAdmin {
+		data["EditHref"] = "/admin/pages/" + page.TeamID
+	}
+	s.render(w, r, "skaters_list.html", data)
 }
 
 func (s *Server) friends(w http.ResponseWriter, r *http.Request) {
