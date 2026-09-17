@@ -56,7 +56,7 @@ func (s *Server) attachProfile(u *auth.User) {
 	if p.AvatarURL != "" {
 		u.AvatarURL = p.AvatarURL
 	}
-	u.AvatarR1, u.AvatarR2, u.AvatarR3, u.AvatarR4, u.AvatarBorder = p.AvatarR1, p.AvatarR2, p.AvatarR3, p.AvatarR4, p.AvatarBorder
+	u.AvatarR1, u.AvatarR2, u.AvatarR3, u.AvatarR4, u.AvatarBorder, u.AvatarBorderBlur = p.AvatarR1, p.AvatarR2, p.AvatarR3, p.AvatarR4, p.AvatarBorder, p.AvatarBorderBlur
 	u.AvatarBorderStyle, u.AvatarBorderColor = p.AvatarBorderStyle, p.AvatarBorderColor
 }
 

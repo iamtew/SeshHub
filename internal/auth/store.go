@@ -35,13 +35,14 @@ type User struct {
 	AvatarR3            int    `json:"-"`
 	AvatarR4            int    `json:"-"`
 	AvatarBorder        int    `json:"-"`
+	AvatarBorderBlur    int    `json:"-"`
 	AvatarBorderStyle   string `json:"-"`
 	AvatarBorderColor   string `json:"-"`
 }
 
 func (u User) AvatarStyle() template.CSS {
-	st, col, _ := skater.NormalizeBorder(u.AvatarBorderStyle, u.AvatarBorderColor, u.AvatarBorder)
-	return skater.FrameCSS(u.AvatarR1, u.AvatarR2, u.AvatarR3, u.AvatarR4, st, col)
+	st, col, w := skater.NormalizeBorder(u.AvatarBorderStyle, u.AvatarBorderColor, u.AvatarBorder)
+	return skater.FrameCSS(u.AvatarR1, u.AvatarR2, u.AvatarR3, u.AvatarR4, st, col, w, u.AvatarBorderBlur)
 }
 
 func (u User) AvatarClass() string {

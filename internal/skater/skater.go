@@ -26,6 +26,7 @@ type Profile struct {
 	AvatarR3          int
 	AvatarR4          int
 	AvatarBorder      int
+	AvatarBorderBlur  int
 	AvatarBorderStyle string
 	AvatarBorderColor string
 	BannerURL         string
@@ -37,10 +38,14 @@ type Profile struct {
 	Role              string
 }
 
-func FrameCSS(r1, r2, r3, r4 int, style, color string) template.CSS {
+func FrameCSS(r1, r2, r3, r4 int, style, color string, width, blur int) template.CSS {
 	r1, r2, r3, r4 = ClampRadius(r1), ClampRadius(r2), ClampRadius(r3), ClampRadius(r4)
 	s := fmt.Sprintf("border-radius:%d%% %d%% %d%% %d%%", r1, r2, r3, r4)
-	style, color, _ = NormalizeBorder(style, color, 0)
+	style, color, width = NormalizeBorder(style, color, width)
+	if style == "off" {
+		return template.CSS(s)
+	}
+	s += fmt.Sprintf(";--avw:%dpx;--avblur:%dpx", width, ClampBlur(blur))
 	if style == "custom" {
 		s += ";--avb:" + color
 	}
@@ -56,8 +61,8 @@ func FrameClass(style string) string {
 }
 
 func (p Profile) AvatarStyle() template.CSS {
-	st, col, _ := NormalizeBorder(p.AvatarBorderStyle, p.AvatarBorderColor, p.AvatarBorder)
-	return FrameCSS(p.AvatarR1, p.AvatarR2, p.AvatarR3, p.AvatarR4, st, col)
+	st, col, w := NormalizeBorder(p.AvatarBorderStyle, p.AvatarBorderColor, p.AvatarBorder)
+	return FrameCSS(p.AvatarR1, p.AvatarR2, p.AvatarR3, p.AvatarR4, st, col, w, p.AvatarBorderBlur)
 }
 
 func (p Profile) AvatarClass() string {
@@ -105,7 +110,7 @@ func NormalizeBorder(style, color string, flag int) (string, string, int) {
 	} else if color == "" {
 		color = "#e5f20d"
 	}
-	return style, color, 1
+	return style, color, ClampWidth(flag)
 }
 
 func (p Profile) PublicName() string {
@@ -188,7 +193,7 @@ const profileSelect = `
 		SELECT p.id, IFNULL(p.user_id,''), p.slug, p.skater_name, IFNULL(p.real_name,''), IFNULL(p.bio,''),
 			IFNULL(p.stance,'regular'), IFNULL(p.status,'active'), IFNULL(NULLIF(p.avatar_url,''), IFNULL(u.avatar_url,'')), IFNULL(p.avatar_url,''),
 			IFNULL(p.avatar_r1,50), IFNULL(p.avatar_r2,50), IFNULL(p.avatar_r3,50), IFNULL(p.avatar_r4,50), IFNULL(p.avatar_border,0),
-			IFNULL(p.avatar_border_style,''), IFNULL(p.avatar_border_color,''),
+			IFNULL(p.avatar_border_style,''), IFNULL(p.avatar_border_color,''), IFNULL(p.avatar_border_blur,0),
 			IFNULL(p.banner_url,''),
 			IFNULL(p.location,''), IFNULL(p.sponsors,''), IFNULL(p.social_links,''), IFNULL(p.signature_tricks,''),
 			IFNULL(p.featured_video_id,''), IFNULL(u.role,'')
@@ -234,12 +239,16 @@ func scanProfile(sc interface{ Scan(dest ...any) error }) (Profile, error) {
 	var p Profile
 	err := sc.Scan(&p.ID, &p.UserID, &p.Slug, &p.SkaterName, &p.RealName, &p.Bio, &p.Stance, &p.Status,
 		&p.AvatarURL, &p.PhotoURL, &p.AvatarR1, &p.AvatarR2, &p.AvatarR3, &p.AvatarR4, &p.AvatarBorder,
-		&p.AvatarBorderStyle, &p.AvatarBorderColor,
+		&p.AvatarBorderStyle, &p.AvatarBorderColor, &p.AvatarBorderBlur,
 		&p.BannerURL, &p.Location, &p.Sponsors, &p.SocialLinks, &p.SignatureTricks, &p.FeaturedVideoID, &p.Role)
 	if err != nil {
 		return p, err
 	}
 	p.AvatarBorderStyle, p.AvatarBorderColor, p.AvatarBorder = NormalizeBorder(p.AvatarBorderStyle, p.AvatarBorderColor, p.AvatarBorder)
+	p.AvatarBorderBlur = ClampBlur(p.AvatarBorderBlur)
+	if p.AvatarBorderStyle == "off" {
+		p.AvatarBorderBlur = 0
+	}
 	return p, nil
 }
 
@@ -310,22 +319,26 @@ func Save(db *sql.DB, p Profile) (Profile, error) {
 	}
 	p.AvatarR1, p.AvatarR2, p.AvatarR3, p.AvatarR4 = ClampRadius(p.AvatarR1), ClampRadius(p.AvatarR2), ClampRadius(p.AvatarR3), ClampRadius(p.AvatarR4)
 	p.AvatarBorderStyle, p.AvatarBorderColor, p.AvatarBorder = NormalizeBorder(p.AvatarBorderStyle, p.AvatarBorderColor, p.AvatarBorder)
+	p.AvatarBorderBlur = ClampBlur(p.AvatarBorderBlur)
+	if p.AvatarBorderStyle == "off" {
+		p.AvatarBorderBlur = 0
+	}
 	uid := any(nil)
 	if p.UserID != "" {
 		uid = p.UserID
 	}
 	if p.ID == "" {
 		p.ID = newID()
-		_, err = db.Exec(`INSERT INTO skater_profiles (id, user_id, slug, skater_name, real_name, bio, stance, status, avatar_url, avatar_r1, avatar_r2, avatar_r3, avatar_r4, avatar_border, avatar_border_style, avatar_border_color, banner_url, location, sponsors, social_links, signature_tricks, featured_video_id)
-			VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+		_, err = db.Exec(`INSERT INTO skater_profiles (id, user_id, slug, skater_name, real_name, bio, stance, status, avatar_url, avatar_r1, avatar_r2, avatar_r3, avatar_r4, avatar_border, avatar_border_style, avatar_border_color, avatar_border_blur, banner_url, location, sponsors, social_links, signature_tricks, featured_video_id)
+			VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 			p.ID, uid, p.Slug, p.SkaterName, nullEmpty(p.RealName), nullEmpty(p.Bio), p.Stance, p.Status,
-			nullEmpty(p.PhotoURL), p.AvatarR1, p.AvatarR2, p.AvatarR3, p.AvatarR4, p.AvatarBorder, p.AvatarBorderStyle, p.AvatarBorderColor,
+			nullEmpty(p.PhotoURL), p.AvatarR1, p.AvatarR2, p.AvatarR3, p.AvatarR4, p.AvatarBorder, p.AvatarBorderStyle, p.AvatarBorderColor, p.AvatarBorderBlur,
 			nullEmpty(p.BannerURL), nullEmpty(p.Location), nullEmpty(p.Sponsors),
 			nullEmpty(p.SocialLinks), nullEmpty(p.SignatureTricks), nullEmpty(p.FeaturedVideoID))
 	} else {
-		_, err = db.Exec(`UPDATE skater_profiles SET user_id=?, slug=?, skater_name=?, real_name=?, bio=?, stance=?, status=?, avatar_url=?, avatar_r1=?, avatar_r2=?, avatar_r3=?, avatar_r4=?, avatar_border=?, avatar_border_style=?, avatar_border_color=?, banner_url=?, location=?, sponsors=?, social_links=?, signature_tricks=?, featured_video_id=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`,
+		_, err = db.Exec(`UPDATE skater_profiles SET user_id=?, slug=?, skater_name=?, real_name=?, bio=?, stance=?, status=?, avatar_url=?, avatar_r1=?, avatar_r2=?, avatar_r3=?, avatar_r4=?, avatar_border=?, avatar_border_style=?, avatar_border_color=?, avatar_border_blur=?, banner_url=?, location=?, sponsors=?, social_links=?, signature_tricks=?, featured_video_id=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`,
 			uid, p.Slug, p.SkaterName, nullEmpty(p.RealName), nullEmpty(p.Bio), p.Stance, p.Status,
-			nullEmpty(p.PhotoURL), p.AvatarR1, p.AvatarR2, p.AvatarR3, p.AvatarR4, p.AvatarBorder, p.AvatarBorderStyle, p.AvatarBorderColor,
+			nullEmpty(p.PhotoURL), p.AvatarR1, p.AvatarR2, p.AvatarR3, p.AvatarR4, p.AvatarBorder, p.AvatarBorderStyle, p.AvatarBorderColor, p.AvatarBorderBlur,
 			nullEmpty(p.BannerURL), nullEmpty(p.Location), nullEmpty(p.Sponsors),
 			nullEmpty(p.SocialLinks), nullEmpty(p.SignatureTricks), nullEmpty(p.FeaturedVideoID), p.ID)
 	}

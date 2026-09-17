@@ -52,6 +52,10 @@
             <div id="avatar-iro"></div>
             <input type="color" name="avatar_border_color" id="avatar-border-color" value="{{or .P.AvatarBorderColor "#e5f20d"}}">
         </div>
+        <div id="avatar-border-sliders" {{if or (eq .P.AvatarBorderStyle "off") (eq .P.AvatarBorderStyle "")}}hidden{{end}}>
+            <label>Thickness <input type="range" name="avatar_border" min="1" max="12" value="{{if .P.AvatarBorder}}{{.P.AvatarBorder}}{{else}}3{{end}}"></label>
+            <label>Blur <input type="range" name="avatar_border_blur" min="0" max="16" value="{{.P.AvatarBorderBlur}}"></label>
+        </div>
     </div>
     <div id="panel-profile" role="tabpanel" data-panel="profile" aria-labelledby="tab-profile">
         {{template "md_toolbar" .}}
@@ -158,6 +162,9 @@
   var colorInp = form.elements.namedItem('avatar_border_color');
   var iroWrap = document.getElementById('avatar-iro-wrap');
   var iroEl = document.getElementById('avatar-iro');
+  var sliderWrap = document.getElementById('avatar-border-sliders');
+  var widthEl = form.elements.namedItem('avatar_border');
+  var blurEl = form.elements.namedItem('avatar_border_blur');
   var picker = null, syncingColor = false;
   if (window.iro && iroEl) {
     picker = new iro.ColorPicker(iroEl, {
@@ -186,7 +193,15 @@
     prev.className = 'avatar' + (st && st !== 'off' ? ' avb-' + st : '');
     if (st === 'custom' && colorInp) prev.style.setProperty('--avb', colorInp.value);
     else prev.style.removeProperty('--avb');
+    if (st && st !== 'off') {
+      prev.style.setProperty('--avw', ((widthEl && widthEl.value) || '3') + 'px');
+      prev.style.setProperty('--avblur', ((blurEl && blurEl.value) || '0') + 'px');
+    } else {
+      prev.style.removeProperty('--avw');
+      prev.style.removeProperty('--avblur');
+    }
     if (iroWrap) iroWrap.hidden = st !== 'custom';
+    if (sliderWrap) sliderWrap.hidden = !st || st === 'off';
   }
   function setAll(v) {
     rs.forEach(function (el) { el.value = v; });
@@ -204,6 +219,8 @@
     if (!unlock.checked) setAll(round.value);
   });
   rs.forEach(function (el) { el.addEventListener('input', paint); });
+  if (widthEl) widthEl.addEventListener('input', paint);
+  if (blurEl) blurEl.addEventListener('input', paint);
   if (styleSel) styleSel.addEventListener('change', paint);
   if (colorInp) colorInp.addEventListener('input', function () {
     if (picker && colorInp.value) {

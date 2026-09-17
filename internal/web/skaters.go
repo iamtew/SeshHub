@@ -25,6 +25,8 @@ func formProfile(r *http.Request, existing skater.Profile) skater.Profile {
 	existing.AvatarR4, _ = strconv.Atoi(r.FormValue("avatar_r4"))
 	existing.AvatarBorderStyle = r.FormValue("avatar_border_style")
 	existing.AvatarBorderColor = r.FormValue("avatar_border_color")
+	existing.AvatarBorder, _ = strconv.Atoi(r.FormValue("avatar_border"))
+	existing.AvatarBorderBlur, _ = strconv.Atoi(r.FormValue("avatar_border_blur"))
 	if _, ok := r.PostForm["featured_video_id"]; ok {
 		existing.FeaturedVideoID = r.FormValue("featured_video_id")
 	}

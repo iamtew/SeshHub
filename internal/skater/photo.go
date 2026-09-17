@@ -138,3 +138,23 @@ func ClampRadius(n int) int {
 	}
 	return n
 }
+
+func ClampWidth(n int) int {
+	if n <= 0 {
+		return 3
+	}
+	if n > 12 {
+		return 12
+	}
+	return n
+}
+
+func ClampBlur(n int) int {
+	if n < 0 {
+		return 0
+	}
+	if n > 16 {
+		return 16
+	}
+	return n
+}
