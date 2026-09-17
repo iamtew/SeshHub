@@ -11,10 +11,12 @@ Status, not spec. Spec lives in `README.md`.
 
 ## Next
 
+- Hide/unhide YouTube clips from the owner’s feed (profile toggle + per-video overlay icons; featured promote). See `TODO.md`.
 - Turso only when a real need shows up.
 
 ## Log
 
+- 2026-09-18 — Queued owner hide/unhide + featured overlay for YouTube clips (`TODO.md`).
 - 2026-09-18 — Fold PFP goes to public `/team` or `/friends` page. No bounce.
 - 2026-09-17 — In-page slideshow is a fixed-size well; photos contain inside it. No bounce.
 - 2026-09-17 — `/photos` owner overlay + overlay slideshow keys/swipe/auto-advance. No bounce.
