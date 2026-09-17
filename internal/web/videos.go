@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"seshhub/internal/auth"
+	"seshhub/internal/page"
 	"seshhub/internal/yt"
 )
 
@@ -26,6 +27,7 @@ func (s *Server) videos(w http.ResponseWriter, r *http.Request) {
 	p, _ := strconv.Atoi(r.URL.Query().Get("p"))
 	data := map[string]any{"Title": "Videos", "Path": "/videos"}
 	data["Videos"] = videoPager("/videos", n, p, shown, data)
+	s.pageIntro(r, data, "videos", page.VideosID)
 	s.render(w, r, "videos_list.html", data)
 }
 

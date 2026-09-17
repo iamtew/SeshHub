@@ -1,5 +1,7 @@
 {{define "content"}}
-<h1>Videos</h1>
+{{if .CSS}}<style>{{.CSS}}</style>{{end}}
+{{if and .User .EditHref}}<p><a href="{{.EditHref}}">Edit</a></p>{{end}}
+{{if .HTML}}<article class="prose">{{.HTML}}</article>{{else}}<h1>{{.Title}}</h1>{{end}}
 {{if not .Videos}}
 <p>No videos yet.</p>
 {{else}}

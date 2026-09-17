@@ -12,15 +12,17 @@ import (
 )
 
 var reserved = map[string]bool{
-	"team": true, "friends": true, "skaters": true, "news": true, "videos": true, "auth": true,
+	"team": true, "friends": true, "skaters": true, "news": true, "videos": true, "photos": true, "auth": true,
 	"access": true, "admin": true, "dashboard": true, "static": true, "healthz": true, "spot": true, "episodes": true,
 }
 
 const TeamID = "page-team"
 const AboutID = "page-about"
 const FriendsID = "page-friends"
+const PhotosID = "page-photos"
+const VideosID = "page-videos"
 
-var lockSlug = map[string]string{TeamID: "team", AboutID: "about", FriendsID: "friends"}
+var lockSlug = map[string]string{TeamID: "team", AboutID: "about", FriendsID: "friends", PhotosID: "photos", VideosID: "videos"}
 
 type Page struct {
 	ID, Slug, Title, ContentRaw, ContentHTML, CSS string

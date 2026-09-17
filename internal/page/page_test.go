@@ -8,7 +8,7 @@ import (
 )
 
 func TestReservedAndSave(t *testing.T) {
-	if !Reserved("admin") || !Reserved("spot") || !Reserved("episodes") || Reserved("about") {
+	if !Reserved("admin") || !Reserved("spot") || !Reserved("episodes") || !Reserved("photos") || Reserved("about") {
 		t.Fatal("reserved")
 	}
 	if !Reserved("about/privacy") || !Reserved("about/tos") {
@@ -72,5 +72,22 @@ func TestReservedAndSave(t *testing.T) {
 	}
 	if _, err := Save(sqldb, Page{Title: "Nope", Slug: "friends", ContentRaw: "no"}); err == nil {
 		t.Fatal("expected reserved")
+	}
+	photos, err := Get(sqldb, "slug", "photos")
+	if err != nil || photos.ID != PhotosID {
+		t.Fatalf("seed photos %+v %v", photos, err)
+	}
+	if err := Delete(sqldb, PhotosID); err == nil {
+		t.Fatal("expected photos locked")
+	}
+	if _, err := Save(sqldb, Page{Title: "Nope", Slug: "photos", ContentRaw: "no"}); err == nil {
+		t.Fatal("expected reserved")
+	}
+	videos, err := Get(sqldb, "slug", "videos")
+	if err != nil || videos.ID != VideosID {
+		t.Fatalf("seed videos %+v %v", videos, err)
+	}
+	if err := Delete(sqldb, VideosID); err == nil {
+		t.Fatal("expected videos locked")
 	}
 }

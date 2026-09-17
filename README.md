@@ -276,14 +276,14 @@ Two header modes. Same public nav (Spot / Episodes / FS Team / Friends / News / 
 - **FS Team (`/admin/skaters`)**: Superadmin / Discord hub-admin role only. Set another skater’s status. No add-skater form.
 
 ### 2. YouTube clips from skaters
-- **No site-wide channel crawler**: `/videos` is the union of clips pulled from team skaters and friends who have connected YouTube. An optional `YOUTUBE_DATA_API_KEY` poller only refreshes public stats on those existing rows (hourly).
+- **No site-wide channel crawler**: `/videos` is the union of clips pulled from team skaters and friends who have connected YouTube. Intro markdown is a locked CMS page (`# Videos` by default), same as `/team`. An optional `YOUTUBE_DATA_API_KEY` poller only refreshes public stats on those existing rows (hourly).
 - **Logged-in refresh**: If the user has a `skater_profiles` row, a YouTube refresh token, and last sync is older than 60 minutes, a request while they are logged in refreshes up to 50 latest uploads.
 - **YouTube Feed Filter**: On `/dashboard/profile` **YouTube** tab after a channel is linked (`Connect YouTube` until then; no featured clip or filter form). Each owner saves AND-ed rows (field, operator, value) plus optional upload-type checkboxes (video / short / live / premiere). Operators: contains, does not contain, starts with, ends with, regexp. Only that user’s matching clips appear on public `/videos` and their roster page. Test lists Keep then Hidden without saving. Empty filter publishes all of theirs. Other people’s clips are unchanged.
 - **Manual pin**: Admins/skaters/friends can still set `featured_video_id` from that channel’s synced rows.
 
 ### 2.1 Photo gallery
 - **Own gallery (`/dashboard/gallery`)**: Roster users (FS Team / Friends / admin with a profile) can keep up to 10 photos (JPEG/PNG, 15 MB, original aspect, long edge ≤ 1600). Drop or click (Add photo opens the file picker) to add. Drag to reorder (that order is the profile slideshow). Logged-in menu item next to Profile. Public on the roster page as a slideshow and on `/photos`. Click the slideshow image for a viewport-fit overlay.
-- **`/photos`**: Union of those photos, newest first. Big slideshow on top (prev/next only; the paginated grid is the rest of the photos). Grid below paginates 6/12/18/24 (default 6) via `?n=&p=` without a page reload; clicking a grid image puts it in the slideshow slot. Caption is the owner’s display name (link to their roster page).
+- **`/photos`**: Union of those photos, newest first. Intro markdown is a locked CMS page (`# Photos` by default), same as `/team`. Big slideshow on top (prev/next only; the paginated grid is the rest of the photos). Grid below paginates 6/12/18/24 (default 6) via `?n=&p=` without a page reload; clicking a grid image puts it in the slideshow slot. Caption is the owner’s display name (link to their roster page).
 
 ### 3. Articles, News & Blog CMS
 - **Publishing Workflow**: Supports `Draft`, `Published`, and `Archived` statuses.
@@ -292,7 +292,7 @@ Two header modes. Same public nav (Spot / Episodes / FS Team / Friends / News / 
 - **Categorization & Tagging**: Tag clouds and category filters (News, Event Recaps, Modding, Trick Tips).
 
 ### 4. Custom Static Pages
-- **Dynamic Slug Routing (`/{slug}` and nested `/{slug...}`)**: Manage standalone pages such as `/about`, `/rules`, `/fakeskate-setup`, `/sponsors`, `/join-team`. `about/privacy` and `about/tos` are reserved (not CMS). Seeded `/about`, `/team`, and `/friends` intro pages cannot be deleted (slug locked). Save and close returns to the public page if you opened Edit there, or to **Pages** if you opened Edit from the list.
+- **Dynamic Slug Routing (`/{slug}` and nested `/{slug...}`)**: Manage standalone pages such as `/about`, `/rules`, `/fakeskate-setup`, `/sponsors`, `/join-team`. `about/privacy` and `about/tos` are reserved (not CMS). Seeded `/about`, `/team`, `/friends`, `/photos`, and `/videos` intro pages cannot be deleted (slug locked). Save and close returns to the public page if you opened Edit there, or to **Pages** if you opened Edit from the list.
 - **Privacy (GDPR):** [`docs/privacy-policy.md`](docs/privacy-policy.md) and [`docs/tos.md`](docs/tos.md) are compiled into the binary and served at `/about/privacy` and `/about/tos`. Code must not grow past the policy. Footer and `/login` use those URLs.
 - **Custom Metadata**: Page title, custom navigation header/footer inclusion, and optional custom CSS injection per page for special campaign styling.
 

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"seshhub/internal/page"
 	"seshhub/internal/skater"
 )
 
@@ -42,6 +43,7 @@ func (s *Server) photos(w http.ResponseWriter, r *http.Request) {
 		"Gallery": list, "GalleryJSON": galleryJSON(list), "GalleryScript": "gallery-json",
 		"PhotosLive": true,
 	}
+	s.pageIntro(r, data, "photos", page.PhotosID)
 	per, page, offset, from, to := videoPage(n, p, len(list))
 	var pageItems []skater.Photo
 	if len(list) > 0 {
