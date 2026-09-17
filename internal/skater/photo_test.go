@@ -11,11 +11,29 @@ import (
 )
 
 func TestFrameCSS(t *testing.T) {
-	if got := string(FrameCSS(0, 0, 0, 0, 0)); got != "border-radius:0% 0% 0% 0%" {
+	if got := string(FrameCSS(0, 0, 0, 0, "off", "")); got != "border-radius:0% 0% 0% 0%" {
 		t.Fatalf("square %q", got)
 	}
-	if got := string(FrameCSS(50, 12, 0, 99, 1)); got != "border-radius:50% 12% 0% 50%;border:3px solid #E5F20D" {
+	if got := string(FrameCSS(50, 12, 0, 99, "default", "")); got != "border-radius:50% 12% 0% 50%" {
 		t.Fatalf("frame %q", got)
+	}
+	if got := string(FrameCSS(50, 50, 50, 50, "custom", "#FF00AA")); got != "border-radius:50% 50% 50% 50%;--avb:#ff00aa" {
+		t.Fatalf("custom %q", got)
+	}
+	if FrameClass("pulse") != "avb-pulse" || FrameClass("nope") != "" {
+		t.Fatal("class")
+	}
+	st, col, flag := NormalizeBorder("nope", "#gggggg", 1)
+	if st != "off" || col != "" || flag != 0 {
+		t.Fatalf("junk %s %s %d", st, col, flag)
+	}
+	st, col, flag = NormalizeBorder("", "", 1)
+	if st != "default" || flag != 1 {
+		t.Fatalf("legacy %s %d", st, flag)
+	}
+	st, col, flag = NormalizeBorder("custom", "nope", 0)
+	if st != "custom" || col != "#e5f20d" || flag != 1 {
+		t.Fatalf("hex %s %s %d", st, col, flag)
 	}
 }
 

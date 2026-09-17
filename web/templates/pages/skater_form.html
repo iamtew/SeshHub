@@ -4,7 +4,7 @@
     <div class="avatar-tools">
         <div class="profile-head">
             <div class="avatar-drop" id="avatar-drop">
-                <img id="avatar-preview" class="avatar" {{if .P.AvatarURL}}src="{{.P.AvatarURL}}"{{end}} alt="" referrerpolicy="no-referrer" style="{{.P.AvatarStyle}}">
+                <img id="avatar-preview" class="avatar {{.P.AvatarClass}}" {{if .P.AvatarURL}}src="{{.P.AvatarURL}}"{{end}} alt="" referrerpolicy="no-referrer" style="{{.P.AvatarStyle}}">
                 <input type="file" name="avatar" accept="image/jpeg,image/png" hidden>
             </div>
             <div>
@@ -29,7 +29,22 @@
             <label>Bottom right <input type="range" name="avatar_r3" min="0" max="50" value="{{.P.AvatarR3}}"></label>
             <label>Bottom left <input type="range" name="avatar_r4" min="0" max="50" value="{{.P.AvatarR4}}"></label>
         </div>
-        <label><input type="checkbox" name="avatar_border" value="1" {{if .P.AvatarBorder}}checked{{end}} id="avatar-border"> Border</label>
+        <label>Border
+            <select name="avatar_border_style" id="avatar-border-style">
+                <option value="off" {{if eq .P.AvatarBorderStyle "off"}}selected{{end}}>None</option>
+                <option value="default" {{if eq .P.AvatarBorderStyle "default"}}selected{{end}}>Color Default</option>
+                <option value="custom" {{if eq .P.AvatarBorderStyle "custom"}}selected{{end}}>Color Custom</option>
+                <option value="pulse" {{if eq .P.AvatarBorderStyle "pulse"}}selected{{end}}>Pulse</option>
+                <option value="strobe" {{if eq .P.AvatarBorderStyle "strobe"}}selected{{end}}>Strobe</option>
+                <option value="fire" {{if eq .P.AvatarBorderStyle "fire"}}selected{{end}}>Fire</option>
+                <option value="neon" {{if eq .P.AvatarBorderStyle "neon"}}selected{{end}}>Neon</option>
+                <option value="orbit" {{if eq .P.AvatarBorderStyle "orbit"}}selected{{end}}>Orbit</option>
+            </select>
+        </label>
+        <div id="avatar-iro-wrap" {{if ne .P.AvatarBorderStyle "custom"}}hidden{{end}}>
+            <div id="avatar-iro"></div>
+            <input type="color" name="avatar_border_color" id="avatar-border-color" value="{{or .P.AvatarBorderColor "#e5f20d"}}">
+        </div>
     </div>
     <div class="field-reset">
         <label>Display name <input name="display_name" value="{{or .P.RealName .DefaultName}}"></label>
@@ -64,6 +79,7 @@
     <button type="button" id="profile-discard">Discard</button>
     <button type="submit" form="profile-form">Save</button>
 </div>
+<script src="/static/js/iro.min.js"></script>
 <script>
 (function () {
   var form = document.getElementById('profile-form');
@@ -124,11 +140,39 @@
   var unlock = document.getElementById('avatar-unlock');
   var corners = document.getElementById('avatar-corners');
   var rs = ['avatar_r1','avatar_r2','avatar_r3','avatar_r4'].map(function (n) { return form.elements.namedItem(n); });
-  var border = document.getElementById('avatar-border');
+  var styleSel = form.elements.namedItem('avatar_border_style');
+  var colorInp = form.elements.namedItem('avatar_border_color');
+  var iroWrap = document.getElementById('avatar-iro-wrap');
+  var iroEl = document.getElementById('avatar-iro');
+  var picker = null, syncingColor = false;
+  if (window.iro && iroEl) {
+    picker = new iro.ColorPicker(iroEl, {
+      width: 220,
+      color: (colorInp && colorInp.value) || '#e5f20d',
+      borderWidth: 1,
+      borderColor: 'rgba(255, 255, 255, 0.3)',
+      layoutDirection: 'vertical',
+      sliderSize: 14,
+      handleRadius: 8,
+      padding: 4,
+      margin: 8
+    });
+    picker.on('color:change', function (c) {
+      if (syncingColor) return;
+      if (colorInp) colorInp.value = c.hexString.toLowerCase();
+      paint();
+      syncBar();
+    });
+  }
   function paint() {
     if (!prev) return;
     prev.style.borderRadius = rs[0].value + '% ' + rs[1].value + '% ' + rs[2].value + '% ' + rs[3].value + '%';
-    prev.style.border = border && border.checked ? '3px solid #E5F20D' : '';
+    prev.style.border = '';
+    var st = styleSel ? styleSel.value : 'off';
+    prev.className = 'avatar' + (st && st !== 'off' ? ' avb-' + st : '');
+    if (st === 'custom' && colorInp) prev.style.setProperty('--avb', colorInp.value);
+    else prev.style.removeProperty('--avb');
+    if (iroWrap) iroWrap.hidden = st !== 'custom';
   }
   function setAll(v) {
     rs.forEach(function (el) { el.value = v; });
@@ -146,7 +190,15 @@
     if (!unlock.checked) setAll(round.value);
   });
   rs.forEach(function (el) { el.addEventListener('input', paint); });
-  if (border) border.addEventListener('change', paint);
+  if (styleSel) styleSel.addEventListener('change', paint);
+  if (colorInp) colorInp.addEventListener('input', function () {
+    if (picker && colorInp.value) {
+      syncingColor = true;
+      picker.color.hexString = colorInp.value;
+      syncingColor = false;
+    }
+    paint();
+  });
   paint();
   var file = form.elements.namedItem('avatar');
   var resetFlag = form.elements.namedItem('avatar_reset');

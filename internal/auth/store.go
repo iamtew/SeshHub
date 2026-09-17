@@ -35,10 +35,18 @@ type User struct {
 	AvatarR3            int    `json:"-"`
 	AvatarR4            int    `json:"-"`
 	AvatarBorder        int    `json:"-"`
+	AvatarBorderStyle   string `json:"-"`
+	AvatarBorderColor   string `json:"-"`
 }
 
 func (u User) AvatarStyle() template.CSS {
-	return skater.FrameCSS(u.AvatarR1, u.AvatarR2, u.AvatarR3, u.AvatarR4, u.AvatarBorder)
+	st, col, _ := skater.NormalizeBorder(u.AvatarBorderStyle, u.AvatarBorderColor, u.AvatarBorder)
+	return skater.FrameCSS(u.AvatarR1, u.AvatarR2, u.AvatarR3, u.AvatarR4, st, col)
+}
+
+func (u User) AvatarClass() string {
+	st, _, _ := skater.NormalizeBorder(u.AvatarBorderStyle, u.AvatarBorderColor, u.AvatarBorder)
+	return skater.FrameClass(st)
 }
 
 const userCols = `id, username, display_name, IFNULL(avatar_url,''), role, host, IFNULL(discord_id,''), IFNULL(youtube_channel_id,''), IFNULL(youtube_channel_title,'')`

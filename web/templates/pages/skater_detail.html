@@ -1,7 +1,7 @@
 {{define "content"}}
 <article>
     <div class="profile-head">
-        {{if .P.AvatarURL}}<img class="avatar" src="{{.P.AvatarURL}}" alt="" referrerpolicy="no-referrer" style="{{.P.AvatarStyle}}">{{end}}
+        {{if .P.AvatarURL}}<img class="avatar {{.P.AvatarClass}}" src="{{.P.AvatarURL}}" alt="" referrerpolicy="no-referrer" style="{{.P.AvatarStyle}}">{{end}}
         <div>
             <h1>{{.P.PublicName}}</h1>
             <p class="who">{{.P.Stance}} · {{.P.Status}}{{if .P.Location}} · {{.P.Location}}{{end}}</p>

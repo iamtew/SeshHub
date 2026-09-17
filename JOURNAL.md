@@ -4,17 +4,18 @@ Status, not spec. Spec lives in `README.md`.
 
 ## Now
 
-- `/dashboard/profile` edits display name, slug, optional site photo (square crop, 10MB, `/media/avatars/`), and circle-to-square frame (per-corner unlock, optional border). Dirty fields open a bottom Discard / Save bar; Save stays on the dashboard. Roster list/detail put name + who beside a larger PFP. Old slugs 302 until reused. `/videos`, `/team/{slug}`, and `/friends/{slug}` paginate clips 9/18/27 (default 9) via `?n=&p=`. YouTube Feed Filter at the bottom of `/dashboard/profile`; public `/videos` and roster pages show only that user's matching clips. Public site, OAuth, access queue (approve → friend), Discord-role FS Team + Friends (`DISCORD_FRIENDS_ROLE_ID`; YouTube-only friends OK), articles, clips, admin users, custom pages, Spot, Episodes, `-port`. `DISCORD_HUB_ADMIN_ROLE_ID` + `DISCORD_HOSTS_ROLE_ID` + `DISCORD_FRIENDS_ROLE_ID`. Nav Friends after FS Team. In-guild Discord without friends/skater/admin waits in the queue; not-in-guild is pending (login still works). Former `member` rows are Friends; skater Discord role on login moves them to FS Team.
+- `/dashboard/profile` edits display name, slug, optional site photo (square crop, 10MB, `/media/avatars/`), circle-to-square frame, and PFP border styles (default/custom/pulse/strobe/fire/neon/orbit). Dirty fields open a bottom Discard / Save bar; Save stays on the dashboard. Roster list/detail put name + who beside a larger PFP. Old slugs 302 until reused. `/videos`, `/team/{slug}`, and `/friends/{slug}` paginate clips 9/18/27 (default 9) via `?n=&p=`. YouTube Feed Filter at the bottom of `/dashboard/profile`; public `/videos` and roster pages show only that user's matching clips. Public site, OAuth, access queue (approve → friend), Discord-role FS Team + Friends (`DISCORD_FRIENDS_ROLE_ID`; YouTube-only friends OK), articles, clips, admin users, custom pages, Spot, Episodes, `-port`. `DISCORD_HUB_ADMIN_ROLE_ID` + `DISCORD_HOSTS_ROLE_ID` + `DISCORD_FRIENDS_ROLE_ID`. Nav Friends after FS Team. In-guild Discord without friends/skater/admin waits in the queue; not-in-guild is pending (login still works). Former `member` rows are Friends; skater Discord role on login moves them to FS Team.
 - Dark neon CSS in `web/static/css/app.css`. Site-wide `background.png`. Visitor: sofa hero + Discord/Twitch/YouTube + Hub square. Sesh Hub (logged-in): folded bar + avatar; same three social icons, no Hub square. `/login` is the OAuth picker. Well is 70% / min 720px. Queue list actions sit on the right. Public nav: **FS Team** then **Friends**.
 - Halftone-over-gradient recipe in `sesh_halftone.md` (local lift-out; not always in git).
 - `docs/privacy-policy.md` + `docs/tos.md` compile into the binary (`go:embed`) and are served at `/about/privacy` and `/about/tos` (not CMS). Contact mailbox is `tewmten@gmail.com`. OAuth consent screen URLs: `https://hub.seshsofa.nl/about/privacy` and `/about/tos`. `/login` states YouTube sign-in agrees to those. Consent gate, no session IP/UA, complete erasure + `/account` self-service. Fonts stay on cdnfonts. Dead `SESSION_SECRET` gone. GDPR is a hard agent rule (`.cursor/rules/privacy-gdpr.mdc` + `AGENTS.md`); code must not grow past the policy. Optional `YOUTUBE_DATA_API_KEY` hourly stats poll on cached clip IDs (title, channel name, views/likes/comments counts; zeros hidden).
 
 ## Next
 
-- Extra profile-photo border styles. Turso only when a real need shows up.
+- Turso only when a real need shows up.
 
 ## Log
 
+- 2026-09-17 — PFP border styles (default/custom/pulse/strobe/fire/neon/orbit). Bounce `just dev`.
 - 2026-09-17 — Profile dirty bar Discard/Save; save stays on `/dashboard/profile`. No bounce for CSS/HTML; bounce `just dev` for the redirect.
 - 2026-09-17 — Crop zoom in/out, clamped to the photo. No bounce.
 - 2026-09-17 — Roster PFP beside name/who; site photo + roundness sliders. Bounce `just dev`.

@@ -7,7 +7,7 @@
 {{range .Skaters}}
 <li>
     <div class="profile-head profile-head--list">
-        {{if .AvatarURL}}<img class="avatar" src="{{.AvatarURL}}" alt="" referrerpolicy="no-referrer" style="{{.AvatarStyle}}">{{end}}
+        {{if .AvatarURL}}<img class="avatar {{.AvatarClass}}" src="{{.AvatarURL}}" alt="" referrerpolicy="no-referrer" style="{{.AvatarStyle}}">{{end}}
         <div>
             <a href="{{$.Path}}/{{.Slug}}"><strong>{{.PublicName}}</strong></a>
             <span class="who">{{.Stance}} · {{.Status}}{{if .Location}} · {{.Location}}{{end}}</span>
