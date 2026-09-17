@@ -85,8 +85,8 @@ func TestOwnerFilterOnPublicVideos(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/dashboard/profile/filter", strings.NewReader("action=save&field=title&op=contains&value=wheel"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	s.profileFilter(rec, with(a, req))
-	if rec.Code != http.StatusSeeOther {
-		t.Fatalf("save %d", rec.Code)
+	if rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/dashboard/profile#youtube" {
+		t.Fatalf("save %d %s", rec.Code, rec.Header().Get("Location"))
 	}
 
 	rec = httptest.NewRecorder()
@@ -98,7 +98,7 @@ func TestOwnerFilterOnPublicVideos(t *testing.T) {
 
 	rec = httptest.NewRecorder()
 	s.dashboardProfile(rec, with(a, httptest.NewRequest(http.MethodGet, "/dashboard/profile", nil)))
-	if rec.Code != 200 || !strings.Contains(rec.Body.String(), "YouTube Feed Filter") || !strings.Contains(rec.Body.String(), "You have unsaved changes") {
+	if rec.Code != 200 || !strings.Contains(rec.Body.String(), "YouTube Feed Filter") || !strings.Contains(rec.Body.String(), "You have unsaved changes") || !strings.Contains(rec.Body.String(), `role="tablist"`) {
 		t.Fatalf("profile %d %s", rec.Code, rec.Body.String())
 	}
 
@@ -107,7 +107,7 @@ func TestOwnerFilterOnPublicVideos(t *testing.T) {
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	s.profileFilter(rec, with(a, req))
 	body = rec.Body.String()
-	if rec.Code != 200 || !strings.Contains(body, "Keep") || !strings.Contains(body, "Hidden") || !strings.Contains(body, "Other") {
+	if rec.Code != 200 || !strings.Contains(body, "Keep") || !strings.Contains(body, "Hidden") || !strings.Contains(body, "Other") || !strings.Contains(body, `data-initial-tab="youtube"`) {
 		t.Fatalf("test %d %s", rec.Code, body)
 	}
 }
@@ -201,7 +201,7 @@ func TestProfileSaveStaysOnDashboard(t *testing.T) {
 	rec := httptest.NewRecorder()
 	s := &Server{db: sqldb, webDir: filepath.Join("..", "..", "web")}
 	s.dashboardProfile(rec, req)
-	if rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/dashboard/profile" {
+	if rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/dashboard/profile#photo" {
 		t.Fatalf("save %d %s", rec.Code, rec.Header().Get("Location"))
 	}
 }

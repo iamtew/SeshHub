@@ -1,8 +1,14 @@
 {{define "content"}}
 <h1>{{.Title}}</h1>
-{{template "md_toolbar" .}}
+<div class="profile-tabs" id="profile-tabs" data-tab="photo" data-initial-tab="{{or .Tab "photo"}}">
+<div class="profile-tablist" role="tablist" aria-label="Profile settings">
+    <button type="button" role="tab" id="tab-photo" data-tab="photo" aria-controls="panel-photo" aria-selected="true">Photo</button>
+    <button type="button" role="tab" id="tab-profile" data-tab="profile" aria-controls="panel-profile" aria-selected="false" tabindex="-1">Profile</button>
+    <button type="button" role="tab" id="tab-youtube" data-tab="youtube" aria-controls="panel-youtube" aria-selected="false" tabindex="-1">YouTube</button>
+</div>
 <form method="post" action="{{.Action}}" class="form" id="profile-form" enctype="multipart/form-data" data-default-name="{{.DefaultName}}" data-default-slug="{{.DefaultSlug}}" data-default-avatar="{{or .User.ProviderAvatar .User.AvatarURL}}">
-    <div class="avatar-tools">
+    <input type="hidden" name="tab" value="photo">
+    <div class="avatar-tools" id="panel-photo" role="tabpanel" data-panel="photo" aria-labelledby="tab-photo">
         <div class="profile-head">
             <div class="avatar-drop" id="avatar-drop">
                 <img id="avatar-preview" class="avatar {{.P.AvatarClass}}" {{if .P.AvatarURL}}src="{{.P.AvatarURL}}"{{end}} alt="" referrerpolicy="no-referrer" style="{{.P.AvatarStyle}}">
@@ -47,34 +53,39 @@
             <input type="color" name="avatar_border_color" id="avatar-border-color" value="{{or .P.AvatarBorderColor "#e5f20d"}}">
         </div>
     </div>
-    <div class="field-reset">
-        <label>Display name <input name="display_name" value="{{or .P.RealName .DefaultName}}"></label>
-        <button type="button" data-reset="name">Reset</button>
+    <div id="panel-profile" role="tabpanel" data-panel="profile" aria-labelledby="tab-profile">
+        {{template "md_toolbar" .}}
+        <div class="field-reset">
+            <label>Display name <input name="display_name" value="{{or .P.RealName .DefaultName}}"></label>
+            <button type="button" data-reset="name">Reset</button>
+        </div>
+        <div class="field-reset">
+            <label>User slug <span class="who">{{.SlugPrefix}}</span><input name="slug" value="{{.P.Slug}}" autocomplete="off"></label>
+            <button type="button" data-reset="slug">Reset</button>
+        </div>
+        <label>Location <input name="location" value="{{.P.Location}}"></label>
+        <label>Stance
+            <select name="stance">
+                <option value="regular" {{if eq .P.Stance "regular"}}selected{{end}}>Regular</option>
+                <option value="goofy" {{if eq .P.Stance "goofy"}}selected{{end}}>Goofy</option>
+                <option value="mongo" {{if eq .P.Stance "mongo"}}selected{{end}}>Mongo</option>
+            </select>
+        </label>
+        <span>Bio</span>
+        {{template "md_editor" .}}
     </div>
-    <div class="field-reset">
-        <label>User slug <span class="who">{{.SlugPrefix}}</span><input name="slug" value="{{.P.Slug}}" autocomplete="off"></label>
-        <button type="button" data-reset="slug">Reset</button>
+    <div id="panel-youtube" role="tabpanel" data-panel="youtube" aria-labelledby="tab-youtube">
+        {{if .Videos}}
+        <label>Featured video
+            <select name="featured_video_id">
+                <option value="">None</option>
+                {{range .Videos}}
+                <option value="{{.ID}}" {{if eq $.P.FeaturedVideoID .ID}}selected{{end}}>{{.Title}}</option>
+                {{end}}
+            </select>
+        </label>
+        {{end}}
     </div>
-    <label>Location <input name="location" value="{{.P.Location}}"></label>
-    <label>Stance
-        <select name="stance">
-            <option value="regular" {{if eq .P.Stance "regular"}}selected{{end}}>Regular</option>
-            <option value="goofy" {{if eq .P.Stance "goofy"}}selected{{end}}>Goofy</option>
-            <option value="mongo" {{if eq .P.Stance "mongo"}}selected{{end}}>Mongo</option>
-        </select>
-    </label>
-    <span>Bio</span>
-    {{template "md_editor" .}}
-    {{if .Videos}}
-    <label>Featured video
-        <select name="featured_video_id">
-            <option value="">None</option>
-            {{range .Videos}}
-            <option value="{{.ID}}" {{if eq $.P.FeaturedVideoID .ID}}selected{{end}}>{{.Title}}</option>
-            {{end}}
-        </select>
-    </label>
-    {{end}}
     <div id="profile-dirty" class="save-bar" hidden>
         <p>You have unsaved changes</p>
         <button type="button" id="profile-discard">Discard</button>
@@ -90,6 +101,7 @@
   function snap() {
     var fd = new FormData(form), parts = [];
     fd.forEach(function (v, k) {
+      if (k === 'tab') return;
       parts.push(k + '=' + (v && v.name != null ? v.name + ':' + v.size : v));
     });
     return parts.join('\n');
@@ -364,12 +376,59 @@
   form.addEventListener('change', syncBar);
   var discard = document.getElementById('profile-discard');
   if (discard) discard.addEventListener('click', function () { location.reload(); });
+  var root = document.getElementById('profile-tabs');
+  var tabBtns = root ? root.querySelectorAll('[role="tab"]') : [];
+  var tabNames = ['photo', 'profile', 'youtube'];
+  function okTab(n) { return n === 'profile' || n === 'youtube' ? n : 'photo'; }
+  function setTab(name, hash) {
+    name = okTab(name);
+    if (root) root.setAttribute('data-tab', name);
+    for (var i = 0; i < tabBtns.length; i++) {
+      var on = tabBtns[i].getAttribute('data-tab') === name;
+      tabBtns[i].setAttribute('aria-selected', on ? 'true' : 'false');
+      tabBtns[i].tabIndex = on ? 0 : -1;
+    }
+    var fields = document.querySelectorAll('input[name="tab"]');
+    for (i = 0; i < fields.length; i++) fields[i].value = name;
+    if (hash && history.replaceState) history.replaceState(null, '', '#' + name);
+  }
+  var start = okTab((location.hash || '').replace(/^#/, '') || (root && root.getAttribute('data-initial-tab')) || 'photo');
+  setTab(start, false);
+  if (root) {
+    var list = root.querySelector('[role="tablist"]');
+    list.addEventListener('click', function (e) {
+      var t = e.target.closest('[role="tab"]');
+      if (!t || !root.contains(t)) return;
+      setTab(t.getAttribute('data-tab'), true);
+    });
+    list.addEventListener('keydown', function (e) {
+      var t = e.target.closest('[role="tab"]');
+      if (!t) return;
+      var i = tabNames.indexOf(t.getAttribute('data-tab'));
+      if (i < 0) return;
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        e.preventDefault();
+        i = e.key === 'ArrowRight' ? (i + 1) % 3 : (i + 2) % 3;
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        i = 0;
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        i = 2;
+      } else {
+        return;
+      }
+      setTab(tabNames[i], true);
+      tabBtns[i].focus();
+    });
+  }
   baseline = snap();
   syncBar();
 })();
 </script>
-<h2>YouTube Feed Filter</h2>
-<form method="post" action="/dashboard/profile/filter" class="form video-filter">
+<form method="post" action="/dashboard/profile/filter" class="form video-filter" data-panel="youtube">
+    <input type="hidden" name="tab" value="youtube">
+    <h2>YouTube Feed Filter</h2>
     <p class="who">YouTube Feed Filter applies only to your linked uploads. Every rule is AND. Clips that pass appear on /videos and your public page. Other people’s clips are unchanged. Empty filter publishes all of yours. Test lists Keep then Hidden (Hidden still listed so you can see misses). Not saved until you hit Save.</p>
     {{range .FilterRows}}
     <div class="filter-row">
@@ -410,6 +469,7 @@
     </div>
 </form>
 {{if .Test}}
+<div data-panel="youtube">
 <p class="who">{{if .User.YouTubeChannelID}}Your cached uploads only.{{else}}Connect YouTube to test against your clips.{{end}}</p>
 {{if .TestClips}}
 <ul class="grid">
@@ -428,5 +488,7 @@
 {{else if .User.YouTubeChannelID}}
 <p class="who">No cached clips yet. Visit the site while logged in after YouTube is connected.</p>
 {{end}}
+</div>
 {{end}}
+</div>
 {{end}}

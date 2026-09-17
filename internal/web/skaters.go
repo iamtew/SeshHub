@@ -230,7 +230,7 @@ func (s *Server) dashboardProfile(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		http.Redirect(w, r, "/dashboard/profile", http.StatusSeeOther)
+		http.Redirect(w, r, profilePath(r.FormValue("tab")), http.StatusSeeOther)
 		return
 	}
 	s.renderSkaterProfile(w, r, u, p, nil, false)
@@ -249,13 +249,13 @@ func (s *Server) profileFilter(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
-		http.Redirect(w, r, "/dashboard/profile", http.StatusSeeOther)
+		http.Redirect(w, r, profilePath("youtube"), http.StatusSeeOther)
 	case "save":
 		if err := auth.SetVideoFilter(s.db, u.ID, yt.EncodeSpec(spec)); err != nil {
 			http.Error(w, "db error", http.StatusInternalServerError)
 			return
 		}
-		http.Redirect(w, r, "/dashboard/profile", http.StatusSeeOther)
+		http.Redirect(w, r, profilePath("youtube"), http.StatusSeeOther)
 	case "add":
 		if len(spec.Rules) < yt.MaxRules {
 			spec.Rules = append(spec.Rules, yt.Rule{})
@@ -311,9 +311,13 @@ func (s *Server) renderSkaterProfile(w http.ResponseWriter, r *http.Request, u *
 	}
 	vids := userChannelVideos(s.db, u.ID, 50)
 	defName := providerName(u)
+	tab := "photo"
+	if spec != nil {
+		tab = "youtube"
+	}
 	data := map[string]any{
 		"Title": "Skater profile", "Path": "/dashboard/profile", "P": p, "Action": "/dashboard/profile", "BioEdit": true,
-		"Videos": vids, "FilterRows": sspec.Rules, "KindOn": kindOn, "Test": test,
+		"Videos": vids, "FilterRows": sspec.Rules, "KindOn": kindOn, "Test": test, "Tab": tab,
 		"DefaultName": defName, "DefaultSlug": skater.Slugify(defName), "SlugPrefix": skater.RosterPath(u.Role) + "/",
 	}
 	if test {
@@ -330,6 +334,15 @@ func (s *Server) renderSkaterProfile(w http.ResponseWriter, r *http.Request, u *
 		data["TestClips"] = append(keep, hide...)
 	}
 	s.render(w, r, "skater_form.html", data)
+}
+
+func profilePath(tab string) string {
+	switch tab {
+	case "profile", "youtube":
+		return "/dashboard/profile#" + tab
+	default:
+		return "/dashboard/profile#photo"
+	}
 }
 
 func providerName(u *auth.User) string {
