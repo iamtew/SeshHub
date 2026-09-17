@@ -78,7 +78,7 @@ func (s *Server) loginPage(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
-	s.render(w, r, "login.html", map[string]any{"Title": "Sesh Hub", "Path": "/login", "AuthPage": true})
+	s.render(w, r, "login.html", map[string]any{"Path": "/login", "AuthPage": true})
 }
 
 func (s *Server) startOAuth(provider string) http.HandlerFunc {
