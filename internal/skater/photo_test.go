@@ -20,7 +20,7 @@ func TestFrameCSS(t *testing.T) {
 	if got := string(FrameCSS(50, 50, 50, 50, "custom", "#FF00AA", 8, 4)); got != "border-radius:50% 50% 50% 50%;--avw:8px;--avblur:4px;--avb:#ff00aa" {
 		t.Fatalf("custom %q", got)
 	}
-	if FrameClass("pulse") != "avb-pulse" || FrameClass("nope") != "" {
+	if FrameClass("pulse") != "avb-pulse" || FrameClass("chroma") != "avb-chroma" || FrameClass("nope") != "" {
 		t.Fatal("class")
 	}
 	st, col, width := NormalizeBorder("nope", "#gggggg", 1)

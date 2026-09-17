@@ -305,7 +305,7 @@ a.profile-head { padding: 1rem; color: inherit; text-decoration: none; }
 }
 .profile-head--list .avatar { width: 6rem; height: 6rem; flex-basis: 6rem; }
 .avatar-border { border: 3px solid var(--chartreuse); }
-.avb-default, .avb-custom, .avb-pulse, .avb-strobe, .avb-fire, .avb-neon, .avb-orbit {
+.avb-default, .avb-custom, .avb-pulse, .avb-strobe, .avb-fire, .avb-neon {
     border: var(--avw, 3px) solid #E5F20D;
     box-sizing: border-box;
     box-shadow: 0 0 var(--avblur, 0px) #E5F20D;
@@ -332,20 +332,28 @@ a.profile-head { padding: 1rem; color: inherit; text-decoration: none; }
     0%, 100% { border-color: #00FFFF; box-shadow: inset 0 0 8px #FF00FF, 0 0 var(--avblur, 0px) #00FFFF; }
     50% { border-color: #FF00FF; box-shadow: inset 0 0 8px #00FFFF, 0 0 var(--avblur, 0px) #FF00FF; }
 }
-.avb-orbit { border-color: #333333; animation: avb-orbit 1.2s linear infinite; }
+.avb-orbit, .avb-chroma { box-sizing: border-box; border: 0; }
+.avb-orbit { animation: avb-orbit 1.2s linear infinite; }
 @keyframes avb-orbit {
-    0% { box-shadow: 0 -5px var(--avblur, 0px) #E5F20D; }
-    25% { box-shadow: 5px 0 var(--avblur, 0px) #F20D0D; }
-    50% { box-shadow: 0 5px var(--avblur, 0px) #E5F20D; }
-    75% { box-shadow: -5px 0 var(--avblur, 0px) #F20D0D; }
-    100% { box-shadow: 0 -5px var(--avblur, 0px) #E5F20D; }
+    0% { box-shadow: 0 -5px 0 #E5F20D; }
+    25% { box-shadow: 5px 0 0 #F20D0D; }
+    50% { box-shadow: 0 5px 0 #E5F20D; }
+    75% { box-shadow: -5px 0 0 #F20D0D; }
+    100% { box-shadow: 0 -5px 0 #E5F20D; }
+}
+.avb-chroma { animation: avb-chroma 2s ease-in-out infinite; }
+@keyframes avb-chroma {
+    0%, 100% { box-shadow: -2px 0 var(--avblur, 0px) #00FFFF, 2px 0 var(--avblur, 0px) #FF00FF; }
+    50% { box-shadow: -4px 0 var(--avblur, 0px) #00FFFF, 4px 0 var(--avblur, 0px) #FF00FF, -2px 0 6px #00FFFF, 2px 0 6px #FF00FF; }
 }
 @media (prefers-reduced-motion: reduce) {
-    .avb-pulse, .avb-strobe, .avb-fire, .avb-neon, .avb-orbit {
+    .avb-pulse, .avb-strobe, .avb-fire, .avb-neon {
         animation: none;
         border-color: #E5F20D;
         box-shadow: 0 0 var(--avblur, 0px) #E5F20D;
     }
+    .avb-orbit { animation: none; box-shadow: 0 -5px 0 #E5F20D; }
+    .avb-chroma { animation: none; box-shadow: -2px 0 var(--avblur, 0px) #00FFFF, 2px 0 var(--avblur, 0px) #FF00FF; }
     .avb-custom { border-color: var(--avb, #E5F20D); box-shadow: 0 0 var(--avblur, 0px) var(--avb, #E5F20D); }
     button:active:not(:disabled):not(.hero-play), .btn:active, .signin .btn:active, .pager > a:active {
         transform: none;
@@ -360,6 +368,7 @@ a.profile-head { padding: 1rem; color: inherit; text-decoration: none; }
 .form input[type="range"] { width: 100%; accent-color: var(--green); }
 .form:has(.md-edit) { max-width: none; }
 .form label { display: flex; flex-direction: column; gap: 0.4rem; }
+.form label[hidden] { display: none; }
 .field-reset { display: grid; grid-template-columns: 1fr auto; gap: 0.5rem; align-items: end; }
 .field-reset label { margin: 0; }
 .form label:has([type="checkbox"]), .md-side label:has([type="checkbox"]) {

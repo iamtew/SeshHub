@@ -72,7 +72,7 @@ func (p Profile) AvatarClass() string {
 
 var borderStyles = map[string]bool{
 	"off": true, "default": true, "custom": true,
-	"pulse": true, "strobe": true, "fire": true, "neon": true, "orbit": true,
+	"pulse": true, "strobe": true, "fire": true, "neon": true, "orbit": true, "chroma": true,
 }
 
 func ClampHex(s string) string {
