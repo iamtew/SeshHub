@@ -262,7 +262,7 @@ Users who do not match a Discord guild role (hub-admin, skater, or friends), as 
 Two header modes. Same public nav (Spot / Episodes / FS Team / Friends / News / Videos / Photos / About) in the dark well either way.
 
 - **Visitor mode** (logged out): 16:9 sofa hero, click to play `seshsofa.mp4` (local `web/static/vid/`, not in git), Close restores the poster. Header: Discord / Twitch / YouTube icons then a Sesh Hub square to `/login`.
-- **Sesh Hub mode** (logged in): same `background.png`. Hero folds into a translucent panel — `seshhub.png` (click plays the same intro; Close folds it back), then role links, **Account**, Discord avatar (also `/account`; name on hover). Display name is on the `/account` heading. **Log out** is at the bottom of `/account`. Public nav still has Discord / Twitch / YouTube icons, not the Hub square. No 16:9 until the logo is clicked. `/login` redirects home.
+- **Sesh Hub mode** (logged in): same `background.png`. Hero folds into a translucent panel — `seshhub.png` (click plays the same intro; Close folds it back), then role links, **Account**, Discord avatar (also `/account`; name on hover). Display name is on the `/account` heading. **Log out** is at the bottom of `/account`. **Delete my account** opens a modal; you must type your username to confirm. Public nav still has Discord / Twitch / YouTube icons, not the Hub square. No 16:9 until the logo is clicked. `/login` redirects home.
 
 ---
 
@@ -278,7 +278,7 @@ Two header modes. Same public nav (Spot / Episodes / FS Team / Friends / News / 
 ### 2. YouTube clips from skaters
 - **No site-wide channel crawler**: `/videos` is the union of clips pulled from team skaters and friends who have connected YouTube. An optional `YOUTUBE_DATA_API_KEY` poller only refreshes public stats on those existing rows (hourly).
 - **Logged-in refresh**: If the user has a `skater_profiles` row, a YouTube refresh token, and last sync is older than 60 minutes, a request while they are logged in refreshes up to 50 latest uploads.
-- **YouTube Feed Filter**: On `/dashboard/profile`, each owner saves AND-ed rows (field, operator, value) plus optional upload-type checkboxes (video / short / live / premiere). Operators: contains, does not contain, starts with, ends with, regexp. Only that user’s matching clips appear on public `/videos` and their roster page. Test lists Keep then Hidden without saving. Empty filter publishes all of theirs. Other people’s clips are unchanged.
+- **YouTube Feed Filter**: On `/dashboard/profile` **YouTube** tab after a channel is linked (`Connect YouTube` until then; no featured clip or filter form). Each owner saves AND-ed rows (field, operator, value) plus optional upload-type checkboxes (video / short / live / premiere). Operators: contains, does not contain, starts with, ends with, regexp. Only that user’s matching clips appear on public `/videos` and their roster page. Test lists Keep then Hidden without saving. Empty filter publishes all of theirs. Other people’s clips are unchanged.
 - **Manual pin**: Admins/skaters/friends can still set `featured_video_id` from that channel’s synced rows.
 
 ### 2.1 Photo gallery

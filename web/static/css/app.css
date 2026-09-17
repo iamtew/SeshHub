@@ -247,16 +247,29 @@ button:active:not(:disabled):not(.hero-play), .btn:active, .signin .btn:active, 
     box-shadow: inset 0 3px 8px rgb(0 0 0 / 0.55);
     transform: translateY(1px);
 }
-.wrap.auth .auth-discord { background: #5865F2; }
-.wrap.auth .auth-youtube { background: #FF0000; }
-.wrap.auth .auth-discord:hover:not(:active) { box-shadow: 0 0 14px #5865F2; }
-.wrap.auth .auth-youtube:hover:not(:active) { box-shadow: 0 0 14px #FF0000; }
+.wrap.auth .auth-discord, .account .auth-discord { background: #5865F2; }
+.wrap.auth .auth-youtube, .account .auth-youtube { background: #FF0000; }
+.wrap.auth .auth-discord:hover:not(:active), .account .auth-discord:hover:not(:active) { box-shadow: 0 0 14px #5865F2; }
+.wrap.auth .auth-youtube:hover:not(:active), .account .auth-youtube:hover:not(:active) { box-shadow: 0 0 14px #FF0000; }
 button:focus-visible, .btn:focus-visible, a:focus-visible,
 input:focus-visible, textarea:focus-visible, select:focus-visible {
     outline: 2px solid var(--chartreuse); outline-offset: 3px;
 }
 form[action*="/delete"] button { background: var(--red); box-shadow: none; }
 form[action*="/unlink/"] button { background: var(--magenta); }
+.account { max-width: 42rem; display: flex; flex-direction: column; gap: 1.1rem; }
+.account .queue { margin: 0; }
+.account .queue li > :last-child { margin-left: auto; }
+.account .form-actions form { margin: 0; }
+.account-delete {
+    max-width: 28rem; width: calc(100% - 2rem); padding: 1.25rem 1.35rem;
+    border: 2px solid var(--violet); border-radius: 1.1rem;
+    background: var(--panel); color: var(--fg);
+}
+.account-delete::backdrop { background: rgb(0 0 0 / 0.85); }
+.account-delete .form { max-width: none; }
+.account-delete h2 { margin: 0; }
+#account-delete-open { background: var(--red); }
 .queue { list-style: none; padding: 0; margin: 1.5rem 0 0; }
 .queue li {
     display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center;

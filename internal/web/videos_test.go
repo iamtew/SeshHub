@@ -14,6 +14,7 @@ import (
 	"testing"
 
 	"seshhub/internal/auth"
+	"seshhub/internal/config"
 	"seshhub/internal/db"
 	"seshhub/internal/skater"
 )
@@ -58,10 +59,29 @@ func TestOwnerFilterOnPublicVideos(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := auth.LinkYouTube(sqldb, a.ID, "cha", "A TV", "", "r"); err != nil {
+	s := &Server{db: sqldb, webDir: filepath.Join("..", "..", "web"), cfg: config.Config{YouTubeClientID: "id", YouTubeClientSecret: "sec"}}
+	with := func(u auth.User, req *http.Request) *http.Request {
+		return req.WithContext(context.WithValue(req.Context(), userKey, &u))
+	}
+
+	rec := httptest.NewRecorder()
+	s.dashboardProfile(rec, with(a, httptest.NewRequest(http.MethodGet, "/dashboard/profile", nil)))
+	body := rec.Body.String()
+	if rec.Code != 200 || strings.Contains(body, "/dashboard/profile/filter") || strings.Contains(body, "featured_video_id") || !strings.Contains(body, "Connect YouTube") || !strings.Contains(body, "only available after you link") {
+		t.Fatalf("unlinked youtube tab %d %s", rec.Code, body)
+	}
+	rec = httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/dashboard/profile/filter", strings.NewReader("action=save&field=title&op=contains&value=wheel"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	s.profileFilter(rec, with(a, req))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("unlinked filter %d %s", rec.Code, rec.Body.String())
+	}
+
+	if a, err = auth.LinkYouTube(sqldb, a.ID, "cha", "A TV", "", "r"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := auth.LinkYouTube(sqldb, b.ID, "chb", "B TV", "", "r"); err != nil {
+	if b, err = auth.LinkYouTube(sqldb, b.ID, "chb", "B TV", "", "r"); err != nil {
 		t.Fatal(err)
 	}
 	_, err = sqldb.Exec(`INSERT INTO youtube_videos (id, channel_id, channel_title, title, published_at, thumbnail_url, tags, category) VALUES
@@ -71,20 +91,16 @@ func TestOwnerFilterOnPublicVideos(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s := &Server{db: sqldb, webDir: filepath.Join("..", "..", "web")}
-	with := func(u auth.User, req *http.Request) *http.Request {
-		return req.WithContext(context.WithValue(req.Context(), userKey, &u))
-	}
 
-	rec := httptest.NewRecorder()
+	rec = httptest.NewRecorder()
 	s.videos(rec, httptest.NewRequest(http.MethodGet, "/videos", nil))
-	body := rec.Body.String()
+	body = rec.Body.String()
 	if rec.Code != 200 || strings.Contains(body, "YouTube Feed Filter") || !strings.Contains(body, "Wheel Session") || !strings.Contains(body, "Other") || !strings.Contains(body, "B Clip") {
 		t.Fatalf("guest all %d %s", rec.Code, body)
 	}
 
 	rec = httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodPost, "/dashboard/profile/filter", strings.NewReader("action=save&field=title&op=contains&value=wheel"))
+	req = httptest.NewRequest(http.MethodPost, "/dashboard/profile/filter", strings.NewReader("action=save&field=title&op=contains&value=wheel"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	s.profileFilter(rec, with(a, req))
 	if rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/dashboard/profile#youtube" {

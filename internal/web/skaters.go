@@ -268,6 +268,10 @@ func (s *Server) profileFilter(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	if u.YouTubeChannelID == "" {
+		http.Error(w, "connect YouTube first", http.StatusBadRequest)
+		return
+	}
 	_ = r.ParseForm()
 	spec := yt.FormSpec(r.Form["field"], r.Form["op"], r.Form["value"], r.Form["kind"])
 	switch r.FormValue("action") {

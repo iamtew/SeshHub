@@ -82,6 +82,7 @@
         {{template "md_editor" .}}
     </div>
     <div id="panel-youtube" role="tabpanel" data-panel="youtube" aria-labelledby="tab-youtube">
+        {{if .User.YouTubeChannelID}}
         {{if .Videos}}
         <label>Featured video
             <select name="featured_video_id">
@@ -91,6 +92,10 @@
                 {{end}}
             </select>
         </label>
+        {{end}}
+        {{else}}
+        <p class="who">These settings are only available after you link a channel.</p>
+        {{if .YouTubeLogin}}<p><a class="btn" href="/auth/youtube">Connect YouTube</a></p>{{else}}not configured{{end}}
         {{end}}
     </div>
     <div id="profile-dirty" class="save-bar" hidden>
@@ -460,6 +465,7 @@
   syncBar();
 })();
 </script>
+{{if .User.YouTubeChannelID}}
 <form method="post" action="/dashboard/profile/filter" class="form video-filter" data-panel="youtube">
     <input type="hidden" name="tab" value="youtube">
     <h2>YouTube Feed Filter</h2>
@@ -504,7 +510,7 @@
 </form>
 {{if .Test}}
 <div data-panel="youtube">
-<p class="who">{{if .User.YouTubeChannelID}}Your cached uploads only.{{else}}Connect YouTube to test against your clips.{{end}}</p>
+<p class="who">Your cached uploads only.</p>
 {{if .TestClips}}
 <ul class="grid">
 {{range .TestClips}}
@@ -519,10 +525,11 @@
 </li>
 {{end}}
 </ul>
-{{else if .User.YouTubeChannelID}}
+{{else}}
 <p class="who">No cached clips yet. Visit the site while logged in after YouTube is connected.</p>
 {{end}}
 </div>
+{{end}}
 {{end}}
 </div>
 {{end}}

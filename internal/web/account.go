@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"seshhub/internal/auth"
 	"seshhub/internal/skater"
@@ -51,9 +52,24 @@ func (s *Server) accountUnlink(provider string) http.HandlerFunc {
 	}
 }
 
+func accountDeleteWord(u *auth.User) string {
+	if u == nil {
+		return ""
+	}
+	if s := strings.TrimSpace(u.Username); s != "" {
+		return s
+	}
+	return strings.TrimSpace(u.DisplayName)
+}
+
 func (s *Server) accountDelete(w http.ResponseWriter, r *http.Request) {
 	u := s.requireUser(w, r)
 	if u == nil {
+		return
+	}
+	want := accountDeleteWord(u)
+	if want == "" || r.FormValue("confirm") != want {
+		http.Error(w, "type the confirmation word to delete", http.StatusBadRequest)
 		return
 	}
 	if err := auth.DeleteUser(s.db, u.ID, ""); err != nil {

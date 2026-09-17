@@ -1,27 +1,61 @@
 {{define "content"}}
 <h1>Account {{or .User.DisplayName .User.Username}}</h1>
-<ul>
-    <li>Discord
-        {{if .User.DiscordID}}connected ({{.User.DiscordID}})
+<div class="account">
+<ul class="queue">
+    <li>
+        <strong>Discord</strong>
+        {{if .User.DiscordID}}
+        <span class="who">connected ({{.User.DiscordID}})</span>
             {{if .User.YouTubeChannelID}}
             <form method="post" action="/account/unlink/discord"><button type="submit">Unlink Discord</button></form>
             {{end}}
-        {{else if .DiscordLogin}}<a class="btn" href="/auth/discord">Connect Discord</a>{{else}}not configured{{end}}
+        {{else if .DiscordLogin}}<a class="btn auth-discord" href="/auth/discord">Connect Discord</a>{{else}}<span class="who">not configured</span>{{end}}
     </li>
-    <li>YouTube
-        {{if .User.YouTubeChannelID}}connected ({{.User.YouTubeChannelTitle}})
+    <li>
+        <strong>YouTube</strong>
+        {{if .User.YouTubeChannelID}}
+        <span class="who">connected ({{.User.YouTubeChannelTitle}})</span>
             {{if .User.DiscordID}}
             <form method="post" action="/account/unlink/youtube"><button type="submit">Unlink YouTube</button></form>
             {{end}}
-        {{else if .YouTubeLogin}}<a class="btn" href="/auth/youtube">Connect YouTube</a>{{else}}not configured{{end}}
+        {{else if .YouTubeLogin}}<a class="btn auth-youtube" href="/auth/youtube">Connect YouTube</a>{{else}}<span class="who">not configured</span>{{end}}
     </li>
 </ul>
 <p class="who">Skater pages pick up latest YouTube uploads while you are logged in, after YouTube is connected. Unlink needs the other provider still connected; otherwise delete the account.</p>
-<p><a href="/auth/logout">Log out</a> (all devices)</p>
-<hr>
-<p><a href="/account/export">Download my data</a></p>
-<form method="post" action="/account/delete" onsubmit="return confirm('Delete your account and related data? This cannot be undone.')">
-    {{/* ponytail: JS confirm only. Without JS the POST goes straight through. Upgrade to a /account/delete confirm page if that ever bites. */}}
-    <button type="submit">Delete my account</button>
-</form>
+<div class="form-actions">
+    <a class="btn" href="/auth/logout">Log out</a>
+    <a class="btn" href="/account/export">Download my data</a>
+    <button type="button" id="account-delete-open" aria-haspopup="dialog" aria-controls="account-delete">Delete my account</button>
+</div>
+<dialog class="account-delete" id="account-delete" aria-labelledby="account-delete-title" data-word="{{or .User.Username .User.DisplayName}}">
+    <form method="post" action="/account/delete" class="form" id="account-delete-form">
+        <h2 id="account-delete-title">Delete your account</h2>
+        <p>This cannot be undone. Your profile, gallery, sessions, YouTube link, and cached clips are removed. Articles stay published as “Former member”.</p>
+        <p class="who">Type <strong>{{or .User.Username .User.DisplayName}}</strong> to confirm.</p>
+        <label>Confirmation
+            <input name="confirm" autocomplete="off" spellcheck="false" required>
+        </label>
+        <div class="form-actions">
+            <button type="button" class="md-discard" id="account-delete-cancel">Cancel</button>
+            <button type="submit" id="account-delete-go" disabled>Delete my account</button>
+        </div>
+    </form>
+</dialog>
+<script>
+(function () {
+  var dlg = document.getElementById('account-delete');
+  var open = document.getElementById('account-delete-open');
+  var cancel = document.getElementById('account-delete-cancel');
+  var form = document.getElementById('account-delete-form');
+  var go = document.getElementById('account-delete-go');
+  var input = form && form.elements.namedItem('confirm');
+  var word = dlg ? String(dlg.getAttribute('data-word') || '') : '';
+  function sync() { if (go) go.disabled = !input || input.value !== word; }
+  if (open && dlg && dlg.showModal) open.addEventListener('click', function () { dlg.showModal(); if (input) { input.value = ''; sync(); input.focus(); } });
+  if (cancel && dlg) cancel.addEventListener('click', function () { dlg.close(); });
+  if (input) input.addEventListener('input', sync);
+  if (form) form.addEventListener('submit', function (e) { if (!input || input.value !== word) e.preventDefault(); });
+})();
+</script>
+</div>
 {{end}}
