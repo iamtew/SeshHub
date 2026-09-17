@@ -63,4 +63,14 @@ func TestReservedAndSave(t *testing.T) {
 	if err != nil || about.Slug != "about" {
 		t.Fatalf("lock about slug %+v %v", about, err)
 	}
+	friends, err := Get(sqldb, "slug", "friends")
+	if err != nil || friends.ID != FriendsID {
+		t.Fatalf("seed friends %+v %v", friends, err)
+	}
+	if err := Delete(sqldb, FriendsID); err == nil {
+		t.Fatal("expected friends locked")
+	}
+	if _, err := Save(sqldb, Page{Title: "Nope", Slug: "friends", ContentRaw: "no"}); err == nil {
+		t.Fatal("expected reserved")
+	}
 }

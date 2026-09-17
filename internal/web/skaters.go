@@ -79,16 +79,7 @@ func (s *Server) team(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	data := map[string]any{"Title": "FS Team", "Path": "/team", "Skaters": list}
-	if p, err := page.Get(s.db, "slug", "team"); err == nil {
-		data["Title"] = p.Title
-		data["HTML"] = template.HTML(article.Render(p.ContentRaw))
-		if p.CSS != "" {
-			data["CSS"] = template.CSS(p.CSS)
-		}
-	}
-	if u := UserFrom(r); u != nil && u.Role == auth.RoleAdmin {
-		data["EditHref"] = "/admin/pages/" + page.TeamID + "?next=/team"
-	}
+	s.rosterIntro(r, data, "team", page.TeamID)
 	s.render(w, r, "skaters_list.html", data)
 }
 
@@ -98,7 +89,22 @@ func (s *Server) friends(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "db error", http.StatusInternalServerError)
 		return
 	}
-	s.render(w, r, "skaters_list.html", map[string]any{"Title": "Friends", "Path": "/friends", "Skaters": list})
+	data := map[string]any{"Title": "Friends", "Path": "/friends", "Skaters": list}
+	s.rosterIntro(r, data, "friends", page.FriendsID)
+	s.render(w, r, "skaters_list.html", data)
+}
+
+func (s *Server) rosterIntro(r *http.Request, data map[string]any, slug, id string) {
+	if p, err := page.Get(s.db, "slug", slug); err == nil {
+		data["Title"] = p.Title
+		data["HTML"] = template.HTML(article.Render(p.ContentRaw))
+		if p.CSS != "" {
+			data["CSS"] = template.CSS(p.CSS)
+		}
+	}
+	if u := UserFrom(r); u != nil && u.Role == auth.RoleAdmin {
+		data["EditHref"] = "/admin/pages/" + id + "?next=/" + slug
+	}
 }
 
 func (s *Server) skatersAlias(w http.ResponseWriter, r *http.Request) {

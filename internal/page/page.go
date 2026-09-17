@@ -18,8 +18,9 @@ var reserved = map[string]bool{
 
 const TeamID = "page-team"
 const AboutID = "page-about"
+const FriendsID = "page-friends"
 
-var lockSlug = map[string]string{TeamID: "team", AboutID: "about"}
+var lockSlug = map[string]string{TeamID: "team", AboutID: "about", FriendsID: "friends"}
 
 type Page struct {
 	ID, Slug, Title, ContentRaw, ContentHTML, CSS string
