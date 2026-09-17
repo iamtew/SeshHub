@@ -526,7 +526,6 @@ input, select, textarea { accent-color: var(--green); }
     .episodes .grid { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 639px) {
-    body { background-attachment: scroll; }
     .hero, .nav, .wrap, .foot { width: 100%; min-width: 0; }
     .profile-head { flex-direction: column; align-items: stretch; }
     .profile-head .avatar, .avatar-drop {
