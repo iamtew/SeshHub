@@ -63,8 +63,17 @@ a:hover { text-shadow: 0 0 6px var(--red), 0 0 12px var(--chartreuse); color: va
     cursor: pointer;
     border-radius: 0;
     min-height: 0;
+    transform-origin: 50% 80%;
 }
-.hero-play:hover { box-shadow: none; filter: brightness(1.08); }
+.hero-play:hover:not(:active) {
+    box-shadow: none;
+    animation: hero-sway 2.2s ease-in-out infinite;
+}
+@keyframes hero-sway {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(1.1deg); }
+    75% { transform: rotate(-1.1deg); }
+}
 .hero-close {
     position: absolute;
     top: 0.6rem;
@@ -232,7 +241,7 @@ button, .btn {
     background: var(--violet); color: var(--fg); border: 0;
     padding: 0.5rem 1.1rem; font: inherit; cursor: pointer; min-height: 2.5rem; border-radius: 0.6rem;
 }
-button:hover:not(:active), .btn:hover:not(:active) { box-shadow: 0 0 12px var(--violet); }
+button:hover:not(:active):not(.hero-play), .btn:hover:not(:active) { box-shadow: 0 0 12px var(--violet); }
 button:active:not(:disabled):not(.hero-play), .btn:active, .signin .btn:active, .pager > a:active {
     filter: brightness(0.8);
     box-shadow: inset 0 3px 8px rgb(0 0 0 / 0.55);
@@ -405,6 +414,7 @@ a.profile-head { padding: 1rem; color: inherit; text-decoration: none; }
         animation: none;
     }
     .avb-custom { border-color: var(--avb, #E5F20D); }
+    .hero-play:hover:not(:active) { animation: none; }
     button:active:not(:disabled):not(.hero-play), .btn:active, .signin .btn:active, .pager > a:active {
         transform: none;
     }

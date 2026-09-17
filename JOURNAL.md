@@ -15,6 +15,7 @@ Status, not spec. Spec lives in `README.md`.
 
 ## Log
 
+- 2026-09-17 — Hero play hover sways from rest, no glow. No bounce.
 - 2026-09-17 — `/friends` intro is locked CMS markdown like `/team`. Bounce `just dev`.
 - 2026-09-17 — `/login` tag: member of Sesh Hub Discord (invite link). No bounce.
 - 2026-09-17 — Pigeon Coop + Sesh Hub Discord invites; title/footer “Sesh Hub”. Bounce `just dev` for login tab title.
