@@ -434,6 +434,7 @@ hr {
     margin: 0; padding: 0; border: 2px solid var(--violet); border-radius: 0.75rem;
     background: var(--black); color: var(--fg); overflow: hidden;
 }
+.md-overlay:not([open]) { display: none; }
 .md-overlay[open] { display: flex; flex-direction: column; }
 .md-overlay::backdrop { background: rgb(0 0 0 / 0.85); }
 .md-overlay-bar {
@@ -519,6 +520,9 @@ input, select, textarea { accent-color: var(--green); }
 @media (min-width: 640px) {
     .grid { grid-template-columns: repeat(2, 1fr); }
 }
+@media (max-width: 799px) {
+    .md-preview { flex: none; }
+}
 @media (min-width: 800px) {
     .md-basic { grid-template-columns: 1fr 1fr; }
     .md-overlay-body { grid-template-columns: minmax(18rem, 22rem) 1fr 1fr; }
@@ -539,5 +543,5 @@ input, select, textarea { accent-color: var(--green); }
     .profile-head--list .avatar { width: 6rem; height: 6rem; aspect-ratio: auto; }
     .field-reset { grid-template-columns: 1fr; }
     .filter-row { grid-template-columns: 1fr; }
-    .md-toolbar { display: none; }
+    .md-toolbar, .md-overlay { display: none; }
 }
