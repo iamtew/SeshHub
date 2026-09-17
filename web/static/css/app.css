@@ -264,6 +264,8 @@ form[action*="/unlink/"] button { background: var(--magenta); }
     border-radius: 1.1rem; background: rgb(0 0 0 / 0.35);
 }
 .grid li:has(.thumb) { border: none; }
+.grid li:has(> a.profile-head) { padding: 0; }
+a.profile-head { padding: 1rem; color: inherit; text-decoration: none; }
 .form { display: flex; flex-direction: column; gap: 1.1rem; max-width: 36rem; }
 .form:has(.avatar-tools) { max-width: 48rem; }
 .profile-head { display: flex; gap: 1.25rem; align-items: center; min-width: 0; }

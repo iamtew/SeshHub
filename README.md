@@ -90,7 +90,7 @@ One Google OAuth client. That is login, linking a channel, and (for team skaters
 
 YouTube-only accounts start as **pending**. After an admin approves they become **friend** (public `/friends` profile). They cannot be made team skaters from the queue — team requires Discord `DISCORD_SKATER_ROLE_ID`. Discord-first users connect YouTube from **Account**. Re-using a Discord or YouTube identity already on another SeshHub user is rejected.
 
-Team skaters (`DISCORD_SKATER_ROLE_ID`) and friends (Discord friends role, queue approval, or a migrated former member) with a linked YouTube channel: while they are logged in, SeshHub pulls up to 50 latest uploads (at most once an hour) onto `/team/{slug}` or `/friends/{slug}` and the public `/videos` list. Those roster grids and `/videos` paginate 9/18/27 (default 9) via `?n=&p=`. Guests see the last snapshot. Team profiles are created on Discord skater/admin login; friend profiles on friends-role login, queue approve, or the member→friend migration.
+Team skaters (`DISCORD_SKATER_ROLE_ID`) and friends (Discord friends role, queue approval, or a migrated former member) with a linked YouTube channel: while they are logged in, SeshHub pulls up to 50 latest uploads (at most once an hour) onto `/team/{slug}` or `/friends/{slug}` and the public `/videos` list. Those roster grids and `/videos` paginate 6/12/18/24 (default 6) via `?n=&p=`. Guests see the last snapshot. Team profiles are created on Discord skater/admin login; friend profiles on friends-role login, queue approve, or the member→friend migration.
 
 Restart after `.env` changes. Production: add the live `https://…/auth/…/callback` URIs and set `APP_ENV=production` and `BASE_URL` to the public https origin.
 

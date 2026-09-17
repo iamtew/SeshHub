@@ -31,10 +31,10 @@ func (s *Server) videos(w http.ResponseWriter, r *http.Request) {
 
 func videoPage(n, p, total int) (per, page, offset, from, to int) {
 	switch n {
-	case 18, 27:
+	case 12, 18, 24:
 		per = n
 	default:
-		per = 9
+		per = 6
 	}
 	if total <= 0 {
 		return per, 1, 0, 0, 0

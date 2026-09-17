@@ -17,24 +17,24 @@ import (
 )
 
 func TestVideoPage(t *testing.T) {
-	per, page, offset, from, to := videoPage(9, 1, 248)
-	if per != 9 || page != 1 || offset != 0 || from != 1 || to != 9 {
+	per, page, offset, from, to := videoPage(6, 1, 248)
+	if per != 6 || page != 1 || offset != 0 || from != 1 || to != 6 {
 		t.Fatalf("p1 got per=%d page=%d off=%d %d–%d", per, page, offset, from, to)
 	}
-	per, page, offset, from, to = videoPage(9, 28, 248)
-	if per != 9 || page != 28 || offset != 243 || from != 244 || to != 248 {
+	per, page, offset, from, to = videoPage(6, 42, 248)
+	if per != 6 || page != 42 || offset != 246 || from != 247 || to != 248 {
 		t.Fatalf("last got per=%d page=%d off=%d %d–%d", per, page, offset, from, to)
 	}
 	per, page, _, from, to = videoPage(99, 0, 248)
-	if per != 9 || page != 1 || from != 1 || to != 9 {
+	if per != 6 || page != 1 || from != 1 || to != 6 {
 		t.Fatalf("clamp got per=%d page=%d %d–%d", per, page, from, to)
 	}
 	per, page, _, from, to = videoPage(18, 100, 248)
 	if per != 18 || page != 14 || from != 235 || to != 248 {
 		t.Fatalf("oversize got per=%d page=%d %d–%d", per, page, from, to)
 	}
-	per, page, offset, from, to = videoPage(27, 1, 0)
-	if per != 27 || page != 1 || offset != 0 || from != 0 || to != 0 {
+	per, page, offset, from, to = videoPage(24, 1, 0)
+	if per != 24 || page != 1 || offset != 0 || from != 0 || to != 0 {
 		t.Fatalf("empty got per=%d page=%d off=%d %d–%d", per, page, offset, from, to)
 	}
 }
@@ -158,14 +158,14 @@ func TestRosterVideoPager(t *testing.T) {
 	if !strings.Contains(p1, "Clip 00") || !strings.Contains(p1, "Clip 10") || strings.Contains(p1, "Clip 01") {
 		t.Fatalf("page1 %s", p1)
 	}
-	if !strings.Contains(p1, "/team/"+p.Slug+"?n=9") || !strings.Contains(p1, "1–9 of 10") {
+	if !strings.Contains(p1, "/team/"+p.Slug+"?n=6") || !strings.Contains(p1, "1–6 of 10") {
 		t.Fatalf("pager %s", p1)
 	}
 	p2 := hit("?p=2")
 	if !strings.Contains(p2, "Clip 00") || !strings.Contains(p2, "Clip 01") || strings.Contains(p2, "Clip 10") {
 		t.Fatalf("page2 %s", p2)
 	}
-	if !strings.Contains(p2, "10–10 of 10") {
+	if !strings.Contains(p2, "7–10 of 10") {
 		t.Fatalf("range %s", p2)
 	}
 }
