@@ -8,11 +8,11 @@
 {{template "slideshow.html" .}}
 <ul class="grid" id="photos-grid">
 {{range $i, $p := .Photos}}
-<li>
+<li class="photo-cell">
     <a href="#" data-idx="{{$i}}">
         <img src="{{$p.URL}}" alt="" class="thumb">
     </a>
-    {{if $p.Href}}<a href="{{$p.Href}}">{{$p.Name}}</a>{{else}}<strong>{{$p.Name}}</strong>{{end}}
+    {{if $p.Name}}{{if $p.Href}}<a class="photo-credit" href="{{$p.Href}}">{{$p.Name}}</a>{{else}}<span class="photo-credit">{{$p.Name}}</span>{{end}}{{end}}
 </li>
 {{end}}
 </ul>

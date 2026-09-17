@@ -283,7 +283,7 @@ Two header modes. Same public nav (Spot / Episodes / FS Team / Friends / News / 
 
 ### 2.1 Photo gallery
 - **Own gallery (`/dashboard/gallery`)**: Roster users (FS Team / Friends / admin with a profile) can keep up to 10 photos (JPEG/PNG, 15 MB, original aspect, long edge ≤ 1600). Drop or click (Add photo opens the file picker) to add. Drag to reorder (that order is the profile slideshow). Logged-in menu item next to Profile. Public on the roster page as a slideshow and on `/photos`. Click the slideshow image for a viewport-fit overlay.
-- **`/photos`**: Union of those photos, newest first. Intro markdown is a locked CMS page (`# Photos` by default), same as `/team`. Big slideshow on top (prev/next only; the paginated grid is the rest of the photos). Grid below paginates 6/12/18/24 (default 6) via `?n=&p=` without a page reload; clicking a grid image puts it in the slideshow slot. Caption is the owner’s display name (link to their roster page).
+- **`/photos`**: Union of those photos, newest first. Intro markdown is a locked CMS page (`# Photos` by default), same as `/team`. Slideshow on top fills the well in a fixed `min(70dvh, 36rem)` slot (object-fit contain, so mixed aspect ratios do not jump the page); prev/next only. Grid below paginates 6/12/18/24 (default 6) via `?n=&p=` without a page reload; clicking a grid image puts it in the slideshow slot. Owner name overlays the photo (grid, page slideshow, and overlay) and links to their roster page. Overlay slideshow auto-advances every 6s; arrow keys prev/next; Escape closes; swipe left/right on a phone, swipe down to close.
 
 ### 3. Articles, News & Blog CMS
 - **Publishing Workflow**: Supports `Draft`, `Published`, and `Archived` statuses.

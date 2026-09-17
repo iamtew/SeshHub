@@ -3,7 +3,12 @@
 <div class="slideshow" data-gallery data-json="#{{.GalleryScript}}"{{if .PhotosLive}} data-live="1" data-grid="#photos-grid" data-pager=".pager"{{end}}>
     <div class="slideshow-main">
         <button type="button" class="slideshow-prev" aria-label="Previous photo">◀</button>
-        <img class="slideshow-img" alt="">
+        <div class="slideshow-stage">
+            <div class="slideshow-frame">
+                <img class="slideshow-img" alt="">
+                {{if .PhotosLive}}<a class="photo-credit" hidden></a>{{end}}
+            </div>
+        </div>
         <button type="button" class="slideshow-next" aria-label="Next photo">▶</button>
     </div>
     {{if not .PhotosLive}}
@@ -15,7 +20,12 @@
     {{end}}
     <dialog class="slideshow-full">
         <button type="button" class="slideshow-full-prev" aria-label="Previous photo">◀</button>
-        <img class="slideshow-full-img" alt="">
+        <div class="slideshow-stage">
+            <div class="slideshow-frame">
+                <img class="slideshow-full-img" alt="">
+                {{if .PhotosLive}}<a class="photo-credit" hidden></a>{{end}}
+            </div>
+        </div>
         <button type="button" class="slideshow-full-next" aria-label="Next photo">▶</button>
         <button type="button" class="slideshow-full-close" aria-label="Close">Close</button>
     </dialog>

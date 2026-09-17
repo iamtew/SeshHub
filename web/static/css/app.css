@@ -292,15 +292,30 @@ form[action*="/unlink/"] button { background: var(--magenta); }
 }
 .grid li:has(.thumb) { border: none; }
 .grid li:has(> a.profile-head) { padding: 0; }
+.photo-cell { position: relative; padding: 0; gap: 0; }
+.photo-credit {
+    position: absolute; left: 0.45rem; bottom: 0.45rem; z-index: 1;
+    max-width: calc(100% - 0.9rem); padding: 0.15rem 0.5rem;
+    background: rgb(0 0 0 / 0.72); border-radius: 0.4rem;
+    font-size: 0.85rem; font-weight: 600; color: var(--fg);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .slideshow { margin: 1.5rem 0; display: flex; align-items: stretch; gap: 0.75rem; }
 .slideshow-main {
     display: flex; align-items: center; gap: 0.5rem;
     flex: 1; min-width: 0;
     background: rgb(0 0 0 / 0.35); border-radius: 1.1rem; padding: 0.5rem;
 }
+.slideshow-stage {
+    flex: 1; min-width: 0; min-height: 0;
+    display: flex; align-items: center; justify-content: center;
+}
+.slideshow-main .slideshow-stage { height: min(70dvh, 36rem); }
+.slideshow-main .slideshow-frame { width: 100%; height: 100%; }
+.slideshow-frame { position: relative; max-width: 100%; max-height: 100%; }
 .slideshow-img {
-    flex: 1; width: 100%; max-height: 28rem; object-fit: contain;
-    border-radius: 0.5rem; background: var(--black); display: block; cursor: zoom-in;
+    display: block; width: 100%; height: 100%; object-fit: contain;
+    border-radius: 0.5rem; background: var(--black); cursor: zoom-in;
 }
 .slideshow-prev, .slideshow-next, .slideshow-tprev, .slideshow-tnext,
 .slideshow-full-prev, .slideshow-full-next {
@@ -310,15 +325,18 @@ form[action*="/unlink/"] button { background: var(--magenta); }
     padding: 0; border: 0; margin: 0; inset: 0; color: var(--fg);
     width: 100%; height: 100%; max-width: none; max-height: none;
     background: rgb(0 0 0 / 0.92); overflow: hidden; box-sizing: border-box;
+    touch-action: none;
 }
 .slideshow-full[open] {
     display: flex; align-items: center; justify-content: center; gap: 0.5rem;
 }
 .slideshow-full::backdrop { background: rgb(0 0 0 / 0.8); }
-.slideshow-full-img {
-    flex: 1 1 auto; min-width: 0; min-height: 0;
+.slideshow-full .slideshow-stage {
     max-width: calc(100vw - 7rem); max-height: 100vh;
-    width: auto; height: auto; object-fit: contain; display: block;
+}
+.slideshow-full-img {
+    display: block; max-width: 100%; max-height: 100vh;
+    width: auto; height: auto;
 }
 .slideshow-full-close { position: fixed; top: 0.85rem; right: 0.85rem; z-index: 1; }
 .slideshow-full-prev, .slideshow-full-next { flex-shrink: 0; }
