@@ -495,14 +495,16 @@ p:has(+ ul.grid), p.who { max-width: 42rem; }
 .pager > span[aria-disabled] { background: rgb(255 255 255 / 0.12); opacity: 0.55; }
 .pager-range { color: var(--chartreuse); font-weight: 700; letter-spacing: 0.02em; }
 .save-bar {
-    position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+    position: sticky; bottom: 0; z-index: 20;
     display: flex; flex-wrap: wrap; gap: 0.65rem; align-items: center;
-    justify-content: center; padding: 0.85rem 1.1rem;
+    justify-content: center;
+    padding: 0.85rem max(1.1rem, env(safe-area-inset-right)) max(0.85rem, env(safe-area-inset-bottom)) max(1.1rem, env(safe-area-inset-left));
+    margin: 0.5rem -0.25rem -0.5rem;
     background: rgb(0 0 0 / 0.92); border-top: 2px solid var(--chartreuse);
 }
 .save-bar[hidden] { display: none; }
 .save-bar p { margin: 0; }
-body.has-save-bar { padding-bottom: 5.5rem; }
+body:has(.consent) .save-bar { position: static; }
 .consent {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
     padding: 0.85rem 1.1rem; background: rgb(0 0 0 / 0.92);
@@ -522,4 +524,15 @@ input, select, textarea { accent-color: var(--green); }
 @media (min-width: 960px) {
     .grid { grid-template-columns: repeat(3, 1fr); }
     .episodes .grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 639px) {
+    body { background-attachment: scroll; }
+    .hero, .nav, .wrap, .foot { width: 100%; min-width: 0; }
+    .profile-head { flex-direction: column; align-items: stretch; }
+    .profile-head .avatar, .avatar-drop {
+        width: min(12rem, 100%); height: auto; aspect-ratio: 1; flex: 0 0 auto;
+    }
+    .profile-head--list .avatar { width: 6rem; height: 6rem; aspect-ratio: auto; }
+    .field-reset { grid-template-columns: 1fr; }
+    .filter-row { grid-template-columns: 1fr; }
 }

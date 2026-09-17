@@ -73,12 +73,12 @@
         </select>
     </label>
     {{end}}
+    <div id="profile-dirty" class="save-bar" hidden>
+        <p>You have unsaved changes</p>
+        <button type="button" id="profile-discard">Discard</button>
+        <button type="submit">Save</button>
+    </div>
 </form>
-<div id="profile-dirty" class="save-bar" hidden>
-    <p>You have unsaved changes</p>
-    <button type="button" id="profile-discard">Discard</button>
-    <button type="submit" form="profile-form">Save</button>
-</div>
 <script src="/static/js/iro.min.js"></script>
 <script>
 (function () {
