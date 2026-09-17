@@ -15,6 +15,7 @@ Status, not spec. Spec lives in `README.md`.
 
 ## Log
 
+- 2026-09-17 — Mobile nav: social icons under the text links. No bounce.
 - 2026-09-17 — Keep mobile background `cover`/`fixed` (no scroll-zoom). No bounce.
 - 2026-09-17 — Profile save bar sticky in-form; phone well/filter stack. No bounce.
 - 2026-09-17 — PFP border styles (default/custom/pulse/strobe/fire/neon/orbit). Bounce `just dev`.

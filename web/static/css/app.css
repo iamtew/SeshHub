@@ -527,6 +527,9 @@ input, select, textarea { accent-color: var(--green); }
 }
 @media (max-width: 639px) {
     .hero, .nav, .wrap, .foot { width: 100%; min-width: 0; }
+    .nav { flex-direction: column; align-items: stretch; }
+    .nav nav { flex: none; }
+    .nav .signin { justify-content: flex-start; }
     .profile-head { flex-direction: column; align-items: stretch; }
     .profile-head .avatar, .avatar-drop {
         width: min(12rem, 100%); height: auto; aspect-ratio: 1; flex: 0 0 auto;
