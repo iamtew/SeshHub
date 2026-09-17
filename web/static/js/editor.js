@@ -34,7 +34,7 @@
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: body
     }).then(function (r) {
-      if (r.status !== 200 || r.headers.get("X-Sesh-Preview") !== "1") return "";
+      if (!r.ok) return "";
       return r.text();
     }).then(paint).catch(function () {});
   }

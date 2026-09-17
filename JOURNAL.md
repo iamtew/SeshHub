@@ -15,6 +15,7 @@ Status, not spec. Spec lives in `README.md`.
 
 ## Log
 
+- 2026-09-17 — Preview paints on HTTP 200; Firefox Android hides the custom header. No bounce.
 - 2026-09-17 — Buttons match input radius; well + fold bar rounder; inset press. No bounce.
 - 2026-09-17 — Stacked markdown preview keeps height on phones; editor.js loads with the pane. No bounce.
 - 2026-09-17 — Roster list cards are the whole link; clip pager 6/12/18/24. Bounce `just dev` for the clamp.
