@@ -38,6 +38,7 @@ type User struct {
 	AvatarBorderBlur    int    `json:"-"`
 	AvatarBorderStyle   string `json:"-"`
 	AvatarBorderColor   string `json:"-"`
+	RosterURL           string `json:"-"`
 }
 
 func (u User) AvatarStyle() template.CSS {

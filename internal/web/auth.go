@@ -58,6 +58,9 @@ func (s *Server) attachProfile(u *auth.User) {
 	}
 	u.AvatarR1, u.AvatarR2, u.AvatarR3, u.AvatarR4, u.AvatarBorder, u.AvatarBorderBlur = p.AvatarR1, p.AvatarR2, p.AvatarR3, p.AvatarR4, p.AvatarBorder, p.AvatarBorderBlur
 	u.AvatarBorderStyle, u.AvatarBorderColor = p.AvatarBorderStyle, p.AvatarBorderColor
+	if p.Slug != "" {
+		u.RosterURL = skater.RosterPath(u.Role) + "/" + p.Slug
+	}
 }
 
 func (s *Server) maybeSyncSkater(userID string) {

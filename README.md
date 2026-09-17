@@ -262,7 +262,7 @@ Users who do not match a Discord guild role (hub-admin, skater, or friends), as 
 Two header modes. Same public nav (Spot / Episodes / FS Team / Friends / News / Videos / Photos / About) in the dark well either way.
 
 - **Visitor mode** (logged out): 16:9 sofa hero, click to play `seshsofa.mp4` (local `web/static/vid/`, not in git), Close restores the poster. Header: Discord / Twitch / YouTube icons then a Sesh Hub square to `/login`.
-- **Sesh Hub mode** (logged in): same `background.png`. Hero folds into a translucent panel — `seshhub.png` (click plays the same intro; Close folds it back), then role links, **Account**, Discord avatar (also `/account`; name on hover). Display name is on the `/account` heading. **Log out** is at the bottom of `/account`. **Delete my account** opens a modal; you must type your username to confirm. Public nav still has Discord / Twitch / YouTube icons, not the Hub square. No 16:9 until the logo is clicked. `/login` redirects home.
+- **Sesh Hub mode** (logged in): same `background.png`. Hero folds into a translucent panel — `seshhub.png` (click plays the same intro; Close folds it back), then role links, **Account**, Discord avatar (public `/team/{slug}` or `/friends/{slug}` if they have a roster page, else `/account`; name on hover). Display name is on the `/account` heading. **Log out** is at the bottom of `/account`. **Delete my account** opens a modal; you must type your username to confirm. Public nav still has Discord / Twitch / YouTube icons, not the Hub square. No 16:9 until the logo is clicked. `/login` redirects home.
 
 ---
 

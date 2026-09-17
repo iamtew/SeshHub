@@ -9,7 +9,7 @@
         <a href="/account" {{if eq .Path "/account"}}aria-current="page"{{end}}>Account</a>
     </div>
     <div class="signin-who">
-        {{if .User.AvatarURL}}<a class="who-pic {{.User.AvatarClass}}" href="/account" aria-label="{{or .User.DisplayName .User.Username}}" title="{{or .User.DisplayName .User.Username}}" style="{{.User.AvatarStyle}}"><img src="{{.User.AvatarURL}}" alt="" referrerpolicy="no-referrer"></a>{{end}}
+        {{if .User.AvatarURL}}<a class="who-pic {{.User.AvatarClass}}" href="{{or .User.RosterURL "/account"}}"{{if and .User.RosterURL (eq .Path .User.RosterURL)}} aria-current="page"{{end}} aria-label="{{or .User.DisplayName .User.Username}}" title="{{or .User.DisplayName .User.Username}}" style="{{.User.AvatarStyle}}"><img src="{{.User.AvatarURL}}" alt="" referrerpolicy="no-referrer"></a>{{end}}
     </div>
 </div>
 {{end}}

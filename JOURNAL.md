@@ -15,6 +15,7 @@ Status, not spec. Spec lives in `README.md`.
 
 ## Log
 
+- 2026-09-18 — Fold PFP goes to public `/team` or `/friends` page. No bounce.
 - 2026-09-17 — In-page slideshow is a fixed-size well; photos contain inside it. No bounce.
 - 2026-09-17 — `/photos` owner overlay + overlay slideshow keys/swipe/auto-advance. No bounce.
 - 2026-09-17 — `/photos` and `/videos` intros are locked CMS markdown like `/team`. Bounce `just dev`.
