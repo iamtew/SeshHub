@@ -78,7 +78,7 @@ a:hover { text-shadow: 0 0 6px var(--red), 0 0 12px var(--chartreuse); color: va
     display: flex;
     background: var(--panel);
     padding: 0.75rem 1.5rem;
-    border-radius: 0.75rem;
+    border-radius: 1.5rem;
 }
 .hero.fold:not(.playing) > .hero-vid,
 .hero.fold:not(.playing) > .hero-close { display: none; }
@@ -148,7 +148,7 @@ a:hover { text-shadow: 0 0 6px var(--red), 0 0 12px var(--chartreuse); color: va
 .wrap.auth {
     flex: 0 0 auto;
     max-width: 26rem;
-    border-radius: 0.75rem;
+    border-radius: 1.5rem;
     display: flex;
     flex-direction: column;
     gap: 1rem;
@@ -161,7 +161,6 @@ a:hover { text-shadow: 0 0 6px var(--red), 0 0 12px var(--chartreuse); color: va
     width: 100%;
     text-align: center;
     font-weight: 700;
-    border-radius: 0.55rem;
 }
 .auth-back { align-self: center; font-size: 1.2rem; color: var(--chartreuse); font-weight: 700; }
 .nav, .wrap, .foot {
@@ -176,14 +175,14 @@ a:hover { text-shadow: 0 0 6px var(--red), 0 0 12px var(--chartreuse); color: va
     align-items: center;
     padding-top: 1.25rem;
     padding-bottom: 1rem;
-    border-radius: 0.75rem 0.75rem 0 0;
+    border-radius: 1.5rem 1.5rem 0 0;
 }
 .wrap { padding-top: 1.5rem; padding-bottom: 2.5rem; flex: 1; }
 .foot {
     color: var(--muted);
     padding-top: 1rem;
     padding-bottom: 1.5rem;
-    border-radius: 0 0 0.75rem 0.75rem;
+    border-radius: 0 0 1.5rem 1.5rem;
     font-size: 0.95rem;
 }
 .foot p { margin: 0; }
@@ -210,9 +209,9 @@ a:hover { text-shadow: 0 0 6px var(--red), 0 0 12px var(--chartreuse); color: va
 }
 .signin .btn, .signin button {
     background: var(--violet); color: var(--fg); border: 0;
-    padding: 0.45rem 1.1rem; font: inherit; min-height: 2.4rem; border-radius: 999px;
+    padding: 0.45rem 1.1rem; font: inherit; min-height: 2.4rem; border-radius: 0.6rem;
 }
-.signin .btn:hover { box-shadow: 0 0 12px var(--violet); }
+.signin .btn:hover:not(:active) { box-shadow: 0 0 12px var(--violet); }
 .signin button:disabled { opacity: 0.45; cursor: not-allowed; }
 .who { color: var(--muted); font-size: 0.95rem; font-weight: 400; }
 h1 {
@@ -230,13 +229,18 @@ h1 {
 h2 { font-family: "Turbo Jungle", sans-serif; font-weight: 400; }
 button, .btn {
     background: var(--violet); color: var(--fg); border: 0;
-    padding: 0.5rem 1.1rem; font: inherit; cursor: pointer; min-height: 2.5rem; border-radius: 999px;
+    padding: 0.5rem 1.1rem; font: inherit; cursor: pointer; min-height: 2.5rem; border-radius: 0.6rem;
 }
-button:hover, .btn:hover { box-shadow: 0 0 12px var(--violet); }
+button:hover:not(:active), .btn:hover:not(:active) { box-shadow: 0 0 12px var(--violet); }
+button:active:not(:disabled):not(.hero-play), .btn:active, .signin .btn:active, .pager > a:active {
+    filter: brightness(0.8);
+    box-shadow: inset 0 3px 8px rgb(0 0 0 / 0.55);
+    transform: translateY(1px);
+}
 .wrap.auth .auth-discord { background: #5865F2; }
 .wrap.auth .auth-youtube { background: #FF0000; }
-.wrap.auth .auth-discord:hover { box-shadow: 0 0 14px #5865F2; }
-.wrap.auth .auth-youtube:hover { box-shadow: 0 0 14px #FF0000; }
+.wrap.auth .auth-discord:hover:not(:active) { box-shadow: 0 0 14px #5865F2; }
+.wrap.auth .auth-youtube:hover:not(:active) { box-shadow: 0 0 14px #FF0000; }
 button:focus-visible, .btn:focus-visible, a:focus-visible,
 input:focus-visible, textarea:focus-visible, select:focus-visible {
     outline: 2px solid var(--chartreuse); outline-offset: 3px;
@@ -321,6 +325,9 @@ a.profile-head { padding: 1rem; color: inherit; text-decoration: none; }
         box-shadow: none;
     }
     .avb-custom { border-color: var(--avb, #E5F20D); }
+    button:active:not(:disabled):not(.hero-play), .btn:active, .signin .btn:active, .pager > a:active {
+        transform: none;
+    }
 }
 #avatar-iro-wrap { max-width: 14rem; }
 #avatar-iro-wrap input[type="color"] { width: 100%; height: 2.2rem; padding: 0.15rem; }
@@ -478,7 +485,7 @@ p:has(+ ul.grid), p.who { max-width: 42rem; }
 .pager-size details { position: relative; }
 .pager-size summary {
     list-style: none; cursor: pointer; color: var(--black); font-weight: 700;
-    padding: 0.35rem 0.75rem; border-radius: 0.45rem; background: var(--chartreuse);
+    padding: 0.35rem 0.75rem; border-radius: 0.6rem; background: var(--chartreuse);
 }
 .pager-size summary::-webkit-details-marker { display: none; }
 .pager-size details div {
@@ -491,10 +498,10 @@ p:has(+ ul.grid), p.who { max-width: 42rem; }
 .pager-size details a:hover { text-shadow: none; background: var(--violet); }
 .pager > a, .pager > span[aria-disabled] {
     min-width: 2.2rem; min-height: 2.2rem; display: inline-flex; align-items: center; justify-content: center;
-    text-align: center; font-size: 1.35rem; font-weight: 700; border-radius: 0.45rem;
+    text-align: center; font-size: 1.35rem; font-weight: 700; border-radius: 0.6rem;
 }
 .pager > a { background: var(--violet); }
-.pager > a:hover { box-shadow: 0 0 12px var(--violet); text-shadow: none; }
+.pager > a:hover:not(:active) { box-shadow: 0 0 12px var(--violet); text-shadow: none; }
 .pager > span[aria-disabled] { background: rgb(255 255 255 / 0.12); opacity: 0.55; }
 .pager-range { color: var(--chartreuse); font-weight: 700; letter-spacing: 0.02em; }
 .save-bar {
