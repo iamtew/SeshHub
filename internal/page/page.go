@@ -17,6 +17,9 @@ var reserved = map[string]bool{
 }
 
 const TeamID = "page-team"
+const AboutID = "page-about"
+
+var lockSlug = map[string]string{TeamID: "team", AboutID: "about"}
 
 type Page struct {
 	ID, Slug, Title, ContentRaw, ContentHTML, CSS string
@@ -24,7 +27,12 @@ type Page struct {
 }
 
 func Locked(id string) bool {
-	return id == TeamID
+	_, ok := lockSlug[id]
+	return ok
+}
+
+func (p Page) IsLocked() bool {
+	return Locked(p.ID)
 }
 
 func Reserved(slug string) bool {
@@ -79,8 +87,8 @@ func Save(db *sql.DB, p Page) (Page, error) {
 	if p.Title == "" || strings.TrimSpace(p.ContentRaw) == "" {
 		return p, fmt.Errorf("title and body required")
 	}
-	if Locked(p.ID) {
-		p.Slug = "team"
+	if s := lockSlug[p.ID]; s != "" {
+		p.Slug = s
 	}
 	base := slugify(p.Slug)
 	if base == "" {

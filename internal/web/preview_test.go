@@ -37,6 +37,24 @@ func TestPreviewAuthAndMarkdown(t *testing.T) {
 	}
 }
 
+func TestPageCloseTo(t *testing.T) {
+	list := httptest.NewRequest(http.MethodPost, "/admin/pages/x", strings.NewReader("after=close"))
+	list.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	if got := afterSave(list, "/admin/pages/x", pageCloseTo(list)); got != "/admin/pages" {
+		t.Fatalf("list: %s", got)
+	}
+	view := httptest.NewRequest(http.MethodPost, "/admin/pages/x", strings.NewReader("after=close&next=/team"))
+	view.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	if got := afterSave(view, "/admin/pages/x", pageCloseTo(view)); got != "/team" {
+		t.Fatalf("view: %s", got)
+	}
+	bad := httptest.NewRequest(http.MethodPost, "/admin/pages/x", strings.NewReader("after=close&next=https://evil.example/"))
+	bad.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	if got := pageCloseTo(bad); got != "/admin/pages" {
+		t.Fatalf("bad next: %s", got)
+	}
+}
+
 func TestEditorTemplatesParse(t *testing.T) {
 	root := filepath.Join("..", "..", "web", "templates")
 	shared := []string{

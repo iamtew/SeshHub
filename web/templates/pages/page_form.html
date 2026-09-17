@@ -3,9 +3,10 @@
 {{template "md_toolbar" .}}
 <form method="post" action="{{.Action}}" class="form">
     <input type="hidden" name="id" value="{{.P.ID}}">
+    {{if .Next}}<input type="hidden" name="next" value="{{.Next}}">{{end}}
     <div data-md-meta>
         <label>Title <input name="title" required value="{{.P.Title}}"></label>
-        <label>Slug <input name="slug" value="{{.P.Slug}}" placeholder="auto" {{if eq .P.ID "page-team"}}readonly{{end}}></label>
+        <label>Slug <input name="slug" value="{{.P.Slug}}" placeholder="auto" {{if .P.IsLocked}}readonly{{end}}></label>
         <label><input type="checkbox" name="published" value="1" {{if .P.Published}}checked{{end}}> Published</label>
     </div>
     {{template "md_editor" .}}

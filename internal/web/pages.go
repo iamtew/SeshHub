@@ -42,9 +42,13 @@ func (s *Server) customPage(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	s.render(w, r, "custom_page.html", map[string]any{
+	data := map[string]any{
 		"Title": p.Title, "Path": "/" + p.Slug, "HTML": template.HTML(article.Render(p.ContentRaw)), "CSS": template.CSS(p.CSS),
-	})
+	}
+	if u := UserFrom(r); u != nil && u.Role == auth.RoleAdmin {
+		data["EditHref"] = "/admin/pages/" + p.ID + "?next=/" + p.Slug
+	}
+	s.render(w, r, "custom_page.html", data)
 }
 
 func (s *Server) adminPages(w http.ResponseWriter, r *http.Request) {
@@ -90,7 +94,7 @@ func (s *Server) adminPageCreate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	http.Redirect(w, r, afterSave(r, "/admin/pages/"+saved.ID, "/admin/pages"), http.StatusSeeOther)
+	http.Redirect(w, r, afterSave(r, "/admin/pages/"+saved.ID, pageCloseTo(r)), http.StatusSeeOther)
 }
 
 func (s *Server) adminPageEdit(w http.ResponseWriter, r *http.Request) {
@@ -111,10 +115,14 @@ func (s *Server) adminPageEdit(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		http.Redirect(w, r, afterSave(r, "/admin/pages/"+p.ID, "/admin/pages"), http.StatusSeeOther)
+		http.Redirect(w, r, afterSave(r, "/admin/pages/"+p.ID, pageCloseTo(r)), http.StatusSeeOther)
 		return
 	}
-	s.render(w, r, "page_form.html", map[string]any{"Title": "Edit " + p.Title, "Path": "/admin/pages", "P": p, "Action": "/admin/pages/" + p.ID, "Monaco": true})
+	next := safeNext(r.FormValue("next"))
+	s.render(w, r, "page_form.html", map[string]any{
+		"Title": "Edit " + p.Title, "Path": "/admin/pages", "P": p, "Action": "/admin/pages/" + p.ID,
+		"Monaco": true, "Cancel": pageCloseTo(r), "Next": next,
+	})
 }
 
 func (s *Server) adminPageDelete(w http.ResponseWriter, r *http.Request) {

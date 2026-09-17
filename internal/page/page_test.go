@@ -56,4 +56,11 @@ func TestReservedAndSave(t *testing.T) {
 	if err := Delete(sqldb, TeamID); err == nil {
 		t.Fatal("expected locked")
 	}
+	if err := Delete(sqldb, AboutID); err == nil {
+		t.Fatal("expected about locked")
+	}
+	about, err := Save(sqldb, Page{ID: AboutID, Title: "About us", Slug: "stolen", ContentRaw: "# About us", Published: true})
+	if err != nil || about.Slug != "about" {
+		t.Fatalf("lock about slug %+v %v", about, err)
+	}
 }

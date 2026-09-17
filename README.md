@@ -292,7 +292,7 @@ Two header modes. Same public nav (Spot / Episodes / FS Team / Friends / News / 
 - **Categorization & Tagging**: Tag clouds and category filters (News, Event Recaps, Modding, Trick Tips).
 
 ### 4. Custom Static Pages
-- **Dynamic Slug Routing (`/{slug}` and nested `/{slug...}`)**: Manage standalone pages such as `/about`, `/rules`, `/fakeskate-setup`, `/sponsors`, `/join-team`. `about/privacy` and `about/tos` are reserved (not CMS).
+- **Dynamic Slug Routing (`/{slug}` and nested `/{slug...}`)**: Manage standalone pages such as `/about`, `/rules`, `/fakeskate-setup`, `/sponsors`, `/join-team`. `about/privacy` and `about/tos` are reserved (not CMS). Seeded `/about` and `/team` intro pages cannot be deleted (slug locked). Save and close returns to the public page if you opened Edit there, or to **Pages** if you opened Edit from the list.
 - **Privacy (GDPR):** [`docs/privacy-policy.md`](docs/privacy-policy.md) and [`docs/tos.md`](docs/tos.md) are compiled into the binary and served at `/about/privacy` and `/about/tos`. Code must not grow past the policy. Footer and `/login` use those URLs.
 - **Custom Metadata**: Page title, custom navigation header/footer inclusion, and optional custom CSS injection per page for special campaign styling.
 

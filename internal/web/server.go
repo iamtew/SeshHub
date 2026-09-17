@@ -183,3 +183,17 @@ func afterSave(r *http.Request, stay, closeTo string) string {
 	}
 	return stay
 }
+
+func safeNext(s string) string {
+	if !strings.HasPrefix(s, "/") || strings.HasPrefix(s, "//") || strings.ContainsAny(s, ":\\\n\r\t ") {
+		return ""
+	}
+	return s
+}
+
+func pageCloseTo(r *http.Request) string {
+	if n := safeNext(r.FormValue("next")); n != "" {
+		return n
+	}
+	return "/admin/pages"
+}

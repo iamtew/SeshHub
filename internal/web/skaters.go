@@ -87,7 +87,7 @@ func (s *Server) team(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if u := UserFrom(r); u != nil && u.Role == auth.RoleAdmin {
-		data["EditHref"] = "/admin/pages/" + page.TeamID
+		data["EditHref"] = "/admin/pages/" + page.TeamID + "?next=/team"
 	}
 	s.render(w, r, "skaters_list.html", data)
 }
