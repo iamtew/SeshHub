@@ -26,6 +26,9 @@ func New(cfg config.Config, db *sql.DB) *Server {
 	yt.RefreshAccess = auth.RefreshGoogle
 	s := &Server{cfg: cfg, db: db, webDir: cfg.WebDir, mux: http.NewServeMux()}
 	s.mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir(filepath.Join(cfg.WebDir, "static")))))
+	s.mux.HandleFunc("GET /favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, filepath.Join(s.webDir, "static", "favicon.ico"))
+	})
 	s.mux.HandleFunc("GET /media/avatars/{file}", s.mediaAvatar)
 	s.mux.HandleFunc("GET /media/gallery/{file}", s.mediaGallery)
 	s.mux.HandleFunc("GET /healthz", s.healthz)
