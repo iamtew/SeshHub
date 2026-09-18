@@ -8,6 +8,12 @@
         <label>Title <input name="title" required value="{{.P.Title}}"></label>
         <label>Slug <input name="slug" value="{{.P.Slug}}" placeholder="auto" {{if .P.IsLocked}}readonly{{end}}></label>
         <label><input type="checkbox" name="published" value="1" {{if .P.Published}}checked{{end}}> Published</label>
+        <label>Visibility
+            <select name="visibility">
+                <option value="public" {{if ne .P.Visibility "internal"}}selected{{end}}>Public</option>
+                <option value="internal" {{if eq .P.Visibility "internal"}}selected{{end}}>Internal</option>
+            </select>
+        </label>
     </div>
     {{template "md_editor" .}}
     <details class="md-css">

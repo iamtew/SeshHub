@@ -75,8 +75,24 @@ func TestSavePublish(t *testing.T) {
 	if err != nil || a.PublishedAt == "" {
 		t.Fatal(err, a.PublishedAt)
 	}
-	pub, err := ListPublished(sqldb)
+	pub, err := ListPublished(sqldb, false)
 	if err != nil || len(pub) != 1 {
 		t.Fatalf("%v %d", err, len(pub))
+	}
+	a.Visibility = "internal"
+	a, err = Save(sqldb, a, true)
+	if err != nil || a.Visibility != "internal" {
+		t.Fatal(err, a.Visibility)
+	}
+	guest, err := ListPublished(sqldb, false)
+	if err != nil || len(guest) != 0 {
+		t.Fatalf("guest saw internal: %v %d", err, len(guest))
+	}
+	hub, err := ListPublished(sqldb, true)
+	if err != nil || len(hub) != 1 {
+		t.Fatalf("logged-in miss: %v %d", err, len(hub))
+	}
+	if Visible(a, false, false) || !Visible(a, true, false) {
+		t.Fatal("Visible")
 	}
 }

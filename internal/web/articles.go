@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"html/template"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"seshhub/internal/article"
@@ -22,17 +23,34 @@ func formArticle(r *http.Request, authorID string) article.Article {
 		ImageURL:   r.FormValue("featured_image_url"),
 		AuthorID:   authorID,
 		Status:     r.FormValue("status"),
+		Visibility: r.FormValue("visibility"),
 		Tags:       r.FormValue("tags"),
 	}
 }
 
 func (s *Server) news(w http.ResponseWriter, r *http.Request) {
-	list, err := article.ListPublished(s.db)
+	list, err := article.ListPublished(s.db, UserFrom(r) != nil)
 	if err != nil {
 		http.Error(w, "db error", http.StatusInternalServerError)
 		return
 	}
-	s.render(w, r, "articles_list.html", map[string]any{"Title": "News", "Path": "/news", "Articles": list})
+	n, _ := strconv.Atoi(r.URL.Query().Get("n"))
+	p, _ := strconv.Atoi(r.URL.Query().Get("p"))
+	per, page, offset, from, to := videoPage(n, p, len(list))
+	var pageItems []article.Article
+	if len(list) > 0 {
+		end := offset + per
+		if end > len(list) {
+			end = len(list)
+		}
+		pageItems = list[offset:end]
+	}
+	s.render(w, r, "articles_list.html", map[string]any{
+		"Title": "News", "Path": "/news", "Articles": pageItems, "PagerLabel": "News pagination",
+		"PagerBase": "/news", "Per": per, "Page": page, "Total": len(list),
+		"From": from, "To": to, "Prev": page - 1, "Next": page + 1,
+		"HasPrev": page > 1, "HasNext": to < len(list),
+	})
 }
 
 func (s *Server) articleDetail(w http.ResponseWriter, r *http.Request) {
@@ -45,12 +63,11 @@ func (s *Server) articleDetail(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "db error", http.StatusInternalServerError)
 		return
 	}
-	if a.Status != "published" {
-		u := UserFrom(r)
-		if u == nil || !article.CanEdit(u.Role, u.ID, a) {
-			http.NotFound(w, r)
-			return
-		}
+	u := UserFrom(r)
+	canEdit := u != nil && article.CanEdit(u.Role, u.ID, a)
+	if !article.Visible(a, u != nil, canEdit) {
+		http.NotFound(w, r)
+		return
 	}
 	s.render(w, r, "article_detail.html", map[string]any{
 		"Title": a.Title, "Path": "/news", "A": a, "HTML": template.HTML(a.ContentHTML),

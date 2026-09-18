@@ -90,4 +90,14 @@ func TestReservedAndSave(t *testing.T) {
 	if err := Delete(sqldb, VideosID); err == nil {
 		t.Fatal("expected videos locked")
 	}
+	secret, err := Save(sqldb, Page{Title: "Secret", Slug: "secret", ContentRaw: "nope", Published: true, Visibility: "internal"})
+	if err != nil || secret.Visibility != "internal" {
+		t.Fatalf("internal save %+v %v", secret, err)
+	}
+	if Visible(secret, false, false) || !Visible(secret, true, false) {
+		t.Fatal("Visible")
+	}
+	if !Visible(Page{Published: false}, false, true) {
+		t.Fatal("admin draft")
+	}
 }

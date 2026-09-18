@@ -8,7 +8,7 @@
 {{range .Articles}}
 <li>
     <a href="/news/{{.Slug}}">{{.Title}}</a>
-    <span class="who">{{.Status}}</span>
+    <span class="who">{{.Status}} · {{.Visibility}}</span>
     {{if $.Skater}}
     <a class="btn" href="/dashboard/articles/{{.ID}}">Edit</a>
     {{else}}

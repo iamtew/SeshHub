@@ -14,6 +14,12 @@
                 </select>
             </label>
             {{end}}
+            <label>Visibility
+                <select name="visibility">
+                    <option value="public" {{if ne .A.Visibility "internal"}}selected{{end}}>Public</option>
+                    <option value="internal" {{if eq .A.Visibility "internal"}}selected{{end}}>Internal</option>
+                </select>
+            </label>
             <label>Title <input name="title" required value="{{.A.Title}}"></label>
             {{if .Admin}}<label>Slug <input name="slug" value="{{.A.Slug}}" placeholder="auto"></label>{{end}}
         </div>

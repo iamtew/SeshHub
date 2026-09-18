@@ -8,7 +8,7 @@
 {{range .Pages}}
 <li>
     <a href="/{{.Slug}}">{{.Title}}</a>
-    <span class="who">{{if .Published}}published{{else}}draft{{end}}</span>
+    <span class="who">{{if .Published}}published{{else}}draft{{end}} · {{.Visibility}}</span>
     <a class="btn" href="/admin/pages/{{.ID}}">Edit</a>
     {{if not .IsLocked}}<form method="post" action="/admin/pages/{{.ID}}/delete"><button type="submit">Delete</button></form>{{end}}
 </li>

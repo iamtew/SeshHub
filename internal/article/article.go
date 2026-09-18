@@ -22,8 +22,26 @@ type Article struct {
 	AuthorID    string
 	AuthorName  string
 	Status      string
+	Visibility  string
 	Tags        string
 	PublishedAt string
+}
+
+func clampVis(s string) string {
+	if s == "internal" {
+		return "internal"
+	}
+	return "public"
+}
+
+func Visible(a Article, loggedIn, canEdit bool) bool {
+	if canEdit {
+		return true
+	}
+	if a.Status != "published" {
+		return false
+	}
+	return a.Visibility != "internal" || loggedIn
 }
 
 func CanEdit(role, userID string, a Article) bool {
@@ -55,16 +73,16 @@ func uniqueSlug(db *sql.DB, base, exceptID string) (string, error) {
 	return "", fmt.Errorf("slug taken")
 }
 
-const cols = `a.id, a.slug, a.title, IFNULL(a.excerpt,''), a.content_raw, a.content_html, IFNULL(a.featured_image_url,''), a.author_id, u.display_name, a.status, IFNULL(a.tags,''), IFNULL(a.published_at,'')`
+const cols = `a.id, a.slug, a.title, IFNULL(a.excerpt,''), a.content_raw, a.content_html, IFNULL(a.featured_image_url,''), a.author_id, u.display_name, a.status, IFNULL(a.visibility,'public'), IFNULL(a.tags,''), IFNULL(a.published_at,'')`
 
 func scan(s func(dest ...any) error) (Article, error) {
 	var a Article
-	err := s(&a.ID, &a.Slug, &a.Title, &a.Excerpt, &a.ContentRaw, &a.ContentHTML, &a.ImageURL, &a.AuthorID, &a.AuthorName, &a.Status, &a.Tags, &a.PublishedAt)
+	err := s(&a.ID, &a.Slug, &a.Title, &a.Excerpt, &a.ContentRaw, &a.ContentHTML, &a.ImageURL, &a.AuthorID, &a.AuthorName, &a.Status, &a.Visibility, &a.Tags, &a.PublishedAt)
 	return a, err
 }
 
-func ListPublished(db *sql.DB) ([]Article, error) {
-	return query(db, `SELECT `+cols+` FROM articles a JOIN users u ON u.id = a.author_id WHERE a.status = 'published' ORDER BY a.published_at DESC`)
+func ListPublished(db *sql.DB, loggedIn bool) ([]Article, error) {
+	return query(db, `SELECT `+cols+` FROM articles a JOIN users u ON u.id = a.author_id WHERE a.status = 'published' AND (a.visibility = 'public' OR ?) ORDER BY a.published_at DESC`, loggedIn)
 }
 
 func ListAll(db *sql.DB) ([]Article, error) {
@@ -114,6 +132,7 @@ func Save(db *sql.DB, a Article, asAdmin bool) (Article, error) {
 	default:
 		a.Status = "draft"
 	}
+	a.Visibility = clampVis(a.Visibility)
 	base := a.Slug
 	if base == "" {
 		base = skater.Slugify(a.Title)
@@ -136,12 +155,12 @@ func Save(db *sql.DB, a Article, asAdmin bool) (Article, error) {
 	}
 	if a.ID == "" {
 		a.ID = newID()
-		_, err = db.Exec(`INSERT INTO articles (id, slug, title, excerpt, content_raw, content_html, featured_image_url, author_id, status, tags, published_at)
-			VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
-			a.ID, a.Slug, a.Title, nullEmpty(a.Excerpt), a.ContentRaw, a.ContentHTML, nullEmpty(a.ImageURL), a.AuthorID, a.Status, nullEmpty(a.Tags), published)
+		_, err = db.Exec(`INSERT INTO articles (id, slug, title, excerpt, content_raw, content_html, featured_image_url, author_id, status, visibility, tags, published_at)
+			VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+			a.ID, a.Slug, a.Title, nullEmpty(a.Excerpt), a.ContentRaw, a.ContentHTML, nullEmpty(a.ImageURL), a.AuthorID, a.Status, a.Visibility, nullEmpty(a.Tags), published)
 	} else {
-		_, err = db.Exec(`UPDATE articles SET slug=?, title=?, excerpt=?, content_raw=?, content_html=?, featured_image_url=?, status=?, tags=?, published_at=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`,
-			a.Slug, a.Title, nullEmpty(a.Excerpt), a.ContentRaw, a.ContentHTML, nullEmpty(a.ImageURL), a.Status, nullEmpty(a.Tags), published, a.ID)
+		_, err = db.Exec(`UPDATE articles SET slug=?, title=?, excerpt=?, content_raw=?, content_html=?, featured_image_url=?, status=?, visibility=?, tags=?, published_at=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`,
+			a.Slug, a.Title, nullEmpty(a.Excerpt), a.ContentRaw, a.ContentHTML, nullEmpty(a.ImageURL), a.Status, a.Visibility, nullEmpty(a.Tags), published, a.ID)
 	}
 	return a, err
 }

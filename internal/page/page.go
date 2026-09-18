@@ -25,8 +25,25 @@ const VideosID = "page-videos"
 var lockSlug = map[string]string{TeamID: "team", AboutID: "about", FriendsID: "friends", PhotosID: "photos", VideosID: "videos"}
 
 type Page struct {
-	ID, Slug, Title, ContentRaw, ContentHTML, CSS string
-	Published                                     bool
+	ID, Slug, Title, ContentRaw, ContentHTML, CSS, Visibility string
+	Published                                                 bool
+}
+
+func clampVis(s string) string {
+	if s == "internal" {
+		return "internal"
+	}
+	return "public"
+}
+
+func Visible(p Page, loggedIn, admin bool) bool {
+	if admin {
+		return true
+	}
+	if !p.Published {
+		return false
+	}
+	return p.Visibility != "internal" || loggedIn
 }
 
 func Locked(id string) bool {
@@ -54,7 +71,7 @@ func newID() string {
 }
 
 func List(db *sql.DB) ([]Page, error) {
-	rows, err := db.Query(`SELECT id, slug, title, content_raw, content_html, IFNULL(custom_css,''), is_published FROM pages ORDER BY slug`)
+	rows, err := db.Query(`SELECT id, slug, title, content_raw, content_html, IFNULL(custom_css,''), is_published, IFNULL(visibility,'public') FROM pages ORDER BY slug`)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +80,7 @@ func List(db *sql.DB) ([]Page, error) {
 	for rows.Next() {
 		var p Page
 		var pub int
-		if err := rows.Scan(&p.ID, &p.Slug, &p.Title, &p.ContentRaw, &p.ContentHTML, &p.CSS, &pub); err != nil {
+		if err := rows.Scan(&p.ID, &p.Slug, &p.Title, &p.ContentRaw, &p.ContentHTML, &p.CSS, &pub, &p.Visibility); err != nil {
 			return nil, err
 		}
 		p.Published = pub != 0
@@ -79,8 +96,8 @@ func Get(db *sql.DB, by, val string) (Page, error) {
 	}
 	var p Page
 	var pub int
-	err := db.QueryRow(`SELECT id, slug, title, content_raw, content_html, IFNULL(custom_css,''), is_published FROM pages WHERE `+col+` = ?`, val).
-		Scan(&p.ID, &p.Slug, &p.Title, &p.ContentRaw, &p.ContentHTML, &p.CSS, &pub)
+	err := db.QueryRow(`SELECT id, slug, title, content_raw, content_html, IFNULL(custom_css,''), is_published, IFNULL(visibility,'public') FROM pages WHERE `+col+` = ?`, val).
+		Scan(&p.ID, &p.Slug, &p.Title, &p.ContentRaw, &p.ContentHTML, &p.CSS, &pub, &p.Visibility)
 	p.Published = pub != 0
 	return p, err
 }
@@ -109,17 +126,18 @@ func Save(db *sql.DB, p Page) (Page, error) {
 	}
 	p.Slug = slug
 	p.ContentHTML = article.Render(p.ContentRaw)
+	p.Visibility = clampVis(p.Visibility)
 	pub := 0
 	if p.Published {
 		pub = 1
 	}
 	if p.ID == "" {
 		p.ID = newID()
-		_, err = db.Exec(`INSERT INTO pages (id, slug, title, content_raw, content_html, custom_css, is_published) VALUES (?,?,?,?,?,?,?)`,
-			p.ID, p.Slug, p.Title, p.ContentRaw, p.ContentHTML, nullEmpty(p.CSS), pub)
+		_, err = db.Exec(`INSERT INTO pages (id, slug, title, content_raw, content_html, custom_css, is_published, visibility) VALUES (?,?,?,?,?,?,?,?)`,
+			p.ID, p.Slug, p.Title, p.ContentRaw, p.ContentHTML, nullEmpty(p.CSS), pub, p.Visibility)
 	} else {
-		_, err = db.Exec(`UPDATE pages SET slug=?, title=?, content_raw=?, content_html=?, custom_css=?, is_published=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`,
-			p.Slug, p.Title, p.ContentRaw, p.ContentHTML, nullEmpty(p.CSS), pub, p.ID)
+		_, err = db.Exec(`UPDATE pages SET slug=?, title=?, content_raw=?, content_html=?, custom_css=?, is_published=?, visibility=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`,
+			p.Slug, p.Title, p.ContentRaw, p.ContentHTML, nullEmpty(p.CSS), pub, p.Visibility, p.ID)
 	}
 	return p, err
 }

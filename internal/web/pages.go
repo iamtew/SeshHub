@@ -35,17 +35,15 @@ func (s *Server) customPage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "db error", http.StatusInternalServerError)
 		return
 	}
-	if !p.Published {
-		u := UserFrom(r)
-		if u == nil || u.Role != auth.RoleAdmin {
-			http.NotFound(w, r)
-			return
-		}
+	u := UserFrom(r)
+	if !page.Visible(p, u != nil, u != nil && u.Role == auth.RoleAdmin) {
+		http.NotFound(w, r)
+		return
 	}
 	data := map[string]any{
 		"Title": p.Title, "Path": "/" + p.Slug, "HTML": template.HTML(article.Render(p.ContentRaw)), "CSS": template.CSS(p.CSS),
 	}
-	if u := UserFrom(r); u != nil && u.Role == auth.RoleAdmin {
+	if u != nil && u.Role == auth.RoleAdmin {
 		data["EditHref"] = "/admin/pages/" + p.ID + "?next=/" + p.Slug
 	}
 	s.render(w, r, "custom_page.html", data)
@@ -74,6 +72,7 @@ func formPage(r *http.Request) page.Page {
 		ContentRaw:  r.FormValue("content_raw"),
 		CSS:         r.FormValue("custom_css"),
 		Published:   r.FormValue("published") == "1",
+		Visibility:  r.FormValue("visibility"),
 	}
 }
 

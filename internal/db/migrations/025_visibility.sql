@@ -1,0 +1,2 @@
+ALTER TABLE articles ADD COLUMN visibility TEXT NOT NULL DEFAULT 'public';
+ALTER TABLE pages ADD COLUMN visibility TEXT NOT NULL DEFAULT 'public';

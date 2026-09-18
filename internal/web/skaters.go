@@ -99,9 +99,11 @@ func (s *Server) friends(w http.ResponseWriter, r *http.Request) {
 func (s *Server) pageIntro(r *http.Request, data map[string]any, slug, id string) {
 	if p, err := page.Get(s.db, "slug", slug); err == nil {
 		data["Title"] = p.Title
-		data["HTML"] = template.HTML(article.Render(p.ContentRaw))
-		if p.CSS != "" {
-			data["CSS"] = template.CSS(p.CSS)
+		if p.Visibility != "internal" || UserFrom(r) != nil {
+			data["HTML"] = template.HTML(article.Render(p.ContentRaw))
+			if p.CSS != "" {
+				data["CSS"] = template.CSS(p.CSS)
+			}
 		}
 	}
 	if u := UserFrom(r); u != nil && u.Role == auth.RoleAdmin {

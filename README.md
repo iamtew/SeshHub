@@ -254,8 +254,8 @@ Users who do not match a Discord guild role (hub-admin, skater, or friends), as 
 | **Host** | (flag) | Discord user has `DISCORD_HOSTS_ROLE_ID` in the guild (checked on Discord login; not granted by superadmin). | Edit Spot (`/admin/spot`) and Episodes (`/admin/episodes`). Edit links only show for this flag. |
 | **Team Skater** | Level 2 | Discord user has configured `DISCORD_SKATER_ROLE_ID` in the guild. | Edit own profile, clips, draft articles. Public `/team`. |
 | **Friend** | Level 1 | Discord `DISCORD_FRIENDS_ROLE_ID`, an approved access request, or a former `member` row (promoted to skater on Discord login if they hold the skater role). No Discord required. | Edit own `/friends` profile and YouTube Feed Filter. Clips on `/videos`. |
-| **Access Pending** | N/A | Not in the guild, or in the guild without hub-admin/skater/friends roles, or YouTube-only and not yet approved. Login still succeeds. | View public content; request access at `/access`. |
-| **Guest / Anonymous** | Level 0 | Unauthenticated public visitor. | View public pages, read published articles, browse FS Team and Friends, watch embedded videos. |
+| **Access Pending** | N/A | Not in the guild, or in the guild without hub-admin/skater/friends roles, or YouTube-only and not yet approved. Login still succeeds. | View public and internal published pages/news; request access at `/access`. |
+| **Guest / Anonymous** | Level 0 | Unauthenticated public visitor. | View public pages, read published public articles, browse FS Team and Friends, watch embedded videos. |
 
 ### Chrome: visitor vs Sesh Hub
 
@@ -286,13 +286,15 @@ Two header modes. Same public nav (Spot / Episodes / FS Team / Friends / News / 
 - **`/photos`**: Union of those photos, newest first. Intro markdown is a locked CMS page (`# Photos` by default), same as `/team`. Slideshow on top fills the well in a fixed `min(70dvh, 36rem)` slot (object-fit contain, so mixed aspect ratios do not jump the page); prev/next only. Grid below paginates 6/12/18/24 (default 6) via `?n=&p=` without a page reload; clicking a grid image puts it in the slideshow slot. Owner name overlays the photo (grid, page slideshow, and overlay) and links to their roster page. Overlay slideshow auto-advances every 6s; arrow keys prev/next; Escape closes; swipe left/right on a phone, swipe down to close.
 
 ### 3. Articles, News & Blog CMS
-- **Publishing Workflow**: Supports `Draft`, `Published`, and `Archived` statuses.
+- **Index (`/news`)**: Published posts, newest first, as a single-column list (title, optional image, excerpt, byline). Paginates 6/12/18/24 (default 6) via `?n=&p=`. Guests see public posts only; logged-in users also see internal.
+- **Publishing Workflow**: Supports `Draft`, `Published`, and `Archived` statuses. Visibility is `public` or `internal` (logged-in only). Guest hitting an internal URL gets 404, same as unpublished.
 - **Rich Content Formats**: Markdown parsing with frontmatter support and sanitized HTML rendering.
 - **Featured Image & SEO**: OpenGraph tags, slug generation with uniqueness validation, excerpt generation, and reading time estimation.
 - **Categorization & Tagging**: Tag clouds and category filters (News, Event Recaps, Modding, Trick Tips).
 
 ### 4. Custom Static Pages
 - **Dynamic Slug Routing (`/{slug}` and nested `/{slug...}`)**: Manage standalone pages such as `/about`, `/rules`, `/fakeskate-setup`, `/sponsors`, `/join-team`. `about/privacy` and `about/tos` are reserved (not CMS). Seeded `/about`, `/team`, `/friends`, `/photos`, and `/videos` intro pages cannot be deleted (slug locked). Save and close returns to the public page if you opened Edit there, or to **Pages** if you opened Edit from the list.
+- **ACL**: Each page is `public` or `internal`. Internal published pages are 404 for guests; logged-in users can read them. Locked intro pages (`/team`, `/friends`, `/photos`, `/videos`) stay reachable; an internal intro only hides that markdown from guests. `/about/privacy` and `/about/tos` are always public.
 - **Privacy (GDPR):** [`docs/privacy-policy.md`](docs/privacy-policy.md) and [`docs/tos.md`](docs/tos.md) are compiled into the binary and served at `/about/privacy` and `/about/tos`. Code must not grow past the policy. Footer and `/login` use those URLs.
 - **Custom Metadata**: Page title, custom navigation header/footer inclusion, and optional custom CSS injection per page for special campaign styling.
 
@@ -393,6 +395,7 @@ CREATE TABLE IF NOT EXISTS articles (
     featured_image_url TEXT,
     author_id TEXT NOT NULL REFERENCES users(id),
     status TEXT NOT NULL DEFAULT 'draft',      -- 'draft', 'published', 'archived'
+    visibility TEXT NOT NULL DEFAULT 'public', -- 'public', 'internal' (logged-in)
     tags TEXT,                                 -- JSON array of tag strings
     published_at DATETIME,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -408,6 +411,7 @@ CREATE TABLE IF NOT EXISTS pages (
     content_html TEXT NOT NULL,                -- Sanitized rendered HTML
     custom_css TEXT,
     is_published BOOLEAN NOT NULL DEFAULT 0,
+    visibility TEXT NOT NULL DEFAULT 'public', -- 'public', 'internal' (logged-in)
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
