@@ -808,3 +808,21 @@ input, select, textarea { accent-color: var(--green); }
     }
     .md-toolbar, .md-overlay { display: none; }
 }
+
+.smoke-puff {
+    z-index: 15;
+    position: fixed;
+    width: 64px;
+    height: 64px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.6) 70%);
+    pointer-events: none;
+    border-radius: 50%;
+    filter: blur(8px);
+    opacity: 0.9;
+    animation: smokeRise 700ms ease-out forwards;
+}
+@keyframes smokeRise {
+    0% { transform: translate(-50%, -50%) scale(0.6); opacity: 0.9; }
+    60% { transform: translate(calc(-50% + var(--drift)), -80%) scale(1.2); opacity: 0.4; }
+    100% { transform: translate(calc(-50% + var(--drift)), -130%) scale(1.7); opacity: 0; }
+}
