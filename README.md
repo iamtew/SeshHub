@@ -116,14 +116,14 @@ Quota is cheap: `videos.list` is 1 unit per 50 IDs. We do not download comments,
 | Native binary | `just build` → `bin/seshhub` on Linux, `dist/seshhub.exe` on Windows |
 | Clean binaries | `just clean` → drops `bin/` and `dist/` |
 | Linux binary from Windows | see [Cross-compilation](#cross-compilation) |
-| Status of the repo | [`JOURNAL.md`](JOURNAL.md) — what works now vs what's next |
+| Status of the repo | `git log` |
 | Duplicate Discord + YouTube accounts | **Admin → Users** → merge from the spare into the Discord user |
 
 ---
 
 ## Specification
 
-The rest of this file is the architecture spec (what the system is supposed to be). Code and [`JOURNAL.md`](JOURNAL.md) win when they disagree.
+The rest of this file is the architecture spec (what the system is supposed to be). Code wins when they disagree. History is `git log`.
 
 ## Table of Contents
 
