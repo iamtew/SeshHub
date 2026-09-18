@@ -248,14 +248,16 @@ flowchart TD
 
 Users who do not match a Discord guild role (hub-admin, skater, or friends), as well as users authenticated through YouTube, are shown an option to request access. Requests remain pending until a site admin reviews and approves or rejects them individually in the admin UI. Approval grants **friend** and does not grant Admin or Team Skater. Team still requires Discord.
 
-| Role | Hierarchy Level | Determination Logic | Capabilities |
-| :--- | :--- | :--- | :--- |
-| **Admin** | Level 3 | Discord user has configured `DISCORD_HUB_ADMIN_ROLE_ID` in the Sesh Sofa Discord guild, OR user ID matches `SUPERADMIN_DISCORD_IDS`. | Hub access: FS Team (status), edit articles/pages, users, access queue. Not Spot/Episodes. |
-| **Host** | (flag) | Discord user has `DISCORD_HOSTS_ROLE_ID` in the guild (checked on Discord login; not granted by superadmin). | Edit Spot (`/admin/spot`) and Episodes (`/admin/episodes`). Edit links only show for this flag. |
-| **Team Skater** | Level 2 | Discord user has configured `DISCORD_SKATER_ROLE_ID` in the guild. | Edit own profile, clips, draft articles. Public `/team`. |
-| **Friend** | Level 1 | Discord `DISCORD_FRIENDS_ROLE_ID`, an approved access request, or a former `member` row (promoted to skater on Discord login if they hold the skater role). No Discord required. | Edit own `/friends` profile and YouTube Feed Filter. Clips on `/videos`. |
-| **Access Pending** | N/A | Not in the guild, or in the guild without hub-admin/skater/friends roles, or YouTube-only and not yet approved. Login still succeeds. | View public and internal published pages/news; request access at `/access`. |
-| **Guest / Anonymous** | Level 0 | Unauthenticated public visitor. | View public pages, read published public articles, browse FS Team and Friends, watch embedded videos. |
+`users.role` is a rank: **admin > skater > friend** (legacy `member` counts as friend). Discord login keeps the highest matching guild role. **Host** is `users.host`, not a rank — Spot/Episodes only, not granted by superadmin, and can sit on any of those roles.
+
+| Role | Determination Logic | Capabilities |
+| :--- | :--- | :--- |
+| **Admin** | Discord `DISCORD_HUB_ADMIN_ROLE_ID` in the Sesh Sofa guild, OR Discord user ID in `SUPERADMIN_DISCORD_IDS`. | Hub access: FS Team (status), edit articles/pages, users, access queue. Not Spot/Episodes. |
+| **Team Skater** | Discord `DISCORD_SKATER_ROLE_ID` in the guild. | Edit own profile, clips, draft articles. Public `/team`. |
+| **Friend** | Discord `DISCORD_FRIENDS_ROLE_ID`, an approved access request, or a former `member` row (promoted to skater on Discord login if they hold the skater role). No Discord required. | Edit own `/friends` profile and YouTube Feed Filter. Clips on `/videos`. |
+| **Host** (flag) | Discord `DISCORD_HOSTS_ROLE_ID` on Discord login. Independent of `users.role`. | Edit Spot (`/admin/spot`) and Episodes (`/admin/episodes`). Edit links only show for this flag. |
+| **Access Pending** | Not in the guild, or in the guild without hub-admin/skater/friends roles, or YouTube-only and not yet approved. Login still succeeds. | View public and internal published pages/news; request access at `/access`. |
+| **Guest / Anonymous** | Unauthenticated public visitor. | View public pages, read published public articles, browse FS Team and Friends, watch embedded videos. |
 
 ### Chrome: visitor vs Sesh Hub
 
@@ -584,11 +586,12 @@ DATABASE_AUTH_TOKEN=                 # Required only if connecting to Turso Clou
 DISCORD_CLIENT_ID=your_discord_client_id
 DISCORD_CLIENT_SECRET=your_discord_client_secret
 DISCORD_GUILD_ID=your_sesh_sofa_discord_guild_id
+# users.role rank: hub admin / superadmin IDs → skater → friends. Hosts is users.host, not a rank.
+SUPERADMIN_DISCORD_IDS=123456789012345678,987654321098765432
 DISCORD_HUB_ADMIN_ROLE_ID=your_hub_admin_role_id
-DISCORD_HOSTS_ROLE_ID=your_hosts_role_id
 DISCORD_SKATER_ROLE_ID=your_team_skater_role_id
 DISCORD_FRIENDS_ROLE_ID=your_friends_role_id
-SUPERADMIN_DISCORD_IDS=123456789012345678,987654321098765432
+DISCORD_HOSTS_ROLE_ID=your_hosts_role_id
 
 # ==============================================================================
 # YouTube OAuth2 (login + link)

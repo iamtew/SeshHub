@@ -8,6 +8,7 @@ const (
 	RolePending = "pending"
 )
 
+// DiscordRole maps guild membership to users.role (admin > skater > friend). Hosts is users.host, set separately.
 func DiscordRole(discordID string, inGuild bool, guildRoleIDs, superAdmins []string, adminRoleID, skaterRoleID, friendsRoleID string) string {
 	for _, id := range superAdmins {
 		if id == discordID {
@@ -45,6 +46,7 @@ func KeepRole(existing, computed string) string {
 	return RolePending
 }
 
+// roleRank is users.role only. Host is not a rank.
 func roleRank(r string) int {
 	switch r {
 	case RoleAdmin:
