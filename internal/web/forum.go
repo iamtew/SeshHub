@@ -297,3 +297,16 @@ func (s *Server) adminForum(w http.ResponseWriter, r *http.Request) {
 	}
 	s.render(w, r, "admin_forum.html", map[string]any{"Title": "Forum sections", "Path": "/admin/forum/sections", "Sections": list})
 }
+
+func (s *Server) adminForumDelete(w http.ResponseWriter, r *http.Request) {
+	u := UserFrom(r)
+	if u == nil || u.Role != auth.RoleAdmin {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+	if err := forum.DeleteSection(s.db, r.PathValue("id")); err != nil {
+		http.Error(w, "db error", http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, "/admin/forum/sections", http.StatusSeeOther)
+}

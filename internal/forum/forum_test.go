@@ -1,6 +1,7 @@
 package forum
 
 import (
+	"database/sql"
 	"testing"
 
 	"seshhub/internal/auth"
@@ -60,5 +61,11 @@ func TestCreateUnreadReply(t *testing.T) {
 	n, err = UnreadCount(sqldb, alice.ID)
 	if err != nil || n != 1 {
 		t.Fatalf("alice after reply %d %v", n, err)
+	}
+	if err := DeleteSection(sqldb, sec.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := GetSection(sqldb, "general"); err != sql.ErrNoRows {
+		t.Fatalf("section lingered %v", err)
 	}
 }

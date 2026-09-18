@@ -437,6 +437,27 @@ func SaveSection(db *sql.DB, id, name, desc string, active bool) error {
 	return err
 }
 
+func DeleteSection(db *sql.DB, id string) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if _, err := tx.Exec(`DELETE FROM forum_thread_reads WHERE thread_id IN (SELECT id FROM forum_threads WHERE section_id=?)`, id); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(`DELETE FROM forum_posts WHERE thread_id IN (SELECT id FROM forum_threads WHERE section_id=?)`, id); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(`DELETE FROM forum_threads WHERE section_id=?`, id); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(`DELETE FROM forum_sections WHERE id=?`, id); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
 func MoveSection(db *sql.DB, id string, dir int) error {
 	var order int
 	if err := db.QueryRow(`SELECT sort_order FROM forum_sections WHERE id=?`, id).Scan(&order); err != nil {

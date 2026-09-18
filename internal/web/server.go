@@ -97,6 +97,7 @@ func New(cfg config.Config, db *sql.DB) *Server {
 	s.mux.HandleFunc("POST /forum/{sectionSlug}/{threadSlug}/posts/{id}/delete", s.forumPostDelete)
 	s.mux.HandleFunc("GET /admin/forum/sections", s.adminForum)
 	s.mux.HandleFunc("POST /admin/forum/sections", s.adminForum)
+	s.mux.HandleFunc("POST /admin/forum/sections/{id}/delete", s.adminForumDelete)
 	s.mux.HandleFunc("GET /admin", s.adminHome)
 	s.mux.HandleFunc("GET /admin/spot", s.adminSpot)
 	s.mux.HandleFunc("POST /admin/spot", s.adminSpot)

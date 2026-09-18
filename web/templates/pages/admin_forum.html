@@ -1,7 +1,7 @@
 {{define "content"}}
 <p class="who"><a href="/forum">Message Board</a></p>
 <h1>Forum sections</h1>
-<p>Add, hide, rename, or reorder categories. Hidden sections drop off the board.</p>
+<p>Add, hide, rename, reorder, or remove categories. Hidden sections drop off the board. Remove deletes the section and every thread in it.</p>
 <form method="post" class="form forum-sec-add">
     <input type="hidden" name="action" value="create">
     <label>Name <input name="name" required placeholder="e.g. Gear"></label>
@@ -19,6 +19,7 @@
     <div class="forum-sec-actions">
         <form method="post"><input type="hidden" name="action" value="up"><input type="hidden" name="id" value="{{.ID}}"><button type="submit">Up</button></form>
         <form method="post"><input type="hidden" name="action" value="down"><input type="hidden" name="id" value="{{.ID}}"><button type="submit">Down</button></form>
+        <form method="post" action="/admin/forum/sections/{{.ID}}/delete"><button type="submit">Remove</button></form>
         <details class="forum-edit">
             <summary>Edit</summary>
             <form method="post" class="form">

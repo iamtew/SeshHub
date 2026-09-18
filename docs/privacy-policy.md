@@ -175,7 +175,7 @@ We do not send email. There is no newsletter and no notification system. The onl
 
 **Updated:** when you (or an administrator) edit a post or thread title, when someone replies (thread last-activity time), or when an administrator edits, reorders, or deactivates a section.
 
-**Deleted:** you or an administrator can delete a post. Deleting the first post removes the whole thread. If your account is deleted, authorship of remaining threads and posts is reassigned to the reserved "Former member" record (same as articles). Your read watermarks are deleted.
+**Deleted:** you or an administrator can delete a post. Deleting the first post removes the whole thread. An administrator can remove a section, which deletes its threads and posts. If your account is deleted, authorship of remaining threads and posts is reassigned to the reserved "Former member" record (same as articles). Your read watermarks are deleted.
 
 ## 5. Cookies
 
