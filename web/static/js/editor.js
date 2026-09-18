@@ -224,7 +224,7 @@
       dialog.close();
     });
     dialog.querySelector(".md-overlay-save").addEventListener("click", function () {
-      if (ed) ta.value = ed.getValue();
+      closeAdv();
       dialog.close();
       var stay = form && form.querySelector('[name=after][value=stay]');
       if (stay) stay.click();
@@ -235,6 +235,9 @@
   if (form) {
     form.addEventListener("submit", function () {
       if (ed) ta.value = ed.getValue();
+      if (meta && metaHome && meta.parentNode !== metaHome) {
+        metaHome.insertBefore(meta, metaNext);
+      }
     });
   }
 })();
