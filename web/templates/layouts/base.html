@@ -60,6 +60,7 @@
     {{if not .AuthPage}}{{template "nav.html" .}}{{end}}
     <main class="wrap{{if .AuthPage}} auth{{end}}">
         {{template "content" .}}
+        {{if and .User .EditHref}}<p><a href="{{.EditHref}}">Edit</a></p>{{end}}
     </main>
     {{if not .AuthPage}}{{template "footer.html" .}}{{end}}
     {{template "consent.html" .}}

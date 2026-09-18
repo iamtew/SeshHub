@@ -16,9 +16,11 @@ func (s *Server) home(w http.ResponseWriter, r *http.Request) {
 	}
 	vals, _ := spot.Latest()
 	md := spot.Fill(cfg.ContentRaw, vals)
-	s.render(w, r, "index.html", map[string]any{
-		"Title": "Spot", "Path": "/", "HTML": template.HTML(article.Render(md)),
-	})
+	data := map[string]any{"Title": "Spot", "Path": "/", "HTML": template.HTML(article.Render(md))}
+	if u := UserFrom(r); u != nil && u.Host {
+		data["EditHref"] = "/admin/spot"
+	}
+	s.render(w, r, "index.html", data)
 }
 
 func (s *Server) adminSpot(w http.ResponseWriter, r *http.Request) {

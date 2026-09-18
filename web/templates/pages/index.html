@@ -1,5 +1,4 @@
 {{define "content"}}
-{{if and .User .User.Host}}<p><a href="/admin/spot">Edit Spot</a></p>{{end}}
 {{if .HTML}}<article class="prose">{{.HTML}}</article>{{end}}
 {{if and .User (eq .User.Role "pending")}}
 <p><a href="/access">Request access</a> if you are waiting for Friends.</p>

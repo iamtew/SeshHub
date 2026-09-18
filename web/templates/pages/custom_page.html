@@ -1,5 +1,4 @@
 {{define "content"}}
 {{if .CSS}}<style>{{.CSS}}</style>{{end}}
-{{if and .User .EditHref}}<p><a href="{{.EditHref}}">Edit</a></p>{{end}}
 <article class="prose">{{.HTML}}</article>
 {{end}}

@@ -40,7 +40,11 @@ func (s *Server) episodes(w http.ResponseWriter, r *http.Request) {
 	for _, e := range list {
 		views = append(views, epView{Episode: e, Cards: episodeCards(e, vids)})
 	}
-	s.render(w, r, "episodes.html", map[string]any{"Title": "Episodes", "Path": "/episodes", "Episodes": views})
+	data := map[string]any{"Title": "Episodes", "Path": "/episodes", "Episodes": views}
+	if u := UserFrom(r); u != nil && u.Host {
+		data["EditHref"] = "/admin/episodes"
+	}
+	s.render(w, r, "episodes.html", data)
 }
 
 func episodeCards(e episode.Episode, vids map[string]yt.Video) []epCard {
