@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"seshhub/internal/auth"
+	"seshhub/internal/forum"
 	"seshhub/internal/skater"
 )
 
@@ -124,6 +125,12 @@ func (s *Server) accountExport(w http.ResponseWriter, r *http.Request) {
 		return
 	} else if st != "" {
 		out["access_request"] = map[string]string{"status": st}
+	}
+	if posts, err := forum.Export(s.db, fresh.ID); err != nil {
+		http.Error(w, "db error", http.StatusInternalServerError)
+		return
+	} else if len(posts) > 0 {
+		out["forum"] = posts
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Content-Disposition", `attachment; filename="seshhub-export.json"`)

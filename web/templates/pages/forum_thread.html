@@ -1,0 +1,54 @@
+{{define "content"}}
+<p class="who"><a href="/forum">Message Board</a> · <a href="/forum/{{.S.Slug}}">{{.S.Name}}</a></p>
+<header class="forum-topic">
+    <h1>{{.T.Title}}</h1>
+    {{if .CanEditThread}}
+    <details class="forum-edit">
+        <summary>Rename</summary>
+        <form method="post" action="/forum/{{.S.Slug}}/{{.T.Slug}}" class="form">
+            <label>Title <input name="title" required value="{{.T.Title}}"></label>
+            <button type="submit">Save title</button>
+        </form>
+    </details>
+    {{end}}
+</header>
+<div class="forum-stream">
+{{range .Posts}}
+<article class="forum-post{{if .First}} forum-post--op{{end}}"{{if .Latest}} id="latest"{{end}}>
+    <header class="forum-post-meta">
+        {{if .AuthorAvatar}}{{if .AuthorURL}}<a class="avframe {{.AvatarClass}}" href="{{.AuthorURL}}" style="{{.AvatarStyle}}" aria-label="{{.AuthorName}}"><img class="avatar" src="{{.AuthorAvatar}}" alt="" referrerpolicy="no-referrer"></a>{{else}}<span class="avframe {{.AvatarClass}}" style="{{.AvatarStyle}}"><img class="avatar" src="{{.AuthorAvatar}}" alt="" referrerpolicy="no-referrer"></span>{{end}}{{end}}
+        <div>
+            <p class="forum-author">{{if .AuthorURL}}<a href="{{.AuthorURL}}">{{.AuthorName}}</a>{{else}}{{.AuthorName}}{{end}}{{if .First}} <span class="forum-op">OP</span>{{end}}</p>
+            <p class="who">{{.CreatedAt}}{{if .Edited}} · edited{{end}}</p>
+        </div>
+    </header>
+    <div class="forum-cooked prose">{{.HTML}}</div>
+    {{if .CanEdit}}
+    <details class="forum-edit">
+        <summary>Edit</summary>
+        <form method="post" action="/forum/{{$.S.Slug}}/{{$.T.Slug}}/posts/{{.ID}}" class="form">
+            <label>Body <textarea name="body" rows="6" required>{{.BodyRaw}}</textarea></label>
+            <button type="submit">Save</button>
+        </form>
+        <form method="post" action="/forum/{{$.S.Slug}}/{{$.T.Slug}}/posts/{{.ID}}/delete">
+            <button type="submit">Delete</button>
+        </form>
+    </details>
+    {{end}}
+</article>
+{{end}}
+</div>
+{{if gt .Total .Per}}{{template "pager.html" .}}{{end}}
+{{if .T.Locked}}
+<p class="who">This thread is locked.</p>
+{{else}}
+<section class="forum-composer">
+    <h2>Reply</h2>
+    <form method="post" action="/forum/{{.S.Slug}}/{{.T.Slug}}/reply" class="form">
+        <label class="visually-hidden" for="forum-reply">Reply</label>
+        <textarea id="forum-reply" name="body" rows="6" required placeholder="Write a reply…"></textarea>
+        <button type="submit">Post reply</button>
+    </form>
+</section>
+{{end}}
+{{end}}

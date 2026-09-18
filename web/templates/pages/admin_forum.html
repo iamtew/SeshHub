@@ -1,0 +1,38 @@
+{{define "content"}}
+<p class="who"><a href="/forum">Message Board</a></p>
+<h1>Forum sections</h1>
+<p>Add, hide, rename, or reorder categories. Hidden sections drop off the board.</p>
+<form method="post" class="form forum-sec-add">
+    <input type="hidden" name="action" value="create">
+    <label>Name <input name="name" required placeholder="e.g. Gear"></label>
+    <label>Description <input name="description" placeholder="optional"></label>
+    <button type="submit">Add section</button>
+</form>
+{{if not .Sections}}
+<p>None yet.</p>
+{{else}}
+<ul class="forum-cats">
+{{range .Sections}}
+<li>
+    <strong>{{.Name}}</strong>
+    <p class="who">{{if .Description}}{{.Description}} · {{end}}{{if .Active}}on the board{{else}}hidden{{end}} · {{.ThreadCount}} thread{{if ne .ThreadCount 1}}s{{end}}</p>
+    <div class="forum-sec-actions">
+        <form method="post"><input type="hidden" name="action" value="up"><input type="hidden" name="id" value="{{.ID}}"><button type="submit">Up</button></form>
+        <form method="post"><input type="hidden" name="action" value="down"><input type="hidden" name="id" value="{{.ID}}"><button type="submit">Down</button></form>
+        <details class="forum-edit">
+            <summary>Edit</summary>
+            <form method="post" class="form">
+                <input type="hidden" name="action" value="save">
+                <input type="hidden" name="id" value="{{.ID}}">
+                <label>Name <input name="name" required value="{{.Name}}"></label>
+                <label>Description <input name="description" value="{{.Description}}"></label>
+                <label><input type="checkbox" name="is_active" value="1" {{if .Active}}checked{{end}}> Show on the board</label>
+                <button type="submit">Save</button>
+            </form>
+        </details>
+    </div>
+</li>
+{{end}}
+</ul>
+{{end}}
+{{end}}

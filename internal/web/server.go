@@ -11,6 +11,7 @@ import (
 
 	"seshhub/internal/auth"
 	"seshhub/internal/config"
+	"seshhub/internal/forum"
 	"seshhub/internal/yt"
 )
 
@@ -85,6 +86,17 @@ func New(cfg config.Config, db *sql.DB) *Server {
 	s.mux.HandleFunc("POST /dashboard/articles", s.articleCreate(false))
 	s.mux.HandleFunc("GET /dashboard/articles/{id}", s.articleEdit(false))
 	s.mux.HandleFunc("POST /dashboard/articles/{id}", s.articleEdit(false))
+	s.mux.HandleFunc("GET /forum", s.forumIndex)
+	s.mux.HandleFunc("GET /forum/{sectionSlug}/new", s.forumNew)
+	s.mux.HandleFunc("POST /forum/{sectionSlug}/new", s.forumNew)
+	s.mux.HandleFunc("GET /forum/{sectionSlug}", s.forumSection)
+	s.mux.HandleFunc("GET /forum/{sectionSlug}/{threadSlug}", s.forumThread)
+	s.mux.HandleFunc("POST /forum/{sectionSlug}/{threadSlug}", s.forumThread)
+	s.mux.HandleFunc("POST /forum/{sectionSlug}/{threadSlug}/reply", s.forumReply)
+	s.mux.HandleFunc("POST /forum/{sectionSlug}/{threadSlug}/posts/{id}", s.forumPostEdit)
+	s.mux.HandleFunc("POST /forum/{sectionSlug}/{threadSlug}/posts/{id}/delete", s.forumPostDelete)
+	s.mux.HandleFunc("GET /admin/forum/sections", s.adminForum)
+	s.mux.HandleFunc("POST /admin/forum/sections", s.adminForum)
 	s.mux.HandleFunc("GET /admin", s.adminHome)
 	s.mux.HandleFunc("GET /admin/spot", s.adminSpot)
 	s.mux.HandleFunc("POST /admin/spot", s.adminSpot)
@@ -142,6 +154,9 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, dat
 	if !authPage {
 		if u != nil {
 			data["Fold"] = true
+			if n, err := forum.UnreadCount(s.db, u.ID); err == nil && n > 0 {
+				data["ForumUnread"] = n
+			}
 		} else if publicHero(path) {
 			data["Hero"] = true
 		}
@@ -154,6 +169,7 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, dat
 		filepath.Join(s.webDir, "templates", "partials", "consent.html"),
 		filepath.Join(s.webDir, "templates", "partials", "md_editor.html"),
 		filepath.Join(s.webDir, "templates", "partials", "pager.html"),
+		filepath.Join(s.webDir, "templates", "partials", "forum_badge.html"),
 		filepath.Join(s.webDir, "templates", "partials", "slideshow.html"),
 		filepath.Join(s.webDir, "templates", "pages", page),
 	}
@@ -170,10 +186,10 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, dat
 }
 
 func publicHero(path string) bool {
-	if path == "" || path == "/account" || path == "/access" || path == "/login" {
+	if path == "" || path == "/account" || path == "/access" || path == "/login" || path == "/forum" {
 		return false
 	}
-	if strings.HasPrefix(path, "/admin") || strings.HasPrefix(path, "/dashboard") {
+	if strings.HasPrefix(path, "/admin") || strings.HasPrefix(path, "/dashboard") || strings.HasPrefix(path, "/forum/") {
 		return false
 	}
 	return true

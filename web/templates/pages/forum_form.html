@@ -1,0 +1,9 @@
+{{define "content"}}
+<p class="who"><a href="/forum">Message Board</a> · <a href="/forum/{{.S.Slug}}">{{.S.Name}}</a></p>
+<h1>New thread</h1>
+<form method="post" action="/forum/{{.S.Slug}}/new" class="form">
+    <label>Title <input name="title" required value="{{.TitleVal}}"></label>
+    <label>Body <textarea name="body" rows="12" required>{{.Body}}</textarea></label>
+    <button type="submit">Create thread</button>
+</form>
+{{end}}

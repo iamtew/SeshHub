@@ -77,11 +77,16 @@ func (s *Server) maybeSyncSkater(userID string) {
 }
 
 func (s *Server) loginPage(w http.ResponseWriter, r *http.Request) {
+	next := safeNext(r.URL.Query().Get("next"))
 	if UserFrom(r) != nil {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+		loc := "/"
+		if next != "" {
+			loc = next
+		}
+		http.Redirect(w, r, loc, http.StatusSeeOther)
 		return
 	}
-	s.render(w, r, "login.html", map[string]any{"Path": "/login", "AuthPage": true})
+	s.render(w, r, "login.html", map[string]any{"Path": "/login", "AuthPage": true, "Next": next})
 }
 
 func (s *Server) startOAuth(provider string) http.HandlerFunc {
@@ -96,7 +101,7 @@ func (s *Server) startOAuth(provider string) http.HandlerFunc {
 		}
 		state := auth.RandomHex(16)
 		verifier, challenge := auth.PKCE()
-		http.SetCookie(w, s.oauthCookie(auth.FormatOAuthCookie(provider, state, verifier)))
+		http.SetCookie(w, s.oauthCookie(auth.FormatOAuthCookie(provider, state, verifier, safeNext(r.URL.Query().Get("next")))))
 		var loc string
 		switch provider {
 		case "discord":
@@ -215,7 +220,7 @@ func (s *Server) checkOAuth(r *http.Request, provider string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("missing oauth cookie")
 	}
-	gotProvider, state, verifier, ok := auth.ParseOAuthCookie(c.Value)
+	gotProvider, state, verifier, _, ok := auth.ParseOAuthCookie(c.Value)
 	if !ok || gotProvider != provider || state != r.URL.Query().Get("state") || r.URL.Query().Get("code") == "" {
 		return "", fmt.Errorf("invalid oauth state")
 	}
@@ -238,8 +243,16 @@ func (s *Server) issueSession(w http.ResponseWriter, r *http.Request, userID str
 		Secure:   s.cfg.CookieSecure(),
 		MaxAge:   30 * 24 * 60 * 60,
 	})
+	loc := "/"
+	if c, err := r.Cookie(auth.OAuthCookieName()); err == nil {
+		if _, _, _, next, ok := auth.ParseOAuthCookie(c.Value); ok {
+			if n := safeNext(next); n != "" {
+				loc = n
+			}
+		}
+	}
 	http.SetCookie(w, &http.Cookie{Name: auth.OAuthCookieName(), Path: "/", MaxAge: -1})
-	http.Redirect(w, r, "/", http.StatusFound)
+	http.Redirect(w, r, loc, http.StatusFound)
 }
 
 func (s *Server) logout(w http.ResponseWriter, r *http.Request) {

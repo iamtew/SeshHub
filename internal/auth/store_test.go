@@ -165,6 +165,15 @@ func TestDeleteUserErasure(t *testing.T) {
 	if _, err := sqldb.Exec(`INSERT INTO articles (id, slug, title, content_raw, content_html, author_id, status) VALUES ('a-erase', 'erase-post', 'Post', 'hi', 'hi', ?, 'published')`, u.ID); err != nil {
 		t.Fatal(err)
 	}
+	if _, err := sqldb.Exec(`INSERT INTO forum_threads (id, section_id, user_id, title, slug) VALUES ('t-erase', 'forum-general', ?, 'Hi', 'hi')`, u.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := sqldb.Exec(`INSERT INTO forum_posts (id, thread_id, user_id, body_raw, body_html, is_first_post) VALUES ('p-erase', 't-erase', ?, 'body', 'body', 1)`, u.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := sqldb.Exec(`INSERT INTO forum_thread_reads (user_id, thread_id) VALUES (?, 't-erase')`, u.ID); err != nil {
+		t.Fatal(err)
+	}
 	if _, err := sqldb.Exec(`INSERT INTO youtube_videos (id, channel_id, title, published_at, thumbnail_url) VALUES ('vid-erase', 'ch-erase', 'Clip', '2020-01-01', 'https://img')`); err != nil {
 		t.Fatal(err)
 	}
@@ -198,6 +207,16 @@ func TestDeleteUserErasure(t *testing.T) {
 	var author string
 	if err := sqldb.QueryRow(`SELECT author_id FROM articles WHERE id='a-erase'`).Scan(&author); err != nil || author != TombstoneID {
 		t.Fatalf("article author %q %v", author, err)
+	}
+	if err := sqldb.QueryRow(`SELECT user_id FROM forum_posts WHERE id='p-erase'`).Scan(&author); err != nil || author != TombstoneID {
+		t.Fatalf("forum post user %q %v", author, err)
+	}
+	if err := sqldb.QueryRow(`SELECT user_id FROM forum_threads WHERE id='t-erase'`).Scan(&author); err != nil || author != TombstoneID {
+		t.Fatalf("forum thread user %q %v", author, err)
+	}
+	_ = sqldb.QueryRow(`SELECT COUNT(*) FROM forum_thread_reads WHERE user_id=?`, u.ID).Scan(&n)
+	if n != 0 {
+		t.Fatal("forum reads survived")
 	}
 	list, err := ListUsers(sqldb)
 	if err != nil {

@@ -1,0 +1,17 @@
+{{define "content"}}
+<h1>Message Board</h1>
+{{if .Admin}}<p><a class="btn" href="/admin/forum/sections">Manage sections</a></p>{{end}}
+{{if not .Sections}}
+<p>No sections yet.</p>
+{{else}}
+<ul class="forum-cats">
+{{range .Sections}}
+<li>
+    <a href="/forum/{{.Slug}}">{{.Name}}</a>
+    {{if .Description}}<p>{{.Description}}</p>{{end}}
+    <p class="who">{{.ThreadCount}} thread{{if ne .ThreadCount 1}}s{{end}}{{if .LastPostAt}} · last {{.LastPostAt}}{{end}}</p>
+</li>
+{{end}}
+</ul>
+{{end}}
+{{end}}

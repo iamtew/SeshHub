@@ -218,16 +218,23 @@ func FetchYouTubeChannel(token string) (channelID, title, avatar string, err err
 	return it.ID, it.Snippet.Title, it.Snippet.Thumbnails.Default.URL, nil
 }
 
-func ParseOAuthCookie(v string) (provider, state, verifier string, ok bool) {
-	parts := strings.Split(v, ":")
-	if len(parts) != 3 {
-		return "", "", "", false
+func ParseOAuthCookie(v string) (provider, state, verifier, next string, ok bool) {
+	parts := strings.SplitN(v, ":", 4)
+	if len(parts) < 3 || parts[0] == "" || parts[1] == "" || parts[2] == "" {
+		return "", "", "", "", false
 	}
-	return parts[0], parts[1], parts[2], true
+	if len(parts) == 4 {
+		next = parts[3]
+	}
+	return parts[0], parts[1], parts[2], next, true
 }
 
-func FormatOAuthCookie(provider, state, verifier string) string {
-	return provider + ":" + state + ":" + verifier
+func FormatOAuthCookie(provider, state, verifier, next string) string {
+	s := provider + ":" + state + ":" + verifier
+	if next != "" {
+		s += ":" + next
+	}
+	return s
 }
 
 func OAuthCookieName() string { return oauthCookie }

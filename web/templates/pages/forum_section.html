@@ -1,0 +1,19 @@
+{{define "content"}}
+<p class="who"><a href="/forum">Message Board</a>{{if .Admin}} · <a href="/admin/forum/sections">Manage sections</a>{{end}}</p>
+<h1>{{.S.Name}}</h1>
+{{if .S.Description}}<p>{{.S.Description}}</p>{{end}}
+<p><a class="btn" href="/forum/{{.S.Slug}}/new">New thread</a></p>
+{{if not .Threads}}
+<p>No threads yet — start one.</p>
+{{else}}
+<ul class="forum-cats">
+{{range .Threads}}
+<li>
+    <a href="/forum/{{$.S.Slug}}/{{.Slug}}">{{.Title}}</a>
+    <p class="who">{{if .AuthorURL}}<a href="{{.AuthorURL}}">{{.AuthorName}}</a>{{else}}{{.AuthorName}}{{end}} · {{.ReplyCount}} {{if eq .ReplyCount 1}}reply{{else}}replies{{end}} · {{.LastPostAt}}</p>
+</li>
+{{end}}
+</ul>
+{{if gt .Total .Per}}{{template "pager.html" .}}{{end}}
+{{end}}
+{{end}}

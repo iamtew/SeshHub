@@ -1,6 +1,6 @@
 # SeshHub
 
-SeshHub is the website and CMS for **Sesh Sofa** and the fakeskate scene. One Go process, a SQLite file, templates on disk. Public FS Team (Discord skater role), Friends (Discord friends role, queue approval, or former members), news, videos, custom pages. Login is Discord or YouTube only — no passwords. Discord guild roles (plus a superadmin list) decide who is admin, skater, or friend; everyone else can request access.
+SeshHub is the website and CMS for **Sesh Sofa** and the fakeskate scene. One Go process, a SQLite file, templates on disk. Public FS Team (Discord skater role), Friends (Discord friends role, queue approval, or former members), news, videos, custom pages, and a signed-in Message Board. Login is Discord or YouTube only — no passwords. Discord guild roles (plus a superadmin list) decide who is admin, skater, or friend; everyone else can request access.
 
 Local default listen address is **port 53053**. That port is yours. Don't let a Clanker steal it; they use `-port`.
 
@@ -140,6 +140,7 @@ The rest of this file is the architecture spec (what the system is supposed to b
    - [Special page: Spot](#special-page-spot)
    - [Special page: Episodes](#special-page-episodes)
    - [Admin UI & Markdown editor](#5-admin-ui--markdown-editor)
+   - [Message Board](#6-message-board)
 6. [Data Models & Database Schema (libSQL)](#data-models--database-schema-libsql)
 7. [Project Directory Layout](#project-directory-layout)
 8. [Configuration & Environment Variables](#configuration--environment-variables)
@@ -316,6 +317,11 @@ Two header modes. Same public nav (Spot / Episodes / FS Team / Friends / News / 
 - **Basic editor**: `textarea[name=content_raw]` on articles, custom pages, and Spot, with a live HTML preview beside it (under it below 800px). Preview is `POST /preview` → goldmark + bluemonday (Spot also fills `{{placeholders}}`).
 - **Advanced editor**: from 640px up, a button opens a near-fullscreen `<dialog>`. Hidden on smaller screens (phone stays on the basic textarea + preview). Left sidebar is the rest of the document (slug, published, …; Spot: insert chips). Center is Monaco from jsDelivr. Right is the same live preview. Palette theme `sesh-sofa`.
 
+### 6. Message Board
+- **Logged-in only (`/forum`)**: Any signed-in user can read, start threads, and reply. Guests are sent to `/login?next=…`. Link lives in the fold nav (Message Board), not the public main menu. Unread pill is other people’s posts since you last opened each thread; it hides at 0.
+- **Sections → threads → posts**: Seeded General, Skateboarding, Off topic. Markdown bodies go through the same goldmark + bluemonday path as news. Author can edit/delete own posts (and thread title); admin can edit/delete anything. First-post delete removes the thread.
+- **Admin (`/admin/forum/sections`)**: Create, edit, deactivate, reorder sections. No guest access, attachments, search, or realtime.
+
 ---
 
 ## Data Models & Database Schema (libSQL)
@@ -405,6 +411,49 @@ CREATE TABLE IF NOT EXISTS articles (
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS forum_sections (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    slug TEXT UNIQUE NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS forum_threads (
+    id TEXT PRIMARY KEY,
+    section_id TEXT NOT NULL REFERENCES forum_sections(id),
+    user_id TEXT NOT NULL REFERENCES users(id),
+    title TEXT NOT NULL,
+    slug TEXT NOT NULL,
+    is_locked INTEGER NOT NULL DEFAULT 0,
+    is_sticky INTEGER NOT NULL DEFAULT 0,
+    last_post_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(section_id, slug)
+);
+
+CREATE TABLE IF NOT EXISTS forum_posts (
+    id TEXT PRIMARY KEY,
+    thread_id TEXT NOT NULL REFERENCES forum_threads(id),
+    user_id TEXT NOT NULL REFERENCES users(id),
+    body_raw TEXT NOT NULL,
+    body_html TEXT NOT NULL,
+    is_first_post INTEGER NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS forum_thread_reads (
+    user_id TEXT NOT NULL REFERENCES users(id),
+    thread_id TEXT NOT NULL REFERENCES forum_threads(id),
+    last_read_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, thread_id)
+);
+
 -- Static custom pages
 CREATE TABLE IF NOT EXISTS pages (
     id TEXT PRIMARY KEY,
@@ -487,6 +536,7 @@ SeshHub/
 │   ├── db/                          # libSQL connection, migrations, query helper routines
 │   │   ├── db.go
 │   │   └── migrations/              # Runtime-loaded SQL migration files (.sql)
+│   ├── forum/                       # Message Board store (sections, threads, posts, unread)
 │   ├── models/                      # Go structs representing database entities
 │   │   ├── article.go
 │   │   ├── page.go
