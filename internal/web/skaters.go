@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"html/template"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -141,12 +142,17 @@ func (s *Server) skaterDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	u := UserFrom(r)
+	canEdit := u != nil && skater.CanEdit(u.Role, u.ID, p.UserID)
+	hasYT := canEdit && u.YouTubeChannelID != ""
 	name := p.PublicName()
 	data := skaterView(p)
 	data["Title"] = name
 	data["Path"] = wantPath
 	data["OGTitle"] = name
 	data["OGDesc"] = article.Excerpt(p.Bio, "")
+	data["CanEdit"] = canEdit
+	data["HasYouTube"] = hasYT
+	data["FeedNext"] = wantPath + "/" + p.Slug
 	if strings.TrimSpace(p.Bio) != "" {
 		data["BioHTML"] = template.HTML(article.Render(p.Bio))
 	}
@@ -154,10 +160,14 @@ func (s *Server) skaterDetail(w http.ResponseWriter, r *http.Request) {
 		data["OGImage"] = p.AvatarURL
 	}
 	by, _ := yt.OwnerFilters(s.db)
-	if v, err := yt.Get(s.db, p.FeaturedVideoID); err == nil && yt.Match(v, by[v.ChannelID]) {
+	featGet := yt.Get
+	if hasYT {
+		featGet = yt.GetAny
+	}
+	if v, err := featGet(s.db, p.FeaturedVideoID); err == nil && yt.Match(v, by[v.ChannelID]) {
 		data["Featured"] = v
 	}
-	clips := yt.FilterOwned(userChannelVideos(s.db, p.UserID, 0), by)
+	clips := yt.FilterOwned(userChannelVideosOpt(s.db, p.UserID, 0, hasYT), by)
 	if feat, ok := data["Featured"].(yt.Video); ok {
 		var rest []yt.Video
 		for _, c := range clips {
@@ -167,16 +177,17 @@ func (s *Server) skaterDetail(w http.ResponseWriter, r *http.Request) {
 		}
 		clips = rest
 	}
-	n, _ := strconv.Atoi(r.URL.Query().Get("n"))
-	pn, _ := strconv.Atoi(r.URL.Query().Get("p"))
-	data["Clips"] = videoPager(wantPath+"/"+p.Slug, n, pn, clips, data)
+	if hasYT {
+		data["Clips"] = clips
+	} else {
+		n, _ := strconv.Atoi(r.URL.Query().Get("n"))
+		pn, _ := strconv.Atoi(r.URL.Query().Get("p"))
+		data["Clips"] = videoPager(wantPath+"/"+p.Slug, n, pn, clips, data)
+	}
 	if photos, err := skater.ListByProfile(s.db, p.ID); err == nil && len(photos) > 0 {
 		data["Gallery"] = photos
 		data["GalleryJSON"] = galleryJSON(photos)
 		data["GalleryScript"] = "gallery-json"
-	}
-	if u != nil {
-		data["CanEdit"] = skater.CanEdit(u.Role, u.ID, p.UserID)
 	}
 	s.render(w, r, "skater_detail.html", data)
 }
@@ -263,6 +274,54 @@ func (s *Server) dashboardProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.renderSkaterProfile(w, r, u, p, nil, false)
+}
+
+func (s *Server) profileClip(w http.ResponseWriter, r *http.Request) {
+	u, p, ok := s.ownProfile(w, r)
+	if !ok {
+		return
+	}
+	if u.YouTubeChannelID == "" {
+		http.Error(w, "connect YouTube first", http.StatusBadRequest)
+		return
+	}
+	id := strings.TrimSpace(r.FormValue("id"))
+	v, err := yt.GetAny(s.db, id)
+	if err != nil || v.ChannelID != u.YouTubeChannelID {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+	switch r.FormValue("op") {
+	case "hide":
+		err = yt.SetHidden(s.db, id, true)
+	case "show":
+		err = yt.SetHidden(s.db, id, false)
+	case "feature":
+		p.FeaturedVideoID = id
+		_, err = skater.Save(s.db, p)
+	default:
+		http.Error(w, "bad action", http.StatusBadRequest)
+		return
+	}
+	if err != nil {
+		http.Error(w, "db error", http.StatusInternalServerError)
+		return
+	}
+	if strings.Contains(r.Header.Get("Accept"), "application/json") {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	http.Redirect(w, r, clipNext(r.FormValue("next"), p), http.StatusSeeOther)
+}
+
+func clipNext(next string, p skater.Profile) string {
+	want := skater.RosterPath(p.Role) + "/" + p.Slug
+	fallback := want
+	u, err := url.Parse(next)
+	if err != nil || u.Host != "" || u.Scheme != "" || u.Path != want {
+		return fallback
+	}
+	return next
 }
 
 func (s *Server) profileFilter(w http.ResponseWriter, r *http.Request) {

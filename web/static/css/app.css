@@ -622,6 +622,18 @@ time.md-date[data-fmt="count"] { font-variant-numeric: tabular-nums; }
 .prose a { color: var(--cyan); }
 .embed { position: relative; width: 100%; max-width: none; aspect-ratio: 16 / 9; }
 .embed iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; border-radius: 0.5rem; }
+.clip-thumb { position: relative; }
+.clip-tools {
+    position: absolute; top: 0.4rem; right: 0.4rem; z-index: 2;
+    display: none; gap: 0.35rem;
+}
+.feed-edit .clip-tools { display: flex; }
+.clip-tools form { margin: 0; }
+.clip-tools button { font-size: 0.85rem; padding: 0.25rem 0.55rem; }
+.clip-tools button[aria-pressed="true"] { box-shadow: 0 0 10px var(--chartreuse); }
+.feed-edit .is-hidden { opacity: 0.45; }
+article:not(.feed-edit) li.is-hidden,
+article:not(.feed-edit) .feed-featured.is-hidden { display: none; }
 p:has(+ ul.grid), p.who { max-width: 42rem; }
 .pager {
     display: flex; flex-wrap: wrap; align-items: center; gap: 0.55rem 0.75rem;

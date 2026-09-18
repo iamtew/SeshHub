@@ -289,3 +289,93 @@ func TestProfilePhotoResetWins(t *testing.T) {
 		t.Fatalf("cleared %#v %v", got, err)
 	}
 }
+
+func TestOwnerClipHideAndFeature(t *testing.T) {
+	sqldb, err := db.Open(":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = sqldb.Close() })
+	if err := db.Migrate(sqldb, "../db/migrations"); err != nil {
+		t.Fatal(err)
+	}
+	a, err := auth.UpsertDiscord(sqldb, "da", "alice", "Alice", "", auth.RoleSkater, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := auth.UpsertDiscord(sqldb, "db", "bob", "Bob", "", auth.RoleSkater, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if a, err = auth.LinkYouTube(sqldb, a.ID, "cha", "A TV", "", "r"); err != nil {
+		t.Fatal(err)
+	}
+	if b, err = auth.LinkYouTube(sqldb, b.ID, "chb", "B TV", "", "r"); err != nil {
+		t.Fatal(err)
+	}
+	p, err := skater.EnsureForUser(sqldb, a.ID, "Alice")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := skater.EnsureForUser(sqldb, b.ID, "Bob"); err != nil {
+		t.Fatal(err)
+	}
+	_, err = sqldb.Exec(`INSERT INTO youtube_videos (id, channel_id, channel_title, title, published_at, thumbnail_url) VALUES
+		('keep','cha','A TV','Keep Clip','2026-01-02','http://t'),
+		('hide','cha','A TV','Hide Clip','2026-01-01','http://t')`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := &Server{db: sqldb, webDir: filepath.Join("..", "..", "web")}
+	with := func(u auth.User, req *http.Request) *http.Request {
+		return req.WithContext(context.WithValue(req.Context(), userKey, &u))
+	}
+	post := func(u auth.User, body string) *httptest.ResponseRecorder {
+		req := httptest.NewRequest(http.MethodPost, "/dashboard/profile/clip", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		rec := httptest.NewRecorder()
+		s.profileClip(rec, with(u, req))
+		return rec
+	}
+	rec := post(b, "id=hide&op=hide")
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("stranger %d %s", rec.Code, rec.Body.String())
+	}
+	rec = post(a, "id=hide&op=hide&next=/team/"+p.Slug)
+	if rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/team/"+p.Slug {
+		t.Fatalf("hide %d %s", rec.Code, rec.Header().Get("Location"))
+	}
+	rec = httptest.NewRecorder()
+	s.videos(rec, httptest.NewRequest(http.MethodGet, "/videos", nil))
+	if rec.Code != 200 || strings.Contains(rec.Body.String(), "Hide Clip") || !strings.Contains(rec.Body.String(), "Keep Clip") {
+		t.Fatalf("guest videos %d %s", rec.Code, rec.Body.String())
+	}
+	req := httptest.NewRequest(http.MethodGet, "/team/"+p.Slug, nil)
+	req.SetPathValue("slug", p.Slug)
+	rec = httptest.NewRecorder()
+	s.skaterDetail(rec, req)
+	guest := rec.Body.String()
+	if rec.Code != 200 || strings.Contains(guest, "Hide Clip") || strings.Contains(guest, "Edit YouTube feed") || !strings.Contains(guest, "Keep Clip") || strings.Contains(guest, "youtube-nocookie.com/embed/keep") {
+		t.Fatalf("guest profile %d %s", rec.Code, guest)
+	}
+	req = httptest.NewRequest(http.MethodGet, "/team/"+p.Slug, nil)
+	req.SetPathValue("slug", p.Slug)
+	rec = httptest.NewRecorder()
+	s.skaterDetail(rec, with(a, req))
+	owner := rec.Body.String()
+	if rec.Code != 200 || !strings.Contains(owner, "Edit YouTube feed") || !strings.Contains(owner, "Hide Clip") || !strings.Contains(owner, "Unhide") || !strings.Contains(owner, "feed-edit.js") {
+		t.Fatalf("owner %s", owner)
+	}
+	reqJSON := httptest.NewRequest(http.MethodPost, "/dashboard/profile/clip", strings.NewReader("id=keep&op=feature"))
+	reqJSON.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	reqJSON.Header.Set("Accept", "application/json")
+	rec = httptest.NewRecorder()
+	s.profileClip(rec, with(a, reqJSON))
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("json %d %s", rec.Code, rec.Body.String())
+	}
+	got, err := skater.Get(sqldb, "id", p.ID)
+	if err != nil || got.FeaturedVideoID != "keep" {
+		t.Fatalf("pin %#v %v", got, err)
+	}
+}

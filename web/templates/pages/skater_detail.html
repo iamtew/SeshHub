@@ -1,5 +1,5 @@
 {{define "content"}}
-<article>
+<article{{if .HasYouTube}} class="profile-feed"{{end}}>
     <div class="profile-head">
         {{if .P.AvatarURL}}<span class="avframe {{.P.AvatarClass}}" style="{{.P.AvatarStyle}}"><img class="avatar" src="{{.P.AvatarURL}}" alt="" referrerpolicy="no-referrer"></span>{{end}}
         <div>
@@ -9,25 +9,67 @@
     </div>
     {{if .BioHTML}}<div class="prose">{{.BioHTML}}</div>{{end}}
     {{template "slideshow.html" .}}
-    {{if .Featured}}
-    <div class="embed"><iframe src="https://www.youtube-nocookie.com/embed/{{.Featured.ID}}" title="{{.Featured.Title}}" allowfullscreen loading="lazy"></iframe></div>
+    {{if and .CanEdit .HasYouTube}}
+    <p><button type="button" class="btn" data-feed-toggle aria-pressed="false">Edit YouTube feed</button></p>
     {{end}}
+    {{if .HasYouTube}}
+    <div class="feed-featured embed{{if .Featured}}{{if .Featured.Hidden}} is-hidden{{end}}{{end}}"{{if not .Featured}} hidden{{end}} data-id="{{with .Featured}}{{.ID}}{{end}}" data-thumb="{{with .Featured}}{{.Thumb}}{{end}}" data-title="{{with .Featured}}{{.Title}}{{end}}" data-stats="{{with .Featured}}{{.StatsLine}}{{end}}">
+        <iframe{{with .Featured}} src="https://www.youtube-nocookie.com/embed/{{.ID}}" title="{{.Title}}"{{end}} allowfullscreen loading="lazy"></iframe>
+        <div class="clip-tools">
+            <form method="post" action="/dashboard/profile/clip">
+                <input type="hidden" name="id" value="{{with .Featured}}{{.ID}}{{end}}">
+                <input type="hidden" name="op" value="feature">
+                <input type="hidden" name="next" value="{{.FeedNext}}">
+                <button type="submit" aria-label="Set as featured" aria-pressed="true">★</button>
+            </form>
+            <form method="post" action="/dashboard/profile/clip">
+                <input type="hidden" name="id" value="{{with .Featured}}{{.ID}}{{end}}">
+                <input type="hidden" name="op" value="{{if .Featured}}{{if .Featured.Hidden}}show{{else}}hide{{end}}{{else}}hide{{end}}" data-hide-action>
+                <input type="hidden" name="next" value="{{.FeedNext}}">
+                <button type="submit" data-hide-btn aria-label="{{if .Featured}}{{if .Featured.Hidden}}Unhide{{else}}Hide{{end}}{{else}}Hide{{end}}" aria-pressed="{{if .Featured}}{{.Featured.Hidden}}{{else}}false{{end}}">{{if .Featured}}{{if .Featured.Hidden}}Unhide{{else}}Hide{{end}}{{else}}Hide{{end}}</button>
+            </form>
+        </div>
+    </div>
+    {{else}}{{with .Featured}}
+    <div class="embed"><iframe src="https://www.youtube-nocookie.com/embed/{{.ID}}" title="{{.Title}}" allowfullscreen loading="lazy"></iframe></div>
+    {{end}}{{end}}
     {{if .Clips}}
     <h2>Videos</h2>
     <ul class="grid">
     {{range .Clips}}
-    <li>
-        <div class="embed"><iframe src="https://www.youtube-nocookie.com/embed/{{.ID}}" title="{{.Title}}" allowfullscreen loading="lazy"></iframe></div>
-        <strong>{{.Title}}</strong>
+    <li{{if .Hidden}} class="is-hidden"{{end}} data-id="{{.ID}}" data-thumb="{{.Thumb}}" data-title="{{.Title}}" data-stats="{{.StatsLine}}">
+        <div class="clip-thumb">
+            <a href="https://www.youtube.com/watch?v={{.ID}}">
+                {{if .Thumb}}<img src="{{.Thumb}}" alt="" class="thumb" loading="lazy">{{end}}
+                <strong>{{.Title}}</strong>
+            </a>
+            {{if $.HasYouTube}}
+            <div class="clip-tools">
+                <form method="post" action="/dashboard/profile/clip">
+                    <input type="hidden" name="id" value="{{.ID}}">
+                    <input type="hidden" name="op" value="feature">
+                    <input type="hidden" name="next" value="{{$.FeedNext}}">
+                    <button type="submit" aria-label="Set as featured">★</button>
+                </form>
+                <form method="post" action="/dashboard/profile/clip">
+                    <input type="hidden" name="id" value="{{.ID}}">
+                    <input type="hidden" name="op" value="{{if .Hidden}}show{{else}}hide{{end}}" data-hide-action>
+                    <input type="hidden" name="next" value="{{$.FeedNext}}">
+                    <button type="submit" data-hide-btn aria-label="{{if .Hidden}}Unhide{{else}}Hide{{end}}" aria-pressed="{{.Hidden}}">{{if .Hidden}}Unhide{{else}}Hide{{end}}</button>
+                </form>
+            </div>
+            {{end}}
+        </div>
         {{if .StatsLine}}<span class="who">{{.StatsLine}}</span>{{end}}
     </li>
     {{end}}
     </ul>
-    {{template "pager.html" .}}
+    {{if not .HasYouTube}}{{template "pager.html" .}}{{end}}
     {{end}}
     {{if .Social}}<h2>Links</h2><ul>{{range .Social}}<li>{{.}}</li>{{end}}</ul>{{end}}
     {{if .Sponsors}}<h2>Sponsors</h2><ul>{{range .Sponsors}}<li>{{.}}</li>{{end}}</ul>{{end}}
     {{if .Tricks}}<h2>Tricks</h2><ul>{{range .Tricks}}<li>{{.}}</li>{{end}}</ul>{{end}}
     {{if .CanEdit}}<p><a href="/dashboard/profile">Edit profile</a></p>{{end}}
 </article>
+{{if .HasYouTube}}<script src="/static/js/feed-edit.js" defer></script>{{end}}
 {{end}}

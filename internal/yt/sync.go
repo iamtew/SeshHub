@@ -33,6 +33,7 @@ type Video struct {
 	Tags         string
 	Category     string
 	Live         string
+	Hidden       bool
 }
 
 // ponytail: Shorts ≤180s (YouTube's 3min cap); live/upcoming from snippet.liveBroadcastContent, not a stored kind column.
@@ -318,11 +319,11 @@ func upsert(db *sql.DB, v Video) (inserted bool, err error) {
 }
 
 func ListPublic(db *sql.DB) ([]Video, error) {
-	return list(db, "", 0, 0)
+	return list(db, "", 0, 0, false)
 }
 
 func ListPublicPage(db *sql.DB, limit, offset int) ([]Video, error) {
-	return list(db, "", limit, offset)
+	return list(db, "", limit, offset, false)
 }
 
 func CountPublic(db *sql.DB) (int, error) {
@@ -335,12 +336,30 @@ func ListByChannel(db *sql.DB, channelID string, limit int) ([]Video, error) {
 	if channelID == "" {
 		return nil, nil
 	}
-	return list(db, channelID, limit, 0)
+	return list(db, channelID, limit, 0, false)
 }
 
-func list(db *sql.DB, channelID string, limit, offset int) ([]Video, error) {
-	q := `SELECT id, channel_id, IFNULL(channel_title,''), title, IFNULL(description,''), published_at, thumbnail_url, duration_seconds, view_count, like_count, comment_count, IFNULL(tags,''), IFNULL(category,''), IFNULL(live_broadcast,'') FROM youtube_videos WHERE is_hidden = 0`
+func ListByChannelAll(db *sql.DB, channelID string, limit int) ([]Video, error) {
+	if channelID == "" {
+		return nil, nil
+	}
+	return list(db, channelID, limit, 0, true)
+}
+
+func SetHidden(db *sql.DB, id string, hidden bool) error {
+	if id == "" {
+		return sql.ErrNoRows
+	}
+	_, err := db.Exec(`UPDATE youtube_videos SET is_hidden=? WHERE id=?`, hidden, id)
+	return err
+}
+
+func list(db *sql.DB, channelID string, limit, offset int, includeHidden bool) ([]Video, error) {
+	q := `SELECT id, channel_id, IFNULL(channel_title,''), title, IFNULL(description,''), published_at, thumbnail_url, duration_seconds, view_count, like_count, comment_count, IFNULL(tags,''), IFNULL(category,''), IFNULL(live_broadcast,''), is_hidden FROM youtube_videos WHERE 1=1`
 	var args []any
+	if !includeHidden {
+		q += ` AND is_hidden = 0`
+	}
 	if channelID != "" {
 		q += ` AND channel_id = ?`
 		args = append(args, channelID)
@@ -361,8 +380,8 @@ func list(db *sql.DB, channelID string, limit, offset int) ([]Video, error) {
 	defer rows.Close()
 	var out []Video
 	for rows.Next() {
-		var v Video
-		if err := rows.Scan(&v.ID, &v.ChannelID, &v.ChannelTitle, &v.Title, &v.Description, &v.PublishedAt, &v.Thumb, &v.Duration, &v.Views, &v.Likes, &v.Comments, &v.Tags, &v.Category, &v.Live); err != nil {
+		v, err := scanVideo(rows.Scan)
+		if err != nil {
 			return nil, err
 		}
 		out = append(out, v)
@@ -370,13 +389,32 @@ func list(db *sql.DB, channelID string, limit, offset int) ([]Video, error) {
 	return out, rows.Err()
 }
 
+func scanVideo(scan func(dest ...any) error) (Video, error) {
+	var v Video
+	var hidden int
+	err := scan(&v.ID, &v.ChannelID, &v.ChannelTitle, &v.Title, &v.Description, &v.PublishedAt, &v.Thumb, &v.Duration, &v.Views, &v.Likes, &v.Comments, &v.Tags, &v.Category, &v.Live, &hidden)
+	v.Hidden = hidden != 0
+	return v, err
+}
+
 func Get(db *sql.DB, id string) (Video, error) {
+	return get(db, id, false)
+}
+
+func GetAny(db *sql.DB, id string) (Video, error) {
+	return get(db, id, true)
+}
+
+func get(db *sql.DB, id string, includeHidden bool) (Video, error) {
 	var v Video
 	if id == "" {
 		return v, sql.ErrNoRows
 	}
-	err := db.QueryRow(`SELECT id, channel_id, IFNULL(channel_title,''), title, IFNULL(description,''), published_at, thumbnail_url, duration_seconds, view_count, like_count, comment_count, IFNULL(tags,''), IFNULL(category,''), IFNULL(live_broadcast,'') FROM youtube_videos WHERE id = ? AND is_hidden = 0`, id).
-		Scan(&v.ID, &v.ChannelID, &v.ChannelTitle, &v.Title, &v.Description, &v.PublishedAt, &v.Thumb, &v.Duration, &v.Views, &v.Likes, &v.Comments, &v.Tags, &v.Category, &v.Live)
+	q := `SELECT id, channel_id, IFNULL(channel_title,''), title, IFNULL(description,''), published_at, thumbnail_url, duration_seconds, view_count, like_count, comment_count, IFNULL(tags,''), IFNULL(category,''), IFNULL(live_broadcast,''), is_hidden FROM youtube_videos WHERE id = ?`
+	if !includeHidden {
+		q += ` AND is_hidden = 0`
+	}
+	v, err := scanVideo(db.QueryRow(q, id).Scan)
 	return v, err
 }
 
@@ -393,7 +431,7 @@ func GetMany(db *sql.DB, ids []string) map[string]Video {
 	if len(uniq) == 0 {
 		return nil
 	}
-	q := `SELECT id, channel_id, IFNULL(channel_title,''), title, IFNULL(description,''), published_at, thumbnail_url, duration_seconds, view_count, like_count, comment_count, IFNULL(tags,''), IFNULL(category,''), IFNULL(live_broadcast,'') FROM youtube_videos WHERE is_hidden = 0 AND id IN (` + strings.Repeat("?,", len(uniq)-1) + `?)`
+	q := `SELECT id, channel_id, IFNULL(channel_title,''), title, IFNULL(description,''), published_at, thumbnail_url, duration_seconds, view_count, like_count, comment_count, IFNULL(tags,''), IFNULL(category,''), IFNULL(live_broadcast,''), is_hidden FROM youtube_videos WHERE is_hidden = 0 AND id IN (` + strings.Repeat("?,", len(uniq)-1) + `?)`
 	args := make([]any, len(uniq))
 	for i, id := range uniq {
 		args[i] = id
@@ -405,8 +443,8 @@ func GetMany(db *sql.DB, ids []string) map[string]Video {
 	defer rows.Close()
 	out := map[string]Video{}
 	for rows.Next() {
-		var v Video
-		if err := rows.Scan(&v.ID, &v.ChannelID, &v.ChannelTitle, &v.Title, &v.Description, &v.PublishedAt, &v.Thumb, &v.Duration, &v.Views, &v.Likes, &v.Comments, &v.Tags, &v.Category, &v.Live); err != nil {
+		v, err := scanVideo(rows.Scan)
+		if err != nil {
 			return out
 		}
 		out[v.ID] = v

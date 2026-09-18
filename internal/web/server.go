@@ -69,6 +69,7 @@ func New(cfg config.Config, db *sql.DB) *Server {
 	s.mux.HandleFunc("GET /dashboard/profile", s.dashboardProfile)
 	s.mux.HandleFunc("POST /dashboard/profile", s.dashboardProfile)
 	s.mux.HandleFunc("POST /dashboard/profile/filter", s.profileFilter)
+	s.mux.HandleFunc("POST /dashboard/profile/clip", s.profileClip)
 	s.mux.HandleFunc("GET /dashboard/gallery", s.dashboardGallery)
 	s.mux.HandleFunc("POST /dashboard/gallery", s.dashboardGalleryAdd)
 	s.mux.HandleFunc("POST /dashboard/gallery/order", s.dashboardGalleryOrder)

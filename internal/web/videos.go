@@ -77,6 +77,10 @@ func videoPager(base string, n, p int, shown []yt.Video, data map[string]any) []
 }
 
 func userChannelVideos(db *sql.DB, userID string, limit int) []yt.Video {
+	return userChannelVideosOpt(db, userID, limit, false)
+}
+
+func userChannelVideosOpt(db *sql.DB, userID string, limit int, includeHidden bool) []yt.Video {
 	if userID == "" {
 		return nil
 	}
@@ -84,7 +88,12 @@ func userChannelVideos(db *sql.DB, userID string, limit int) []yt.Video {
 	if err != nil || u.YouTubeChannelID == "" {
 		return nil
 	}
-	list, err := yt.ListByChannel(db, u.YouTubeChannelID, limit)
+	var list []yt.Video
+	if includeHidden {
+		list, err = yt.ListByChannelAll(db, u.YouTubeChannelID, limit)
+	} else {
+		list, err = yt.ListByChannel(db, u.YouTubeChannelID, limit)
+	}
 	if err != nil {
 		return nil
 	}
