@@ -12,6 +12,11 @@ import (
 	"seshhub/internal/skater"
 )
 
+type newsPost struct {
+	article.Article
+	HTML template.HTML
+}
+
 func formArticle(r *http.Request, authorID string) article.Article {
 	_ = r.ParseForm()
 	return article.Article{
@@ -37,16 +42,19 @@ func (s *Server) news(w http.ResponseWriter, r *http.Request) {
 	n, _ := strconv.Atoi(r.URL.Query().Get("n"))
 	p, _ := strconv.Atoi(r.URL.Query().Get("p"))
 	per, page, offset, from, to := videoPage(n, p, len(list))
-	var pageItems []article.Article
+	var posts []newsPost
 	if len(list) > 0 {
 		end := offset + per
 		if end > len(list) {
 			end = len(list)
 		}
-		pageItems = list[offset:end]
+		posts = make([]newsPost, 0, end-offset)
+		for _, a := range list[offset:end] {
+			posts = append(posts, newsPost{a, template.HTML(a.ContentHTML)})
+		}
 	}
 	s.render(w, r, "articles_list.html", map[string]any{
-		"Title": "News", "Path": "/news", "Articles": pageItems, "PagerLabel": "News pagination",
+		"Title": "News", "Path": "/news", "Articles": posts, "PagerLabel": "News pagination",
 		"PagerBase": "/news", "Per": per, "Page": page, "Total": len(list),
 		"From": from, "To": to, "Prev": page - 1, "Next": page + 1,
 		"HasPrev": page > 1, "HasNext": to < len(list),

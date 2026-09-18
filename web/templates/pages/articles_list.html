@@ -3,18 +3,14 @@
 {{if not .Articles}}
 <p>No articles yet.</p>
 {{else}}
-<ul class="posts">
 {{range .Articles}}
-<li>
-    <a href="/news/{{.Slug}}">
-        {{if .ImageURL}}<img src="{{.ImageURL}}" alt="" class="post-thumb">{{end}}
-        <strong>{{.Title}}</strong>
-    </a>
-    {{if .Excerpt}}<p>{{.Excerpt}}</p>{{end}}
-    <span class="who">{{.AuthorName}}{{if .PublishedAt}} · {{.PublishedAt}}{{end}}</span>
-</li>
+<article class="prose">
+    {{if .ImageURL}}<img src="{{.ImageURL}}" alt="" class="banner">{{end}}
+    <h2><a href="/news/{{.Slug}}">{{.Title}}</a></h2>
+    <p class="who">{{.AuthorName}}{{if .PublishedAt}} · {{.PublishedAt}}{{end}}</p>
+    {{.HTML}}
+</article>
 {{end}}
-</ul>
 {{template "pager.html" .}}
 {{end}}
 {{end}}

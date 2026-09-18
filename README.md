@@ -288,7 +288,7 @@ Two header modes. Same public nav (Spot / Episodes / FS Team / Friends / News / 
 - **`/photos`**: Union of those photos, newest first. Intro markdown is a locked CMS page (`# Photos` by default), same as `/team`. Slideshow on top fills the well in a fixed `min(70dvh, 36rem)` slot (object-fit contain, so mixed aspect ratios do not jump the page); prev/next only. Grid below paginates 6/12/18/24 (default 6) via `?n=&p=` without a page reload; clicking a grid image puts it in the slideshow slot. Owner name overlays the photo (grid, page slideshow, and overlay) and links to their roster page. Overlay slideshow auto-advances every 6s; arrow keys prev/next; Escape closes; swipe left/right on a phone, swipe down to close.
 
 ### 3. Articles, News & Blog CMS
-- **Index (`/news`)**: Published posts, newest first, as a single-column list (title, optional image, excerpt, byline). Paginates 6/12/18/24 (default 6) via `?n=&p=`. Guests see public posts only; logged-in users also see internal.
+- **Index (`/news`)**: Full published posts, newest first. Paginates 6/12/18/24 (default 6) via `?n=&p=`. Title links to `/news/{slug}` for sharing. Guests see public posts only; logged-in users also see internal.
 - **Publishing Workflow**: Supports `Draft`, `Published`, and `Archived` statuses. Visibility is `public` or `internal` (logged-in only). Guest hitting an internal URL gets 404, same as unpublished.
 - **Rich Content Formats**: Markdown parsing with frontmatter support and sanitized HTML rendering.
 - **Featured Image & SEO**: OpenGraph tags, slug generation with uniqueness validation, excerpt generation, and reading time estimation.
