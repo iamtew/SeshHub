@@ -31,7 +31,7 @@ func TestSyncUpsertBearer(t *testing.T) {
 	if err := db.Migrate(sqldb, "../db/migrations"); err != nil {
 		t.Fatal(err)
 	}
-	_, err = sqldb.Exec(`INSERT INTO youtube_videos (id, channel_id, title, published_at, thumbnail_url) VALUES ('priv','ch','secret','2026-01-01','http://t')`)
+	_, err = sqldb.Exec(`INSERT INTO youtube_videos (id, channel_id, title, published_at, thumbnail_url) VALUES ('priv','ch','secret','2026-01-01','http://t'), ('oldun','ch','gone','2025-01-01','http://t')`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,7 +82,7 @@ func TestSyncUpsertBearer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if res.Inserted != 1 || res.Fetched != 2 {
+	if res.Inserted != 1 || res.Fetched != 3 {
 		t.Fatalf("%+v", res)
 	}
 	res, err = c.Sync(context.Background(), sqldb)
@@ -93,9 +93,68 @@ func TestSyncUpsertBearer(t *testing.T) {
 	if err != nil || len(list) != 1 || list[0].Duration != 253 || list[0].ChannelTitle != "Sofa TV" || list[0].Comments != 3 {
 		t.Fatalf("list %v %#v", err, list)
 	}
-	got := GetMany(sqldb, []string{"vid1", "nope", "vid1", "priv"})
+	got := GetMany(sqldb, []string{"vid1", "nope", "vid1", "priv", "oldun"})
 	if len(got) != 1 || got["vid1"].Views != 10 {
 		t.Fatalf("getmany %#v", got)
+	}
+}
+
+func TestSyncKeyDropsUnlistedOffPublicPlaylist(t *testing.T) {
+	sqldb, err := db.Open(":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = sqldb.Close() })
+	if err := db.Migrate(sqldb, "../db/migrations"); err != nil {
+		t.Fatal(err)
+	}
+	_, err = sqldb.Exec(`INSERT INTO youtube_videos (id, channel_id, title, published_at, thumbnail_url) VALUES ('priv','ch','secret','2026-01-01','http://t')`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mux := http.NewServeMux()
+	mux.HandleFunc("/channels", func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "" {
+			http.Error(w, "no bearer", 401)
+			return
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"items": []any{map[string]any{"contentDetails": map[string]any{"relatedPlaylists": map[string]any{"uploads": "UU1"}}}},
+		})
+	})
+	mux.HandleFunc("/playlistItems", func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "" {
+			http.Error(w, "no bearer", 401)
+			return
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"items": []any{map[string]any{"contentDetails": map[string]any{"videoId": "vid1"}}},
+		})
+	})
+	mux.HandleFunc("/videos", func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"items": []any{map[string]any{
+				"id": "vid1",
+				"snippet": map[string]any{
+					"title": "Session", "description": "x", "publishedAt": "2026-01-01T00:00:00Z",
+					"channelId": "ch", "channelTitle": "Sofa TV",
+					"thumbnails": map[string]any{"high": map[string]any{"url": "http://t/i.jpg"}},
+				},
+				"contentDetails": map[string]any{"duration": "PT1M"},
+				"statistics":     map[string]any{"viewCount": "1", "likeCount": "0", "commentCount": "0"},
+				"status":         map[string]any{"privacyStatus": "public"},
+			}},
+		})
+	})
+	ts := httptest.NewServer(mux)
+	t.Cleanup(ts.Close)
+	c := Client{Token: "tok", Key: "k", Channel: "ch", Base: ts.URL, HTTP: ts.Client()}
+	res, err := c.Sync(context.Background(), sqldb)
+	if err != nil || res.Inserted != 1 {
+		t.Fatalf("%+v %v", res, err)
+	}
+	if _, err := Get(sqldb, "priv"); err == nil {
+		t.Fatal("unlisted still cached")
 	}
 }
 
@@ -122,7 +181,7 @@ func TestMaybeSyncUserNeedsProfile(t *testing.T) {
 			return "", "", nil
 		}
 	})
-	if err := MaybeSyncUser(context.Background(), sqldb, "u", "cid", "sec"); err != nil {
+	if err := MaybeSyncUser(context.Background(), sqldb, "u", "cid", "sec", ""); err != nil {
 		t.Fatal(err)
 	}
 	if called {

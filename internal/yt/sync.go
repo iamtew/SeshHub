@@ -16,7 +16,7 @@ import (
 
 const apiDefault = "https://www.googleapis.com/youtube/v3"
 
-var userMu sync.Map
+var userMu, swept sync.Map
 
 type Video struct {
 	ID           string
@@ -137,6 +137,14 @@ func (c Client) http() *http.Client {
 }
 
 func (c Client) get(ctx context.Context, path string, q url.Values) ([]byte, error) {
+	return c.do(ctx, path, q, true)
+}
+
+func (c Client) getPublic(ctx context.Context, path string, q url.Values) ([]byte, error) {
+	return c.do(ctx, path, q, false)
+}
+
+func (c Client) do(ctx context.Context, path string, q url.Values, bearer bool) ([]byte, error) {
 	if q == nil {
 		q = url.Values{}
 	}
@@ -147,7 +155,7 @@ func (c Client) get(ctx context.Context, path string, q url.Values) ([]byte, err
 	if err != nil {
 		return nil, err
 	}
-	if c.Token != "" {
+	if bearer && c.Token != "" {
 		req.Header.Set("Authorization", "Bearer "+c.Token)
 	}
 	resp, err := c.http().Do(req)
@@ -196,11 +204,42 @@ func nullEmpty(s string) any {
 	return s
 }
 
-func (c Client) sync(ctx context.Context, db *sql.DB) (Result, error) {
-	var out Result
-	b, err := c.get(ctx, "/channels", url.Values{"part": {"contentDetails"}, "id": {c.Channel}})
+func parseUploadIDs(b []byte) (ids, denied []string, err error) {
+	var pl struct {
+		Items []struct {
+			ContentDetails struct {
+				VideoID string `json:"videoId"`
+			} `json:"contentDetails"`
+			Status struct {
+				PrivacyStatus string `json:"privacyStatus"`
+			} `json:"status"`
+		} `json:"items"`
+	}
+	if err := json.Unmarshal(b, &pl); err != nil {
+		return nil, nil, err
+	}
+	for _, it := range pl.Items {
+		id := it.ContentDetails.VideoID
+		if id == "" {
+			continue
+		}
+		if st := strings.ToLower(it.Status.PrivacyStatus); st != "" && st != "public" {
+			denied = append(denied, id)
+			continue
+		}
+		ids = append(ids, id)
+	}
+	return ids, denied, nil
+}
+
+func (c Client) uploadsPlaylist(ctx context.Context, public bool) (string, error) {
+	get := c.get
+	if public {
+		get = c.getPublic
+	}
+	b, err := get(ctx, "/channels", url.Values{"part": {"contentDetails"}, "id": {c.Channel}})
 	if err != nil {
-		return out, err
+		return "", err
 	}
 	var ch struct {
 		Items []struct {
@@ -212,35 +251,139 @@ func (c Client) sync(ctx context.Context, db *sql.DB) (Result, error) {
 		} `json:"items"`
 	}
 	if err := json.Unmarshal(b, &ch); err != nil || len(ch.Items) == 0 {
-		return out, fmt.Errorf("no uploads playlist")
+		return "", fmt.Errorf("no uploads playlist")
 	}
-	uploads := ch.Items[0].ContentDetails.RelatedPlaylists.Uploads
-	q := url.Values{"part": {"contentDetails"}, "playlistId": {uploads}, "maxResults": {"50"}}
-	pb, err := c.get(ctx, "/playlistItems", q)
+	return ch.Items[0].ContentDetails.RelatedPlaylists.Uploads, nil
+}
+
+func (c Client) playlistPage(ctx context.Context, uploads string, public bool) ([]byte, error) {
+	get := c.get
+	if public {
+		get = c.getPublic
+	}
+	q := url.Values{"part": {"contentDetails,status"}, "playlistId": {uploads}, "maxResults": {"50"}}
+	return get(ctx, "/playlistItems", q)
+}
+
+func channelVideoIDs(db *sql.DB, channel string) ([]string, error) {
+	if channel == "" {
+		return nil, nil
+	}
+	rows, err := db.Query(`SELECT id FROM youtube_videos WHERE channel_id=?`, channel)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var ids []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	return ids, rows.Err()
+}
+
+func mergeIDs(parts ...[]string) []string {
+	seen := map[string]struct{}{}
+	var out []string
+	for _, p := range parts {
+		for _, id := range p {
+			if id == "" {
+				continue
+			}
+			if _, ok := seen[id]; ok {
+				continue
+			}
+			seen[id] = struct{}{}
+			out = append(out, id)
+		}
+	}
+	return out
+}
+
+func pruneChannelNotIn(db *sql.DB, channel string, keep []string) error {
+	if channel == "" {
+		return nil
+	}
+	if len(keep) == 0 {
+		_, err := db.Exec(`DELETE FROM youtube_videos WHERE channel_id=?`, channel)
+		return err
+	}
+	args := make([]any, 0, 1+len(keep))
+	args = append(args, channel)
+	for _, id := range keep {
+		args = append(args, id)
+	}
+	q := `DELETE FROM youtube_videos WHERE channel_id=? AND id NOT IN (` + strings.Repeat("?,", len(keep)-1) + `?)`
+	_, err := db.Exec(q, args...)
+	return err
+}
+
+func (c Client) upsertIDs(ctx context.Context, db *sql.DB, ids []string, out *Result) error {
+	for i := 0; i < len(ids); i += 50 {
+		end := i + 50
+		if end > len(ids) {
+			end = len(ids)
+		}
+		if err := c.upsertChunk(ctx, db, ids[i:end], out); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (c Client) sync(ctx context.Context, db *sql.DB) (Result, error) {
+	var out Result
+	if c.Key != "" {
+		ids, err := c.publicUploadIDs(ctx)
+		if err == nil {
+			out.Fetched = len(ids)
+			if err := c.upsertIDs(ctx, db, ids, &out); err != nil {
+				return out, err
+			}
+			return out, pruneChannelNotIn(db, c.Channel, ids)
+		}
+	}
+	uploads, err := c.uploadsPlaylist(ctx, false)
 	if err != nil {
 		return out, err
 	}
-	var pl struct {
-		Items []struct {
-			ContentDetails struct {
-				VideoID string `json:"videoId"`
-			} `json:"contentDetails"`
-		} `json:"items"`
-	}
-	if err := json.Unmarshal(pb, &pl); err != nil {
+	pb, err := c.playlistPage(ctx, uploads, false)
+	if err != nil {
 		return out, err
 	}
-	var ids []string
-	for _, it := range pl.Items {
-		if it.ContentDetails.VideoID != "" {
-			ids = append(ids, it.ContentDetails.VideoID)
-		}
+	ids, denied, err := parseUploadIDs(pb)
+	if err != nil {
+		return out, err
 	}
+	cached, err := channelVideoIDs(db, c.Channel)
+	if err != nil {
+		return out, err
+	}
+	if err := dropNonPublic(db, denied, nil); err != nil {
+		return out, err
+	}
+	ids = mergeIDs(ids, cached)
 	out.Fetched = len(ids)
 	if len(ids) == 0 {
 		return out, nil
 	}
-	return out, c.upsertChunk(ctx, db, ids, &out)
+	return out, c.upsertIDs(ctx, db, ids, &out)
+}
+
+func (c Client) publicUploadIDs(ctx context.Context) ([]string, error) {
+	uploads, err := c.uploadsPlaylist(ctx, true)
+	if err != nil {
+		return nil, err
+	}
+	pb, err := c.playlistPage(ctx, uploads, true)
+	if err != nil {
+		return nil, err
+	}
+	ids, _, err := parseUploadIDs(pb)
+	return ids, err
 }
 
 func dropNonPublic(db *sql.DB, ids []string, public map[string]struct{}) error {
@@ -491,7 +634,7 @@ var RefreshAccess = func(clientID, clientSecret, refresh string) (access, newRef
 	return "", "", fmt.Errorf("refresh not configured")
 }
 
-func MaybeSyncUser(ctx context.Context, db *sql.DB, userID, clientID, clientSecret string) error {
+func MaybeSyncUser(ctx context.Context, db *sql.DB, userID, clientID, clientSecret, apiKey string) error {
 	if userID == "" || clientID == "" || clientSecret == "" {
 		return nil
 	}
@@ -502,8 +645,12 @@ func MaybeSyncUser(ctx context.Context, db *sql.DB, userID, clientID, clientSecr
 	var channel, refresh, synced string
 	err := db.QueryRow(`SELECT IFNULL(youtube_channel_id,''), IFNULL(youtube_refresh_token,''), IFNULL(youtube_synced_at,'') FROM users WHERE id = ?`, userID).
 		Scan(&channel, &refresh, &synced)
-	if err != nil || channel == "" || refresh == "" || !staleSync(synced) {
+	if err != nil || channel == "" || refresh == "" {
 		return err
+	}
+	_, did := swept.Load(channel)
+	if !staleSync(synced) && did {
+		return nil
 	}
 	access, newRefresh, err := RefreshAccess(clientID, clientSecret, refresh)
 	if err != nil {
@@ -512,15 +659,16 @@ func MaybeSyncUser(ctx context.Context, db *sql.DB, userID, clientID, clientSecr
 	if newRefresh != "" && newRefresh != refresh {
 		_, _ = db.Exec(`UPDATE users SET youtube_refresh_token=? WHERE id=?`, newRefresh, userID)
 	}
-	c := Client{Token: access, Channel: channel}
+	c := Client{Token: access, Key: apiKey, Channel: channel}
 	if _, err := c.Sync(ctx, db); err != nil {
 		return err
 	}
+	swept.Store(channel, struct{}{})
 	_, err = db.Exec(`UPDATE users SET youtube_synced_at=CURRENT_TIMESTAMP WHERE id=?`, userID)
 	return err
 }
 
-func SyncWithToken(ctx context.Context, db *sql.DB, userID, access, channel string) error {
+func SyncWithToken(ctx context.Context, db *sql.DB, userID, access, channel, apiKey string) error {
 	if access == "" || channel == "" {
 		return nil
 	}
@@ -528,10 +676,11 @@ func SyncWithToken(ctx context.Context, db *sql.DB, userID, access, channel stri
 	if err := db.QueryRow(`SELECT COUNT(*) FROM skater_profiles WHERE user_id = ?`, userID).Scan(&n); err != nil || n == 0 {
 		return err
 	}
-	c := Client{Token: access, Channel: channel}
+	c := Client{Token: access, Key: apiKey, Channel: channel}
 	if _, err := c.Sync(ctx, db); err != nil {
 		return err
 	}
+	swept.Store(channel, struct{}{})
 	_, err := db.Exec(`UPDATE users SET youtube_synced_at=CURRENT_TIMESTAMP WHERE id=?`, userID)
 	return err
 }
@@ -545,7 +694,37 @@ func PollPublic(ctx context.Context, db *sql.DB, apiKey string) (int, error) {
 }
 
 // ponytail: 50 ids per videos.list (API max); no new channels, no comment text.
+func (c Client) pruneCachedToPublicPlaylists(ctx context.Context, db *sql.DB) {
+	if c.Key == "" {
+		return
+	}
+	rows, err := db.Query(`SELECT DISTINCT channel_id FROM youtube_videos WHERE IFNULL(channel_id,'') != ''`)
+	if err != nil {
+		return
+	}
+	var chans []string
+	for rows.Next() {
+		var ch string
+		if err := rows.Scan(&ch); err != nil {
+			rows.Close()
+			return
+		}
+		chans = append(chans, ch)
+	}
+	rows.Close()
+	for _, ch := range chans {
+		cc := c
+		cc.Channel = ch
+		ids, err := cc.publicUploadIDs(ctx)
+		if err != nil {
+			continue
+		}
+		_ = pruneChannelNotIn(db, ch, ids)
+	}
+}
+
 func (c Client) Poll(ctx context.Context, db *sql.DB) (int, error) {
+	c.pruneCachedToPublicPlaylists(ctx, db)
 	rows, err := db.Query(`SELECT id FROM youtube_videos WHERE is_hidden = 0`)
 	if err != nil {
 		return 0, err

@@ -70,7 +70,7 @@ func (s *Server) maybeSyncSkater(userID string) {
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
 		defer cancel()
-		if err := yt.MaybeSyncUser(ctx, s.db, userID, s.cfg.YouTubeClientID, s.cfg.YouTubeClientSecret); err != nil {
+		if err := yt.MaybeSyncUser(ctx, s.db, userID, s.cfg.YouTubeClientID, s.cfg.YouTubeClientSecret, s.cfg.YouTubeAPIKey); err != nil {
 			slog.Error("skater youtube sync", "err", err, "user", userID)
 		}
 	}()
@@ -188,7 +188,7 @@ func (s *Server) callbackYouTube(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		s.clearOAuthCookie(w)
-		_ = yt.SyncWithToken(r.Context(), s.db, u.ID, token, chID)
+		_ = yt.SyncWithToken(r.Context(), s.db, u.ID, token, chID, s.cfg.YouTubeAPIKey)
 		http.Redirect(w, r, "/account", http.StatusFound)
 		return
 	}
@@ -198,7 +198,7 @@ func (s *Server) callbackYouTube(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "login failed", http.StatusInternalServerError)
 		return
 	}
-	_ = yt.SyncWithToken(r.Context(), s.db, u.ID, token, chID)
+	_ = yt.SyncWithToken(r.Context(), s.db, u.ID, token, chID, s.cfg.YouTubeAPIKey)
 	s.issueSession(w, r, u.ID)
 }
 

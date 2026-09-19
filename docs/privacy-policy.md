@@ -131,7 +131,7 @@ If your account is deleted, authorship is reassigned to a reserved "Former membe
 
 **Read:** publicly, on `/videos` and on FS Team / Friends profile pages, except clips you have hidden. You can still see those hidden clips yourself while editing your YouTube feed.
 
-**Deleted:** when your account is deleted, when an administrator deletes the account that owned the channel, or when a later sync or stats poll sees the clip is no longer public on YouTube (unlisted, private, or removed).
+**Deleted:** when your account is deleted, when an administrator deletes the account that owned the channel, or when a later sync or stats poll sees the clip is no longer public on YouTube (unlisted, private, removed, or not on the channel’s current public uploads).
 
 ### 4.7 Episode archive (`episodes` table)
 
