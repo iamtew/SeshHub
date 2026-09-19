@@ -1,7 +1,9 @@
 package auth
 
 import (
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"fmt"
 )
 
@@ -35,6 +37,23 @@ func AccessStatus(db *sql.DB, userID string) (string, error) {
 	return status, err
 }
 
+func ChannelHash(channelID string) string {
+	sum := sha256.Sum256([]byte(channelID))
+	return hex.EncodeToString(sum[:])
+}
+
+func ConsumeDenial(db *sql.DB, channelID string) (bool, error) {
+	if channelID == "" {
+		return false, nil
+	}
+	res, err := db.Exec(`DELETE FROM access_denials WHERE channel_hash=?`, ChannelHash(channelID))
+	if err != nil {
+		return false, err
+	}
+	n, _ := res.RowsAffected()
+	return n > 0, nil
+}
+
 func PendingAccess(db *sql.DB) ([]AccessRequest, error) {
 	rows, err := db.Query(`
 		SELECT r.id, r.user_id, r.status, u.display_name, u.username, r.created_at
@@ -59,6 +78,22 @@ func PendingAccess(db *sql.DB) ([]AccessRequest, error) {
 func DecideAccess(db *sql.DB, requestID, reviewerID, status string) error {
 	if status != "approved" && status != "rejected" {
 		return fmt.Errorf("bad status")
+	}
+	if status == "rejected" {
+		var userID, channel, discord string
+		err := db.QueryRow(`
+			SELECT r.user_id, IFNULL(u.youtube_channel_id,''), IFNULL(u.discord_id,'')
+			FROM access_requests r JOIN users u ON u.id = r.user_id
+			WHERE r.id = ? AND r.status = 'pending'`, requestID).Scan(&userID, &channel, &discord)
+		if err != nil {
+			return err
+		}
+		if channel != "" && discord == "" {
+			if _, err := db.Exec(`INSERT OR IGNORE INTO access_denials (channel_hash) VALUES (?)`, ChannelHash(channel)); err != nil {
+				return err
+			}
+			return DeleteUser(db, userID, reviewerID)
+		}
 	}
 	tx, err := db.Begin()
 	if err != nil {

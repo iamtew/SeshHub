@@ -1,0 +1,4 @@
+CREATE TABLE IF NOT EXISTS access_denials (
+    channel_hash TEXT PRIMARY KEY,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

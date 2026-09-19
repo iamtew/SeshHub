@@ -1,9 +1,15 @@
 {{define "content"}}
 <h1>Access</h1>
-{{if ne .User.Role "pending"}}
+{{if .AccessDenied}}
+<p>Your friend access request was denied. Your account and YouTube data on Sesh Hub were deleted.</p>
+{{else if ne .User.Role "pending"}}
 <p>You already have {{.User.Role}} access.</p>
 {{else if eq .AccessStatus "pending"}}
 <p>Your request is waiting on an admin.</p>
+{{else if and (eq .User.DiscordID "") (ne .User.YouTubeChannelID "")}}
+<p>Do you want to request Friends on Sesh Hub? This is not the Discord friends role. An admin reviews the queue.</p>
+<form method="post" action="/access/request"><button type="submit">Yes, request Friends</button></form>
+<form method="post" action="/access/decline"><button type="submit">No thanks</button></form>
 {{else if eq .AccessStatus "rejected"}}
 <p>Your last request was rejected. You can send another.</p>
 <form method="post" action="/access/request"><button type="submit">Request access</button></form>

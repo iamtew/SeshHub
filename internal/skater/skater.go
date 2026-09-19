@@ -196,7 +196,7 @@ const profileSelect = `
 			IFNULL(p.avatar_border_style,''), IFNULL(p.avatar_border_color,''), IFNULL(p.avatar_border_blur,0),
 			IFNULL(p.banner_url,''),
 			IFNULL(p.location,''), IFNULL(p.sponsors,''), IFNULL(p.social_links,''), IFNULL(p.signature_tricks,''),
-			IFNULL(p.featured_video_id,''), IFNULL(u.role,'')
+			IFNULL(p.featured_video_id,''), IFNULL(u.role,''), IFNULL(u.discord_id,'')
 		FROM skater_profiles p LEFT JOIN users u ON u.id = p.user_id`
 
 func List(db *sql.DB) ([]Profile, error) {
@@ -237,10 +237,11 @@ func list(db *sql.DB, roster string) ([]Profile, error) {
 
 func scanProfile(sc interface{ Scan(dest ...any) error }) (Profile, error) {
 	var p Profile
+	var discordID string
 	err := sc.Scan(&p.ID, &p.UserID, &p.Slug, &p.SkaterName, &p.RealName, &p.Bio, &p.Stance, &p.Status,
 		&p.AvatarURL, &p.PhotoURL, &p.AvatarR1, &p.AvatarR2, &p.AvatarR3, &p.AvatarR4, &p.AvatarBorder,
 		&p.AvatarBorderStyle, &p.AvatarBorderColor, &p.AvatarBorderBlur,
-		&p.BannerURL, &p.Location, &p.Sponsors, &p.SocialLinks, &p.SignatureTricks, &p.FeaturedVideoID, &p.Role)
+		&p.BannerURL, &p.Location, &p.Sponsors, &p.SocialLinks, &p.SignatureTricks, &p.FeaturedVideoID, &p.Role, &discordID)
 	if err != nil {
 		return p, err
 	}
@@ -254,6 +255,9 @@ func scanProfile(sc interface{ Scan(dest ...any) error }) (Profile, error) {
 	}
 	if p.Role == "friend" || p.Role == "member" {
 		p.Status = "Friend"
+		if discordID == "" {
+			p.Status = "Sesh Hub Friend"
+		}
 	}
 	return p, nil
 }

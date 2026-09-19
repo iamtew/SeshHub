@@ -2,7 +2,7 @@
 
 **Website:** https://hub.seshsofa.nl
 
-**Last updated:** 19 September 2026
+**Last updated:** 20 September 2026
 
 ## 1. Who we are
 
@@ -103,7 +103,7 @@ We do **not** store your IP address or User-Agent.
 
 **Read: this profile is public.** Anyone on the internet, signed in or not, can see it. Note in particular that the name shown publicly is your **display name (stored as real name) if you have filled it in**, and falls back to your skater name only if you have not. Your **slug** is the public URL `/team/{slug}` (FS Team) or `/friends/{slug}` (Friends). Former slugs are public too: visiting them redirects to your current page. Your **location**, **biography**, **profile photo** (site upload or Discord/YouTube fallback, plus the frame shape and any border style), and **gallery photos** are also shown publicly when set. Please do not put anything in these fields that you would not want a stranger to read.
 
-**Updated:** by you, at `/dashboard/profile`. That form edits your display name, slug, biography, stance, location, featured video, YouTube Feed Filter, photo frame (corner roundness, border style, optional custom hex colour, border width, and border blur), and an optional site-only profile photo. Gallery photos are added and deleted at `/dashboard/gallery`. Changing your slug records the previous one as a redirect and frees it for anyone to claim later. Logging in still refreshes your Discord skater name and the provider avatar URL on your account record; it does not overwrite a slug you chose, and it does not overwrite a site photo you uploaded. Clearing the site photo falls back to Discord or YouTube. An administrator can separately change an FS Team roster status (Active, Pro, and so on). Friends always show as Friend.
+**Updated:** by you, at `/dashboard/profile`. That form edits your display name, slug, biography, stance, location, featured video, YouTube Feed Filter, photo frame (corner roundness, border style, optional custom hex colour, border width, and border blur), and an optional site-only profile photo. Gallery photos are added and deleted at `/dashboard/gallery`. Changing your slug records the previous one as a redirect and frees it for anyone to claim later. Logging in still refreshes your Discord skater name and the provider avatar URL on your account record; it does not overwrite a slug you chose, and it does not overwrite a site photo you uploaded. Clearing the site photo falls back to Discord or YouTube. An administrator can separately change an FS Team roster status (Active, Pro, and so on). Discord-linked Friends show as Friend. Queue-approved Friends with no Discord ID show as **Sesh Hub Friend**.
 
 **Deleted:** when your account is deleted, or by an administrator. Former-slug redirects are deleted with the profile. The site photo file and any gallery photo files are deleted with the profile. If someone else takes an old slug, that redirect row is deleted so their page wins.
 
@@ -113,7 +113,11 @@ We do **not** store your IP address or User-Agent.
 
 **Why:** if you sign in with YouTube, or with Discord while outside the Sesh Sofa server, or while in the server without the hub-admin, skater, or friends Discord role, you land in an approval queue rather than getting a public roster slot.
 
-**Created:** when you ask for access. **Read:** by administrators reviewing the queue, and by you to see your own status. **Updated:** when an administrator approves or rejects it; approval also changes your role to friend and creates a public Friends profile. Approval cannot make you FS Team (that requires the Discord skater role). **Deleted:** together with your account.
+**Created:** when you ask for access. After a YouTube-only sign-in we send you to `/access` and ask whether you want Friends on Sesh Hub (not the Discord friends role). Saying no deletes the account we just created. Discord pending users can request from `/access` without that extra prompt.
+
+**Read:** by administrators reviewing the queue, and by you to see your own status. **Updated:** when an administrator approves or rejects it; approval also changes your role to friend and creates a public Friends profile (status **Sesh Hub Friend** until you link Discord). Approval cannot make you FS Team (that requires the Discord skater role). **Deleted:** together with your account.
+
+If you signed in with YouTube, have no Discord linked, and an administrator **rejects** the request, we delete your account as in section 9 (including the request row). We then keep only a SHA-256 hash of your YouTube channel ID in `access_denials` so the next time you sign in with that channel we can tell you the request was denied. We delete that hash as soon as we show the notice. That is not a ban; you can request again afterwards. Saying no to the Friends prompt does not write a denial hash. Discord-linked accounts that are rejected keep the request row (`rejected`) and the account.
 
 ### 4.5 Articles you write (`articles` table)
 
@@ -213,6 +217,7 @@ Each of these companies handles your data under its own privacy policy. You can 
 | Create and maintain your account record | You cannot use a members' site without an account | Art. 6(1)(b) - performance of a contract, being the service you signed up for |
 | Keep you signed in via a session cookie | Otherwise you would log in on every page | Art. 6(1)(b), and Art. 6(1)(f) legitimate interest in account security |
 | Read your Discord roles to decide your permissions | To keep members' areas restricted to members | Art. 6(1)(f) - legitimate interest in access control |
+| Keep a hash of a YouTube channel ID after a rejected YouTube-only access request | To tell you once that the request was denied, after we deleted the account | Art. 6(1)(f) - legitimate interest in informing you of the decision |
 | Publish your skater profile, gallery photos, and article authorship | This is the purpose of the roster, `/photos`, and the news section, and you control the content | Art. 6(1)(f), with your role in publishing it |
 | Host the Message Board | Signed-in discussion is part of the members' service | Art. 6(1)(b), and Art. 6(1)(f) legitimate interest in a private community board |
 | Cache your YouTube clips | To show the gallery without hammering the YouTube API | Art. 6(1)(f) - legitimate interest in a functioning site |
@@ -224,7 +229,8 @@ Each of these companies handles your data under its own privacy policy. You can 
 - **Session record:** valid for 30 days. Logging out deletes every session for your account. Expired rows are purged when the server starts.
 - **Skater profile:** kept until the account is deleted, or an administrator removes the profile. A site photo file and gallery photo files are kept for the same time and deleted with the profile.
 - **Cached YouTube clips:** kept until the owning account is deleted.
-- **Access requests:** kept until the account is deleted.
+- **Access requests:** kept until the account is deleted. A YouTube-only rejection deletes the account immediately.
+- **Access denial hash:** SHA-256 of a YouTube channel ID, kept only until that channel’s next sign-in (the denial notice), then deleted.
 - **Articles, episode entries, and Message Board posts:** kept as part of the site's archive. Deleted authors are shown as "Former member". Forum read watermarks are deleted with the account.
 
 ## 9. Your rights under the GDPR
@@ -234,7 +240,7 @@ You have the right of access (Art. 15), rectification (Art. 16), erasure (Art. 1
 **How to exercise these rights.** Most of them are on `/account` while you are signed in: unlink a provider, download a JSON export of your account, profile (including photo URL and frame settings), gallery photo URLs, former slugs, YouTube Feed Filter, access request, and Message Board posts (thread title plus markdown body), or delete the account. Logging out ends every session. You can also email the contact address in section 1. We will respond within one month, as Art. 12(3) requires.
 
 - **Access or portability:** use **Download my data** on `/account`, or ask us by email. The export includes the public URL of a site photo if you uploaded one, and the public URLs of gallery photos, not the image bytes.
-- **Erasure:** use **Delete my account** on `/account`. That removes your account record (including the YouTube Feed Filter), sessions, access request, skater profile, former-slug redirects, cached clips, any site profile photo file, any gallery photo files, and Message Board read watermarks. Articles and remaining forum posts stay, shown as "Former member".
+- **Erasure:** use **Delete my account** on `/account`. That removes your account record (including the YouTube Feed Filter), sessions, access request, skater profile, former-slug redirects, cached clips, any site profile photo file, any gallery photo files, and Message Board read watermarks. Articles and remaining forum posts stay, shown as "Former member". An administrator rejecting a YouTube-only access request does the same erasure, except we keep the short-lived channel-ID hash described in section 4.4 until your next YouTube sign-in.
 - **Rectification:** most profile fields update themselves from Discord or YouTube on your next sign-in. Your display name, slug, biography, location, featured clip, YouTube Feed Filter, site photo and photo frame (including border style, width, and blur) are yours to edit at `/dashboard/profile`. Gallery photos are yours to add and delete at `/dashboard/gallery`.
 - **Objection or restriction:** tell us what you object to and we will stop it or explain why we believe we may continue.
 

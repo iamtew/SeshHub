@@ -159,7 +159,7 @@ func (s *Server) callbackDiscord(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ensure(u.ID)
-	s.issueSession(w, r, u.ID)
+	s.issueSession(w, r, u.ID, "")
 }
 
 func (s *Server) callbackYouTube(w http.ResponseWriter, r *http.Request) {
@@ -192,6 +192,17 @@ func (s *Server) callbackYouTube(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/account", http.StatusFound)
 		return
 	}
+	denied, err := auth.ConsumeDenial(s.db, chID)
+	if err != nil {
+		slog.Error("youtube denial", "err", err)
+		http.Error(w, "login failed", http.StatusInternalServerError)
+		return
+	}
+	if denied {
+		s.clearOAuthCookie(w)
+		http.Redirect(w, r, "/access?denied=1", http.StatusFound)
+		return
+	}
 	u, err := auth.UpsertYouTube(s.db, chID, title, avatar, refresh)
 	if err != nil {
 		slog.Error("upsert youtube", "err", err)
@@ -199,7 +210,11 @@ func (s *Server) callbackYouTube(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	_ = yt.SyncWithToken(r.Context(), s.db, u.ID, token, chID, s.cfg.YouTubeAPIKey)
-	s.issueSession(w, r, u.ID)
+	loc := ""
+	if u.Role == auth.RolePending {
+		loc = "/access"
+	}
+	s.issueSession(w, r, u.ID, loc)
 }
 
 func (s *Server) oauthLinkErr(w http.ResponseWriter, err error) {
@@ -227,7 +242,7 @@ func (s *Server) checkOAuth(r *http.Request, provider string) (string, error) {
 	return verifier, nil
 }
 
-func (s *Server) issueSession(w http.ResponseWriter, r *http.Request, userID string) {
+func (s *Server) issueSession(w http.ResponseWriter, r *http.Request, userID, loc string) {
 	token, err := auth.CreateSession(s.db, userID)
 	if err != nil {
 		slog.Error("session", "err", err)
@@ -243,11 +258,13 @@ func (s *Server) issueSession(w http.ResponseWriter, r *http.Request, userID str
 		Secure:   s.cfg.CookieSecure(),
 		MaxAge:   30 * 24 * 60 * 60,
 	})
-	loc := "/"
-	if c, err := r.Cookie(auth.OAuthCookieName()); err == nil {
-		if _, _, _, next, ok := auth.ParseOAuthCookie(c.Value); ok {
-			if n := safeNext(next); n != "" {
-				loc = n
+	if loc == "" {
+		loc = "/"
+		if c, err := r.Cookie(auth.OAuthCookieName()); err == nil {
+			if _, _, _, next, ok := auth.ParseOAuthCookie(c.Value); ok {
+				if n := safeNext(next); n != "" {
+					loc = n
+				}
 			}
 		}
 	}

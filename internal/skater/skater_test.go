@@ -162,7 +162,27 @@ func TestEnsureForUser(t *testing.T) {
 	if err != nil || err3 != nil || len(team) != 1 || len(friends) != 1 || friends[0].UserID != "u2" {
 		t.Fatalf("roster team=%d friends=%d %v %v", len(team), len(friends), err, err3)
 	}
-	if friends[0].Status != "Friend" {
-		t.Fatalf("friend status %q", friends[0].Status)
+	if friends[0].Status != "Sesh Hub Friend" {
+		t.Fatalf("hub friend status %q", friends[0].Status)
+	}
+	_, err = sqldb.Exec(`INSERT INTO users (id, username, display_name, role, discord_id) VALUES ('u3','disc','Disc','friend','d3')`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := EnsureForUser(sqldb, "u3", "disc"); err != nil {
+		t.Fatal(err)
+	}
+	friends, err3 = ListFriends(sqldb)
+	if err3 != nil || len(friends) != 2 {
+		t.Fatalf("friends %d %v", len(friends), err3)
+	}
+	var discStatus string
+	for _, f := range friends {
+		if f.UserID == "u3" {
+			discStatus = f.Status
+		}
+	}
+	if discStatus != "Friend" {
+		t.Fatalf("discord friend status %q", discStatus)
 	}
 }

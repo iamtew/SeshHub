@@ -58,6 +58,7 @@ func New(cfg config.Config, db *sql.DB) *Server {
 	s.mux.HandleFunc("POST /preview", s.preview)
 	s.mux.HandleFunc("GET /access", s.accessPage)
 	s.mux.HandleFunc("POST /access/request", s.accessRequest)
+	s.mux.HandleFunc("POST /access/decline", s.accessDecline)
 	s.mux.HandleFunc("GET /admin/access", s.adminAccess)
 	s.mux.HandleFunc("POST /admin/access/{id}/approve", s.adminDecide("approved"))
 	s.mux.HandleFunc("POST /admin/access/{id}/reject", s.adminDecide("rejected"))

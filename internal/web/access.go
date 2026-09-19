@@ -10,7 +10,11 @@ import (
 func (s *Server) accessPage(w http.ResponseWriter, r *http.Request) {
 	u := UserFrom(r)
 	if u == nil {
-		http.Redirect(w, r, "/", http.StatusFound)
+		if r.URL.Query().Get("denied") != "1" {
+			http.Redirect(w, r, "/", http.StatusFound)
+			return
+		}
+		s.render(w, r, "access.html", map[string]any{"Title": "Access", "Path": "/access", "AccessDenied": true})
 		return
 	}
 	st, err := auth.AccessStatus(s.db, u.ID)
@@ -32,6 +36,29 @@ func (s *Server) accessRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, "/access", http.StatusSeeOther)
+}
+
+func (s *Server) accessDecline(w http.ResponseWriter, r *http.Request) {
+	u := UserFrom(r)
+	if u == nil || u.Role != auth.RolePending || u.DiscordID != "" || u.YouTubeChannelID == "" {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+	st, err := auth.AccessStatus(s.db, u.ID)
+	if err != nil {
+		http.Error(w, "db error", http.StatusInternalServerError)
+		return
+	}
+	if st != "" {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+	if err := auth.DeleteUser(s.db, u.ID, ""); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	http.SetCookie(w, &http.Cookie{Name: auth.CookieName, Path: "/", MaxAge: -1, HttpOnly: true})
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 func (s *Server) adminAccess(w http.ResponseWriter, r *http.Request) {
