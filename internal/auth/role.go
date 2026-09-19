@@ -8,12 +8,14 @@ const (
 	RolePending = "pending"
 )
 
+func IsSuperAdmin(discordID string, superAdmins []string) bool {
+	return discordID != "" && contains(superAdmins, discordID)
+}
+
 // DiscordRole maps guild membership to users.role (admin > skater > friend). Hosts is users.host, set separately.
 func DiscordRole(discordID string, inGuild bool, guildRoleIDs, superAdmins []string, adminRoleID, skaterRoleID, friendsRoleID string) string {
-	for _, id := range superAdmins {
-		if id == discordID {
-			return RoleAdmin
-		}
+	if IsSuperAdmin(discordID, superAdmins) {
+		return RoleAdmin
 	}
 	if !inGuild {
 		return RolePending

@@ -15,6 +15,18 @@ func (s *Server) requireAdmin(w http.ResponseWriter, r *http.Request) *auth.User
 	return u
 }
 
+func (s *Server) requireSuperAdmin(w http.ResponseWriter, r *http.Request) *auth.User {
+	u := s.requireAdmin(w, r)
+	if u == nil {
+		return nil
+	}
+	if !auth.IsSuperAdmin(u.DiscordID, s.cfg.SuperAdminIDs) {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return nil
+	}
+	return u
+}
+
 func (s *Server) requireHost(w http.ResponseWriter, r *http.Request) *auth.User {
 	u := UserFrom(r)
 	if u == nil || !u.Host {
@@ -25,7 +37,7 @@ func (s *Server) requireHost(w http.ResponseWriter, r *http.Request) *auth.User 
 }
 
 func (s *Server) adminUsers(w http.ResponseWriter, r *http.Request) {
-	if s.requireAdmin(w, r) == nil {
+	if s.requireSuperAdmin(w, r) == nil {
 		return
 	}
 	list, err := auth.ListUsers(s.db)
@@ -37,7 +49,7 @@ func (s *Server) adminUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) adminUserMerge(w http.ResponseWriter, r *http.Request) {
-	if s.requireAdmin(w, r) == nil {
+	if s.requireSuperAdmin(w, r) == nil {
 		return
 	}
 	_ = r.ParseForm()
@@ -50,7 +62,7 @@ func (s *Server) adminUserMerge(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) adminUserUnlink(provider string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if s.requireAdmin(w, r) == nil {
+		if s.requireSuperAdmin(w, r) == nil {
 			return
 		}
 		id := r.PathValue("id")
@@ -70,7 +82,7 @@ func (s *Server) adminUserUnlink(provider string) http.HandlerFunc {
 }
 
 func (s *Server) adminUserDelete(w http.ResponseWriter, r *http.Request) {
-	u := s.requireAdmin(w, r)
+	u := s.requireSuperAdmin(w, r)
 	if u == nil {
 		return
 	}

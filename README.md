@@ -74,7 +74,7 @@ Set `BASE_URL` to the same origin you type in the browser (`http://localhost:530
 5. Server Settings → Roles → right-click hub admin, hosts, skater, and friends → Copy Role ID → `DISCORD_HUB_ADMIN_ROLE_ID` / `DISCORD_HOSTS_ROLE_ID` / `DISCORD_SKATER_ROLE_ID` / `DISCORD_FRIENDS_ROLE_ID`.
 6. Right-click **your** user → Copy User ID → `SUPERADMIN_DISCORD_IDS` (comma-separated if more than one). That list is hub admin even without the guild hub-admin role, so you can log in the first time.
 
-Scopes used: `identify`, `guilds.members.read`. Restart the server after saving `.env`. Sign in with Discord. Guild hub-admin role or superadmin → **admin**. Hosts role → can edit Spot and Episodes (independent of admin). Skater role → **skater**, and a `/team` profile is created (Discord name, linked user id). Friends role → **friend**, and a `/friends` profile is created. In the guild with none of those roles → **pending** (request access at `/access`; approve at `/admin/access` grants **friend**, not team). Not in the guild → **pending** as well (login still succeeds). Duplicate Discord/YouTube users: **Admin → Users** → merge into the Discord row. Re-login with Discord after a hosts-role change. Existing `member` rows migrate to **friend**; on Discord login, `DISCORD_SKATER_ROLE_ID` still promotes them to team.
+Scopes used: `identify`, `guilds.members.read`. Restart the server after saving `.env`. Sign in with Discord. Guild hub-admin role or superadmin → **admin**. Hosts role → can edit Spot and Episodes (independent of admin). Skater role → **skater**, and a `/team` profile is created (Discord name, linked user id). Friends role → **friend**, and a `/friends` profile is created. In the guild with none of those roles → **pending** (request access at `/access`; approve at `/admin/access` grants **friend**, not team). Not in the guild → **pending** as well (login still succeeds). Duplicate Discord/YouTube users: superadmin **Admin → Users** → Merge from into the Discord row. Re-login with Discord after a hosts-role change. Existing `member` rows migrate to **friend**; on Discord login, `DISCORD_SKATER_ROLE_ID` still promotes them to team.
 
 ### YouTube login and skater videos
 
@@ -117,7 +117,7 @@ Quota is cheap: `videos.list` is 1 unit per 50 IDs. We do not download comments,
 | Clean binaries | `just clean` → drops `bin/` and `dist/` |
 | Linux binary from Windows | see [Cross-compilation](#cross-compilation) |
 | Status of the repo | `git log` |
-| Duplicate Discord + YouTube accounts | **Admin → Users** → merge from the spare into the Discord user |
+| Duplicate Discord + YouTube accounts | Superadmin **Admin → Users** → Merge from (folded per row) the spare into the Discord user |
 
 ---
 
@@ -253,7 +253,7 @@ Users who do not match a Discord guild role (hub-admin, skater, or friends), as 
 
 | Role | Determination Logic | Capabilities |
 | :--- | :--- | :--- |
-| **Admin** | Discord `DISCORD_HUB_ADMIN_ROLE_ID` in the Sesh Sofa guild, OR Discord user ID in `SUPERADMIN_DISCORD_IDS`. | Hub access: FS Team (status), edit articles/pages, users, access queue. Not Spot/Episodes. |
+| **Admin** | Discord `DISCORD_HUB_ADMIN_ROLE_ID` in the Sesh Sofa guild, OR Discord user ID in `SUPERADMIN_DISCORD_IDS`. | Hub access: FS Team (status), edit articles/pages, access queue. Not Spot/Episodes. Users (`/admin/users`) is superadmin only (`SUPERADMIN_DISCORD_IDS`). |
 | **Team Skater** | Discord `DISCORD_SKATER_ROLE_ID` in the guild. | Edit own profile, clips, draft articles. Public `/team`. |
 | **Friend** | Discord `DISCORD_FRIENDS_ROLE_ID`, an approved access request, or a former `member` row (promoted to skater on Discord login if they hold the skater role). No Discord required. | Edit own `/friends` profile and YouTube Feed Filter. Clips on `/videos`. |
 | **Host** (flag) | Discord `DISCORD_HOSTS_ROLE_ID` on Discord login. Independent of `users.role`. | Edit Spot (`/admin/spot`) and Episodes (`/admin/episodes`). Edit links only show for this flag. |

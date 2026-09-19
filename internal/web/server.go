@@ -157,6 +157,7 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, dat
 	data["NavAbout"] = path == "/about" || strings.HasPrefix(path, "/about/")
 	if !authPage {
 		if u != nil {
+			data["SuperAdmin"] = auth.IsSuperAdmin(u.DiscordID, s.cfg.SuperAdminIDs)
 			data["Fold"] = true
 			if n, err := forum.UnreadCount(s.db, u.ID); err == nil && n > 0 {
 				data["ForumUnread"] = n
