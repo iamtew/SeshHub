@@ -252,6 +252,9 @@ func scanProfile(sc interface{ Scan(dest ...any) error }) (Profile, error) {
 	if p.PhotoURL != "" {
 		p.AvatarURL = Bust(p.PhotoURL, PhotoPath(p.ID))
 	}
+	if p.Role == "friend" || p.Role == "member" {
+		p.Status = "Friend"
+	}
 	return p, nil
 }
 
@@ -314,7 +317,13 @@ func Save(db *sql.DB, p Profile) (Profile, error) {
 	if p.Stance == "" {
 		p.Stance = "regular"
 	}
-	if p.Status == "" {
+	role := p.Role
+	if role == "" && p.UserID != "" {
+		_ = db.QueryRow(`SELECT role FROM users WHERE id=?`, p.UserID).Scan(&role)
+	}
+	if role == "friend" || role == "member" {
+		p.Status = "Friend"
+	} else if p.Status == "" {
 		p.Status = "active"
 	}
 	if p.ID == "" && p.AvatarR1 == 0 && p.AvatarR2 == 0 && p.AvatarR3 == 0 && p.AvatarR4 == 0 {

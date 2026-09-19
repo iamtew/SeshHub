@@ -2,7 +2,7 @@
 
 **Website:** https://hub.seshsofa.nl
 
-**Last updated:** 18 September 2026
+**Last updated:** 19 September 2026
 
 ## 1. Who we are
 
@@ -103,7 +103,7 @@ We do **not** store your IP address or User-Agent.
 
 **Read: this profile is public.** Anyone on the internet, signed in or not, can see it. Note in particular that the name shown publicly is your **display name (stored as real name) if you have filled it in**, and falls back to your skater name only if you have not. Your **slug** is the public URL `/team/{slug}` (FS Team) or `/friends/{slug}` (Friends). Former slugs are public too: visiting them redirects to your current page. Your **location**, **biography**, **profile photo** (site upload or Discord/YouTube fallback, plus the frame shape and any border style), and **gallery photos** are also shown publicly when set. Please do not put anything in these fields that you would not want a stranger to read.
 
-**Updated:** by you, at `/dashboard/profile`. That form edits your display name, slug, biography, stance, location, featured video, YouTube Feed Filter, photo frame (corner roundness, border style, optional custom hex colour, border width, and border blur), and an optional site-only profile photo. Gallery photos are added and deleted at `/dashboard/gallery`. Changing your slug records the previous one as a redirect and frees it for anyone to claim later. Logging in still refreshes your Discord skater name and the provider avatar URL on your account record; it does not overwrite a slug you chose, and it does not overwrite a site photo you uploaded. Clearing the site photo falls back to Discord or YouTube. An administrator can separately change your roster status.
+**Updated:** by you, at `/dashboard/profile`. That form edits your display name, slug, biography, stance, location, featured video, YouTube Feed Filter, photo frame (corner roundness, border style, optional custom hex colour, border width, and border blur), and an optional site-only profile photo. Gallery photos are added and deleted at `/dashboard/gallery`. Changing your slug records the previous one as a redirect and frees it for anyone to claim later. Logging in still refreshes your Discord skater name and the provider avatar URL on your account record; it does not overwrite a slug you chose, and it does not overwrite a site photo you uploaded. Clearing the site photo falls back to Discord or YouTube. An administrator can separately change an FS Team roster status (Active, Pro, and so on). Friends always show as Friend.
 
 **Deleted:** when your account is deleted, or by an administrator. Former-slug redirects are deleted with the profile. The site photo file and any gallery photo files are deleted with the profile. If someone else takes an old slug, that redirect row is deleted so their page wins.
 

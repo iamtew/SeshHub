@@ -162,4 +162,7 @@ func TestEnsureForUser(t *testing.T) {
 	if err != nil || err3 != nil || len(team) != 1 || len(friends) != 1 || friends[0].UserID != "u2" {
 		t.Fatalf("roster team=%d friends=%d %v %v", len(team), len(friends), err, err3)
 	}
+	if friends[0].Status != "Friend" {
+		t.Fatalf("friend status %q", friends[0].Status)
+	}
 }

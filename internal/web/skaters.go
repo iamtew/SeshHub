@@ -206,7 +206,7 @@ func (s *Server) adminSkaters(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}
-	list, err := skater.List(s.db)
+	list, err := skater.ListTeam(s.db)
 	if err != nil {
 		http.Error(w, "db error", http.StatusInternalServerError)
 		return
@@ -229,6 +229,10 @@ func (s *Server) adminSkaterEdit(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+	if p.Role == auth.RoleFriend || p.Role == auth.RoleMember {
+		http.Redirect(w, r, "/admin/skaters", http.StatusSeeOther)
+		return
+	}
 	if st := r.FormValue("status"); st != "" {
 		p.Status = st
 	}
@@ -245,7 +249,12 @@ func (s *Server) adminSkaterDelete(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}
-	_ = skater.Delete(s.db, r.PathValue("id"))
+	p, err := skater.Get(s.db, "id", r.PathValue("id"))
+	if err != nil || p.Role == auth.RoleFriend || p.Role == auth.RoleMember {
+		http.Redirect(w, r, "/admin/skaters", http.StatusSeeOther)
+		return
+	}
+	_ = skater.Delete(s.db, p.ID)
 	http.Redirect(w, r, "/admin/skaters", http.StatusSeeOther)
 }
 
