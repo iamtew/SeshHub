@@ -243,8 +243,20 @@ func (c Client) sync(ctx context.Context, db *sql.DB) (Result, error) {
 	return out, c.upsertChunk(ctx, db, ids, &out)
 }
 
+func dropNonPublic(db *sql.DB, ids []string, public map[string]struct{}) error {
+	for _, id := range ids {
+		if _, ok := public[id]; ok {
+			continue
+		}
+		if _, err := db.Exec(`DELETE FROM youtube_videos WHERE id=?`, id); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (c Client) upsertChunk(ctx context.Context, db *sql.DB, ids []string, out *Result) error {
-	vb, err := c.get(ctx, "/videos", url.Values{"part": {"snippet,contentDetails,statistics"}, "id": {strings.Join(ids, ",")}})
+	vb, err := c.get(ctx, "/videos", url.Values{"part": {"snippet,contentDetails,statistics,status"}, "id": {strings.Join(ids, ",")}})
 	if err != nil {
 		return err
 	}
@@ -271,12 +283,20 @@ func (c Client) upsertChunk(ctx context.Context, db *sql.DB, ids []string, out *
 				LikeCount    string `json:"likeCount"`
 				CommentCount string `json:"commentCount"`
 			} `json:"statistics"`
+			Status struct {
+				PrivacyStatus string `json:"privacyStatus"`
+			} `json:"status"`
 		} `json:"items"`
 	}
 	if err := json.Unmarshal(vb, &vs); err != nil {
 		return err
 	}
+	kept := map[string]struct{}{}
 	for _, it := range vs.Items {
+		if it.Status.PrivacyStatus != "public" {
+			continue
+		}
+		kept[it.ID] = struct{}{}
 		views, _ := strconv.Atoi(it.Statistics.ViewCount)
 		likes, _ := strconv.Atoi(it.Statistics.LikeCount)
 		comments, _ := strconv.Atoi(it.Statistics.CommentCount)
@@ -302,7 +322,7 @@ func (c Client) upsertChunk(ctx context.Context, db *sql.DB, ids []string, out *
 			out.Updated++
 		}
 	}
-	return nil
+	return dropNonPublic(db, ids, kept)
 }
 
 func upsert(db *sql.DB, v Video) (inserted bool, err error) {
@@ -559,7 +579,7 @@ func (c Client) Poll(ctx context.Context, db *sql.DB) (int, error) {
 }
 
 func (c Client) pollChunk(ctx context.Context, db *sql.DB, ids []string) (int, error) {
-	vb, err := c.get(ctx, "/videos", url.Values{"part": {"snippet,contentDetails,statistics"}, "id": {strings.Join(ids, ",")}})
+	vb, err := c.get(ctx, "/videos", url.Values{"part": {"snippet,contentDetails,statistics,status"}, "id": {strings.Join(ids, ",")}})
 	if err != nil {
 		return 0, err
 	}
@@ -579,13 +599,21 @@ func (c Client) pollChunk(ctx context.Context, db *sql.DB, ids []string) (int, e
 				LikeCount    string `json:"likeCount"`
 				CommentCount string `json:"commentCount"`
 			} `json:"statistics"`
+			Status struct {
+				PrivacyStatus string `json:"privacyStatus"`
+			} `json:"status"`
 		} `json:"items"`
 	}
 	if err := json.Unmarshal(vb, &vs); err != nil {
 		return 0, err
 	}
+	kept := map[string]struct{}{}
 	n := 0
 	for _, it := range vs.Items {
+		if it.Status.PrivacyStatus != "public" {
+			continue
+		}
+		kept[it.ID] = struct{}{}
 		views, _ := strconv.Atoi(it.Statistics.ViewCount)
 		likes, _ := strconv.Atoi(it.Statistics.LikeCount)
 		comments, _ := strconv.Atoi(it.Statistics.CommentCount)
@@ -598,6 +626,9 @@ func (c Client) pollChunk(ctx context.Context, db *sql.DB, ids []string) (int, e
 		if k, _ := res.RowsAffected(); k > 0 {
 			n++
 		}
+	}
+	if err := dropNonPublic(db, ids, kept); err != nil {
+		return n, err
 	}
 	return n, nil
 }

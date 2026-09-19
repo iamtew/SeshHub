@@ -31,6 +31,10 @@ func TestSyncUpsertBearer(t *testing.T) {
 	if err := db.Migrate(sqldb, "../db/migrations"); err != nil {
 		t.Fatal(err)
 	}
+	_, err = sqldb.Exec(`INSERT INTO youtube_videos (id, channel_id, title, published_at, thumbnail_url) VALUES ('priv','ch','secret','2026-01-01','http://t')`)
+	if err != nil {
+		t.Fatal(err)
+	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/channels", func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Authorization") != "Bearer tok" {
@@ -44,21 +48,31 @@ func TestSyncUpsertBearer(t *testing.T) {
 	mux.HandleFunc("/playlistItems", func(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"nextPageToken": "p2",
-			"items":         []any{map[string]any{"contentDetails": map[string]any{"videoId": "vid1"}}},
+			"items": []any{
+				map[string]any{"contentDetails": map[string]any{"videoId": "vid1"}},
+				map[string]any{"contentDetails": map[string]any{"videoId": "priv"}},
+			},
 		})
 	})
 	mux.HandleFunc("/videos", func(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]any{
-			"items": []any{map[string]any{
-				"id": "vid1",
-				"snippet": map[string]any{
-					"title": "Session", "description": "x", "publishedAt": "2026-01-01T00:00:00Z",
-					"channelId": "ch", "channelTitle": "Sofa TV",
-					"thumbnails": map[string]any{"high": map[string]any{"url": "http://t/i.jpg"}},
+			"items": []any{
+				map[string]any{
+					"id": "vid1",
+					"snippet": map[string]any{
+						"title": "Session", "description": "x", "publishedAt": "2026-01-01T00:00:00Z",
+						"channelId": "ch", "channelTitle": "Sofa TV",
+						"thumbnails": map[string]any{"high": map[string]any{"url": "http://t/i.jpg"}},
+					},
+					"contentDetails": map[string]any{"duration": "PT4M13S"},
+					"statistics":     map[string]any{"viewCount": "10", "likeCount": "2", "commentCount": "3"},
+					"status":         map[string]any{"privacyStatus": "public"},
 				},
-				"contentDetails": map[string]any{"duration": "PT4M13S"},
-				"statistics":     map[string]any{"viewCount": "10", "likeCount": "2", "commentCount": "3"},
-			}},
+				map[string]any{
+					"id":     "priv",
+					"status": map[string]any{"privacyStatus": "unlisted"},
+				},
+			},
 		})
 	})
 	ts := httptest.NewServer(mux)
@@ -68,18 +82,18 @@ func TestSyncUpsertBearer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if res.Inserted != 1 || res.Fetched != 1 {
+	if res.Inserted != 1 || res.Fetched != 2 {
 		t.Fatalf("%+v", res)
 	}
 	res, err = c.Sync(context.Background(), sqldb)
-	if err != nil || res.Updated != 1 || res.Fetched != 1 {
+	if err != nil || res.Updated != 1 || res.Fetched != 2 {
 		t.Fatalf("update %+v %v", res, err)
 	}
 	list, err := ListByChannel(sqldb, "ch", 6)
 	if err != nil || len(list) != 1 || list[0].Duration != 253 || list[0].ChannelTitle != "Sofa TV" || list[0].Comments != 3 {
 		t.Fatalf("list %v %#v", err, list)
 	}
-	got := GetMany(sqldb, []string{"vid1", "nope", "vid1"})
+	got := GetMany(sqldb, []string{"vid1", "nope", "vid1", "priv"})
 	if len(got) != 1 || got["vid1"].Views != 10 {
 		t.Fatalf("getmany %#v", got)
 	}
@@ -144,7 +158,7 @@ func TestPollPublicStats(t *testing.T) {
 	if err := db.Migrate(sqldb, "../db/migrations"); err != nil {
 		t.Fatal(err)
 	}
-	_, err = sqldb.Exec(`INSERT INTO youtube_videos (id, channel_id, title, published_at, thumbnail_url) VALUES ('vid1','ch','old','2026-01-01','http://t')`)
+	_, err = sqldb.Exec(`INSERT INTO youtube_videos (id, channel_id, title, published_at, thumbnail_url) VALUES ('vid1','ch','old','2026-01-01','http://t'), ('priv','ch','secret','2026-01-01','http://t')`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -155,11 +169,18 @@ func TestPollPublicStats(t *testing.T) {
 			return
 		}
 		_ = json.NewEncoder(w).Encode(map[string]any{
-			"items": []any{map[string]any{
-				"id":         "vid1",
-				"snippet":    map[string]any{"title": "New name", "channelTitle": "Sofa TV"},
-				"statistics": map[string]any{"viewCount": "9", "likeCount": "0", "commentCount": "4"},
-			}},
+			"items": []any{
+				map[string]any{
+					"id":         "vid1",
+					"snippet":    map[string]any{"title": "New name", "channelTitle": "Sofa TV"},
+					"statistics": map[string]any{"viewCount": "9", "likeCount": "0", "commentCount": "4"},
+					"status":     map[string]any{"privacyStatus": "public"},
+				},
+				map[string]any{
+					"id":     "priv",
+					"status": map[string]any{"privacyStatus": "unlisted"},
+				},
+			},
 		})
 	})
 	ts := httptest.NewServer(mux)
@@ -175,5 +196,8 @@ func TestPollPublicStats(t *testing.T) {
 	}
 	if got := v.StatsLine(); got != "Sofa TV · 9 views · 4 comments" {
 		t.Fatal(got)
+	}
+	if _, err := Get(sqldb, "priv"); err == nil {
+		t.Fatal("unlisted still cached")
 	}
 }

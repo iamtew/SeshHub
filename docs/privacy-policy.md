@@ -123,7 +123,7 @@ If your account is deleted, authorship is reassigned to a reserved "Former membe
 
 ### 4.6 Cached clips from your YouTube channel (`youtube_videos` table)
 
-**What:** for up to 50 recent uploads on a linked channel, the video ID, your channel ID, the public channel title, title, description, publication date, thumbnail URL, duration, YouTube live-broadcast status (`none`, `live`, or `upcoming`), view count, like count, comment count, tags, and an `is_hidden` flag you can set so a clip stays in the cache but does not appear on `/videos` or your public roster page. We do not store comment text. Live-broadcast status is used only to classify upload type (video / short / live / premiere) for the YouTube Feed Filter.
+**What:** for up to 50 recent **public** uploads on a linked channel, the video ID, your channel ID, the public channel title, title, description, publication date, thumbnail URL, duration, YouTube live-broadcast status (`none`, `live`, or `upcoming`), view count, like count, comment count, tags, and an `is_hidden` flag you can set so a clip stays in the cache but does not appear on `/videos` or your public roster page. We do not store comment text. Live-broadcast status is used only to classify upload type (video / short / live / premiere) for the YouTube Feed Filter. Unlisted and private videos are not cached.
 
 **Why:** so the `/videos` gallery and public roster profiles load from our database instead of calling the YouTube API on every page view. Counts of zero are stored but not shown. The hide flag lets you pull a single cached upload off those public lists without changing your YouTube Feed Filter.
 
@@ -131,7 +131,7 @@ If your account is deleted, authorship is reassigned to a reserved "Former membe
 
 **Read:** publicly, on `/videos` and on FS Team / Friends profile pages, except clips you have hidden. You can still see those hidden clips yourself while editing your YouTube feed.
 
-**Deleted:** when your account is deleted, or when an administrator deletes the account that owned the channel.
+**Deleted:** when your account is deleted, when an administrator deletes the account that owned the channel, or when a later sync or stats poll sees the clip is no longer public on YouTube (unlisted, private, or removed).
 
 ### 4.7 Episode archive (`episodes` table)
 
