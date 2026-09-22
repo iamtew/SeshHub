@@ -14,17 +14,16 @@
 </header>
 <div class="forum-stream">
 {{range .Posts}}
-{{if .Latest}}<span id="latest"></span>{{end}}
 <article class="forum-post{{if .First}} forum-post--op{{end}}" id="p-{{.ID}}">
     <header class="forum-post-meta">
         {{if .AuthorAvatar}}{{if .AuthorURL}}<a class="avframe {{.AvatarClass}}" href="{{.AuthorURL}}" style="{{.AvatarStyle}}" aria-label="{{.AuthorName}}"><img class="avatar" src="{{.AuthorAvatar}}" alt="" referrerpolicy="no-referrer"></a>{{else}}<span class="avframe {{.AvatarClass}}" style="{{.AvatarStyle}}"><img class="avatar" src="{{.AuthorAvatar}}" alt="" referrerpolicy="no-referrer"></span>{{end}}{{end}}
         <div>
             <p class="forum-author">{{if .AuthorURL}}<a href="{{.AuthorURL}}">{{.AuthorName}}</a>{{else}}{{.AuthorName}}{{end}}{{if .First}} <span class="forum-op">OP</span>{{end}}</p>
-            <p class="who">{{.CreatedAt}}{{if .Edited}} · edited{{end}}</p>
+            <p class="who"><a href="{{$.PagerBase}}?n={{$.Per}}&amp;post={{.ID}}">{{.CreatedAt}}</a>{{if .Edited}} · edited{{end}}</p>
         </div>
     </header>
     {{if .ParentID}}
-    <a class="forum-quote" href="#p-{{.ParentID}}">{{if .ParentAuthor}}{{.ParentAuthor}}{{else}}Deleted post{{end}}{{if .ParentExcerpt}} — {{.ParentExcerpt}}{{end}}</a>
+    <a class="forum-quote" href="{{$.PagerBase}}?n={{$.Per}}&amp;post={{.ParentID}}">{{if .ParentAuthor}}{{.ParentAuthor}}{{else}}Deleted post{{end}}{{if .ParentExcerpt}} — {{.ParentExcerpt}}{{end}}</a>
     {{end}}
     <div class="forum-cooked prose">{{.HTML}}</div>
     {{if .Photos}}

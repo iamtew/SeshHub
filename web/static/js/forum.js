@@ -13,6 +13,17 @@
 
   document.querySelectorAll(".forum-cooked").forEach(emojify);
 
+  var jump = new URLSearchParams(location.search).get("post");
+  if (jump) {
+    var el = document.getElementById("p-" + jump);
+    if (el) {
+      if (location.hash !== "#p-" + jump) {
+        history.replaceState(null, "", location.pathname + location.search + "#p-" + jump);
+      }
+      el.scrollIntoView();
+    }
+  }
+
   function wrap(ta, before, after) {
     var s = ta.selectionStart;
     var e = ta.selectionEnd;

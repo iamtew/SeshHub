@@ -89,7 +89,8 @@ func TestForumMentionsAndMedia(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := forum.CreateThread(sqldb, sec.ID, alice.ID, "Hi", "hey @bob", nil); err != nil {
+	th, err := forum.CreateThread(sqldb, sec.ID, alice.ID, "Hi", "hey @bob", nil)
+	if err != nil {
 		t.Fatal(err)
 	}
 	s := New(config.Config{WebDir: filepath.Join("..", "..", "web")}, sqldb, nil)
@@ -97,8 +98,30 @@ func TestForumMentionsAndMedia(t *testing.T) {
 	req.AddCookie(&http.Cookie{Name: auth.CookieName, Value: tok})
 	rec := httptest.NewRecorder()
 	s.ServeHTTP(rec, req)
-	if rec.Code != 200 || !strings.Contains(rec.Body.String(), "Hi") {
+	posts, err := forum.ListPosts(sqldb, th.ID)
+	if err != nil || len(posts) != 1 {
+		t.Fatalf("posts %d %v", len(posts), err)
+	}
+	want := forum.PostURL(sec.Slug, th.Slug, posts[0].ID)
+	if rec.Code != 200 || !strings.Contains(rec.Body.String(), "Hi") || !strings.Contains(rec.Body.String(), want) {
 		t.Fatalf("mentions %d %s", rec.Code, rec.Body.String())
+	}
+	for i := 0; i < 24; i++ {
+		if err := forum.Reply(sqldb, th.ID, alice.ID, "pad", "", nil); err != nil {
+			t.Fatal(err)
+		}
+	}
+	posts, err = forum.ListPosts(sqldb, th.ID)
+	if err != nil || len(posts) != 25 {
+		t.Fatalf("pad %d %v", len(posts), err)
+	}
+	last := posts[24]
+	req = httptest.NewRequest(http.MethodGet, forum.PostURL(sec.Slug, th.Slug, last.ID), nil)
+	req.AddCookie(&http.Cookie{Name: auth.CookieName, Value: tok})
+	rec = httptest.NewRecorder()
+	s.ServeHTTP(rec, req)
+	if rec.Code != 200 || !strings.Contains(rec.Body.String(), `id="p-`+last.ID+`"`) || strings.Contains(rec.Body.String(), `id="p-`+posts[0].ID+`"`) {
+		t.Fatalf("post jump %d %s", rec.Code, rec.Body.String())
 	}
 	rec = httptest.NewRecorder()
 	s.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/forum/users?q=al", nil))

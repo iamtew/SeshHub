@@ -314,13 +314,10 @@ func ExportMentions(db *sql.DB, userID string) ([]MentionItem, error) {
 	return ListMentions(db, userID)
 }
 
-func MentionHref(it MentionItem, per int) string {
-	if per < 1 {
-		per = 24
-	}
-	page := (it.Index-1)/per + 1
-	if page < 1 {
-		page = 1
-	}
-	return fmt.Sprintf("/forum/%s/%s?n=24&p=%d#p-%s", it.SectionSlug, it.ThreadSlug, page, it.PostID)
+func MentionHref(it MentionItem) string {
+	return PostURL(it.SectionSlug, it.ThreadSlug, it.PostID)
+}
+
+func PostURL(sectionSlug, threadSlug, postID string) string {
+	return "/forum/" + sectionSlug + "/" + threadSlug + "?post=" + postID
 }

@@ -321,7 +321,9 @@ form[action*="/unlink/"] button { background: var(--magenta); }
     border: 2px solid rgb(134 0 223 / 0.55);
     border-radius: 0.9rem;
     background: rgb(0 0 0 / 0.45);
+    scroll-margin-top: 1rem;
 }
+.forum-post:target { border-color: var(--chartreuse); }
 .forum-post--op { border-color: var(--chartreuse); }
 .forum-post-meta {
     display: flex;

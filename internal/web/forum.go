@@ -69,6 +69,13 @@ func (s *Server) forumIncoming(w http.ResponseWriter, r *http.Request) (body, pa
 	return body, parent, files, remove, true
 }
 
+func forumPage(n, p, total int) (per, page, offset, from, to int) {
+	if n == 0 {
+		n = 24
+	}
+	return videoPage(n, p, total)
+}
+
 func (s *Server) forumIndex(w http.ResponseWriter, r *http.Request) {
 	u := s.requireLogin(w, r)
 	if u == nil {
@@ -102,7 +109,7 @@ func (s *Server) forumMentions(w http.ResponseWriter, r *http.Request) {
 	}
 	views := make([]row, len(list))
 	for i, it := range list {
-		views[i] = row{MentionItem: it, Href: forum.MentionHref(it, 24)}
+		views[i] = row{MentionItem: it, Href: forum.MentionHref(it)}
 	}
 	s.render(w, r, "forum_mentions.html", map[string]any{
 		"Title": "Mentions", "Path": "/forum/mentions", "Items": views, "ForumJS": true,
@@ -159,7 +166,7 @@ func (s *Server) forumSection(w http.ResponseWriter, r *http.Request) {
 	}
 	n, _ := strconv.Atoi(r.URL.Query().Get("n"))
 	p, _ := strconv.Atoi(r.URL.Query().Get("p"))
-	per, page, offset, from, to := videoPage(n, p, len(list))
+	per, page, offset, from, to := forumPage(n, p, len(list))
 	shown := list
 	if len(list) > 0 {
 		end := offset + per
@@ -208,7 +215,7 @@ func (s *Server) forumNew(w http.ResponseWriter, r *http.Request) {
 	}
 	s.announce("forum", "New forum thread: **"+th.Title+"**\n"+s.publicURL("/forum/"+sec.Slug+"/"+th.Slug))
 	if pid, err := forum.FirstPostID(s.db, th.ID); err == nil {
-		s.announceMentions(pid, th.Title, "/forum/"+sec.Slug+"/"+th.Slug, nil)
+		s.announceMentions(pid, th.Title, forum.PostURL(sec.Slug, th.Slug, pid), nil)
 	}
 	http.Redirect(w, r, "/forum/"+sec.Slug+"/"+th.Slug, http.StatusSeeOther)
 }
@@ -218,7 +225,6 @@ type forumPostView struct {
 	HTML      template.HTML
 	CanEdit   bool
 	CanDelete bool
-	Latest    bool
 	Quote     string
 }
 
@@ -252,7 +258,16 @@ func (s *Server) forumThread(w http.ResponseWriter, r *http.Request) {
 	_ = forum.MarkRead(s.db, u.ID, th.ID)
 	n, _ := strconv.Atoi(r.URL.Query().Get("n"))
 	p, _ := strconv.Atoi(r.URL.Query().Get("p"))
-	per, page, offset, from, to := videoPage(n, p, len(posts))
+	if pid := r.URL.Query().Get("post"); pid != "" {
+		per, _, _, _, _ := forumPage(n, 1, len(posts))
+		for i, post := range posts {
+			if post.ID == pid {
+				p = i/per + 1
+				break
+			}
+		}
+	}
+	per, page, offset, from, to := forumPage(n, p, len(posts))
 	shown := posts
 	if len(posts) > 0 {
 		end := offset + per
@@ -263,7 +278,7 @@ func (s *Server) forumThread(w http.ResponseWriter, r *http.Request) {
 	}
 	views := make([]forumPostView, len(shown))
 	for i, post := range shown {
-		views[i] = forumPostView{Post: post, HTML: template.HTML(post.BodyHTML), CanEdit: forum.CanEdit(u.ID, post.UserID), CanDelete: forum.CanDelete(u.Role, u.ID, post.UserID), Latest: i == len(shown)-1 && to >= len(posts), Quote: article.Excerpt(post.BodyRaw, "")}
+		views[i] = forumPostView{Post: post, HTML: template.HTML(post.BodyHTML), CanEdit: forum.CanEdit(u.ID, post.UserID), CanDelete: forum.CanDelete(u.Role, u.ID, post.UserID), Quote: article.Excerpt(post.BodyRaw, "")}
 	}
 	s.render(w, r, "forum_thread.html", map[string]any{
 		"Title": th.Title, "Path": "/forum", "S": sec, "T": th, "Posts": views,
@@ -293,9 +308,11 @@ func (s *Server) forumReply(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if pid, err := forum.LatestPostID(s.db, th.ID, u.ID); err == nil {
-		s.announceMentions(pid, th.Title, "/forum/"+sec.Slug+"/"+th.Slug, nil)
+		s.announceMentions(pid, th.Title, forum.PostURL(sec.Slug, th.Slug, pid), nil)
+		http.Redirect(w, r, forum.PostURL(sec.Slug, th.Slug, pid), http.StatusSeeOther)
+		return
 	}
-	http.Redirect(w, r, "/forum/"+sec.Slug+"/"+th.Slug+"#latest", http.StatusSeeOther)
+	http.Redirect(w, r, "/forum/"+sec.Slug+"/"+th.Slug, http.StatusSeeOther)
 }
 
 func (s *Server) forumPostEdit(w http.ResponseWriter, r *http.Request) {
@@ -329,8 +346,8 @@ func (s *Server) forumPostEdit(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	s.announceMentions(p.ID, th.Title, "/forum/"+sec.Slug+"/"+th.Slug, prev)
-	http.Redirect(w, r, "/forum/"+sec.Slug+"/"+th.Slug+"#p-"+p.ID, http.StatusSeeOther)
+	s.announceMentions(p.ID, th.Title, forum.PostURL(sec.Slug, th.Slug, p.ID), prev)
+	http.Redirect(w, r, forum.PostURL(sec.Slug, th.Slug, p.ID), http.StatusSeeOther)
 }
 
 func (s *Server) forumPostDelete(w http.ResponseWriter, r *http.Request) {

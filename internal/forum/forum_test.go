@@ -220,6 +220,9 @@ func TestMentionDiscords(t *testing.T) {
 	if err != nil || len(got) != 0 {
 		t.Fatalf("already mentioned %v %v", got, err)
 	}
+	if h := MentionHref(MentionItem{SectionSlug: "g", ThreadSlug: "t", PostID: "abc"}); h != "/forum/g/t?post=abc" {
+		t.Fatal(h)
+	}
 }
 
 func tinyPNG() []byte {
