@@ -396,12 +396,15 @@ form[action*="/unlink/"] button { background: var(--magenta); }
 .forum-quote-preview[hidden] { display: none; }
 .forum-thumbs { list-style: none; padding: 0; margin: 0.6rem 0 0; display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: flex-end; width: 100%; }
 .forum-thumbs li { min-width: 0; max-width: 100%; }
+.forum-thumbs li:has(audio) { min-width: min(20rem, 100%); flex-shrink: 0; }
 .forum-thumbs button { padding: 0; background: transparent; border: 0; cursor: pointer; min-width: 2.75rem; min-height: 2.75rem; max-width: 100%; }
 .forum-thumbs img, .forum-existing img { max-width: 16rem; max-height: 16rem; object-fit: cover; display: block; }
 .forum-thumbs audio {
     display: block;
-    width: min(20rem, 100%);
+    width: 20rem;
+    max-width: 100%;
     min-height: 2.75rem;
+    flex-shrink: 0;
     color-scheme: light;
 }
 .forum-thumbs video {
