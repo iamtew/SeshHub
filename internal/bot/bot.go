@@ -142,7 +142,7 @@ func (b *Bot) Channels() ([]Channel, error) {
 	if err != nil {
 		return nil, err
 	}
-	member, err := b.sess.GuildMember(b.guildID, "@me")
+	member, err := b.sess.UserGuildMember(b.guildID)
 	if err != nil {
 		return nil, err
 	}
