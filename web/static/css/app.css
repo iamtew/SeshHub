@@ -370,6 +370,7 @@ form[action*="/unlink/"] button { background: var(--magenta); }
     border-left: 3px solid var(--chartreuse); background: rgb(0 0 0 / 0.35);
     color: var(--offwhite); font-size: 0.92rem;
 }
+.forum-quote-preview[hidden] { display: none; }
 .forum-thumbs { list-style: none; padding: 0; margin: 0.6rem 0 0; display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: flex-end; }
 .forum-thumbs button { padding: 0; background: transparent; border: 0; cursor: pointer; min-width: 2.75rem; min-height: 2.75rem; }
 .forum-thumbs img, .forum-existing img { max-width: 16rem; max-height: 16rem; object-fit: cover; display: block; }
