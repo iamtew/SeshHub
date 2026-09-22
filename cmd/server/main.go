@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"seshhub/internal/auth"
+	"seshhub/internal/bot"
 	"seshhub/internal/config"
 	"seshhub/internal/db"
 	"seshhub/internal/spot"
@@ -48,9 +49,12 @@ func main() {
 		go pollYouTube(ctx, sqldb, cfg.YouTubeAPIKey)
 	}
 
+	b := bot.Open(sqldb, cfg.DiscordBotToken, cfg.DiscordGuildID)
+	defer b.Close()
+
 	srv := &http.Server{
 		Addr:              cfg.ListenAddr(),
-		Handler:           web.New(cfg, sqldb),
+		Handler:           web.New(cfg, sqldb, b),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 	go func() {

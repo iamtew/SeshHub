@@ -23,7 +23,7 @@ func TestForumGuestRedirect(t *testing.T) {
 	if err := db.Migrate(sqldb, "../db/migrations"); err != nil {
 		t.Fatal(err)
 	}
-	s := New(config.Config{WebDir: filepath.Join("..", "..", "web")}, sqldb)
+	s := New(config.Config{WebDir: filepath.Join("..", "..", "web")}, sqldb, nil)
 	rec := httptest.NewRecorder()
 	s.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/forum", nil))
 	if rec.Code != http.StatusFound {
@@ -51,7 +51,7 @@ func TestForumLoggedIn(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s := New(config.Config{WebDir: filepath.Join("..", "..", "web")}, sqldb)
+	s := New(config.Config{WebDir: filepath.Join("..", "..", "web")}, sqldb, nil)
 	req := httptest.NewRequest(http.MethodGet, "/forum", nil)
 	req.AddCookie(&http.Cookie{Name: auth.CookieName, Value: tok})
 	rec := httptest.NewRecorder()
@@ -92,7 +92,7 @@ func TestForumMentionsAndMedia(t *testing.T) {
 	if _, err := forum.CreateThread(sqldb, sec.ID, alice.ID, "Hi", "hey @bob", nil); err != nil {
 		t.Fatal(err)
 	}
-	s := New(config.Config{WebDir: filepath.Join("..", "..", "web")}, sqldb)
+	s := New(config.Config{WebDir: filepath.Join("..", "..", "web")}, sqldb, nil)
 	req := httptest.NewRequest(http.MethodGet, "/forum/mentions", nil)
 	req.AddCookie(&http.Cookie{Name: auth.CookieName, Value: tok})
 	rec := httptest.NewRecorder()
@@ -168,7 +168,7 @@ func TestForumAdminCannotEditOthers(t *testing.T) {
 	if err != nil || len(posts) != 1 {
 		t.Fatal(err)
 	}
-	s := New(config.Config{WebDir: filepath.Join("..", "..", "web")}, sqldb)
+	s := New(config.Config{WebDir: filepath.Join("..", "..", "web")}, sqldb, nil)
 	req := httptest.NewRequest(http.MethodPost, "/forum/"+sec.Slug+"/"+th.Slug+"/posts/"+posts[0].ID, strings.NewReader("body=hacked"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.AddCookie(&http.Cookie{Name: auth.CookieName, Value: tok})

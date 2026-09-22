@@ -1,0 +1,30 @@
+{{define "content"}}
+<h1>Discord bot</h1>
+<ul class="queue">
+    <li>Token <span class="who">{{if .Bot.Configured}}set{{else}}missing{{end}}</span></li>
+    <li>Gateway <span class="who">{{.Bot.State}}</span></li>
+    <li>Bot <span class="who">{{.Bot.Username}}</span></li>
+    <li>Latency <span class="who">{{.Bot.Latency}}</span></li>
+    <li>Guild <span class="who">{{.Bot.Guild}}</span></li>
+    <li>Connected since <span class="who">{{.Bot.Since}}</span></li>
+    <li>Last error <span class="who">{{.Bot.LastError}}</span></li>
+</ul>
+<form method="post" action="/admin/bot" class="form">
+    <label>Channel ID <input name="channel_id" value="{{.Settings.ChannelID}}" inputmode="numeric" autocomplete="off" placeholder="snowflake"></label>
+    <label><input type="checkbox" name="news" value="1" {{if .Settings.News}}checked{{end}}> New published news</label>
+    <label><input type="checkbox" name="forum" value="1" {{if .Settings.Forum}}checked{{end}}> New forum thread</label>
+    <label><input type="checkbox" name="access" value="1" {{if .Settings.Access}}checked{{end}}> New access request</label>
+    <button type="submit">Save</button>
+</form>
+<p class="who">Empty channel posts nothing. News is the title and public URL the first time an article is published (internal stays on the hub). Forum is the title, author, and thread URL, not the post. Access is the requester’s name.</p>
+<h2>Activity</h2>
+{{if not .Activity}}
+<p class="who">Nothing yet. This list is cleared when the server stops.</p>
+{{else}}
+<ul class="queue">
+{{range .Activity}}
+<li><span class="who">{{.When}} {{.Kind}}</span> {{.Text}}{{if .Err}} <span class="who">{{.Err}}</span>{{end}}</li>
+{{end}}
+</ul>
+{{end}}
+{{end}}

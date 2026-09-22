@@ -76,6 +76,14 @@ Set `BASE_URL` to the same origin you type in the browser (`http://localhost:530
 
 Scopes used: `identify`, `guilds.members.read`. Restart the server after saving `.env`. Sign in with Discord. Guild hub-admin role or superadmin → **admin**. Hosts role → can edit Spot and Episodes (independent of admin). Skater role → **skater**, and a `/team` profile is created (Discord name, linked user id). Friends role → **friend**, and a `/friends` profile is created. In the guild with none of those roles → **pending** (request access at `/access`; approve at `/admin/access` grants **friend**, not team). Not in the guild → **pending** as well (login still succeeds). Duplicate Discord/YouTube users: superadmin **Admin → Users** → Merge from into the Discord row. Re-login with Discord after a hosts-role change. Existing `member` rows migrate to **friend**; on Discord login, `DISCORD_SKATER_ROLE_ID` still promotes them to team.
 
+### Discord bot
+
+Same Discord application. **Bot → Reset Token** → `DISCORD_BOT_TOKEN` (not the OAuth client secret). Invite the bot to the Sesh Sofa server with the **bot** scope and **Send Messages**. The gateway intent is guilds only; the bot does not read messages. Empty token means no gateway and no posts.
+
+**Admin → Discord bot** (`/admin/bot`): token set or missing, gateway (connecting / connected / disconnected), bot username, heartbeat latency, whether it is in `DISCORD_GUILD_ID`, last error, and an in-memory activity list (connects, disconnects, posts). One channel ID and an on/off switch each for new public news, new forum threads, and access requests. All off until an admin enables them. An empty channel posts nothing. The list is cleared when the process stops.
+
+News posts the title and `/news/…` URL the first time an article becomes published, and only if it is public. A later edit does not post again. Unpublishing and publishing again does. Forum posts the thread title, the author's display name, and the thread URL — not the body or images. Access posts the requester's display name and username when they submit `/access`.
+
 ### YouTube login and skater videos
 
 One Google OAuth client. That is login, linking a channel, and (for team skaters and friends) refreshing their latest public uploads onto their profile and `/videos`.
@@ -313,7 +321,7 @@ Two header modes. Same public nav (Spot / Episodes / FS Team / Friends / News / 
 - **Edit (`/admin/episodes`)**: Hosts role only. Edit title, counts, rows, trick URL, winner (pick from the challenge playlist when the editor has YouTube linked, or paste a watch URL; empty winner name fills from the video’s channel and can be overwritten).
 
 ### 5. Admin UI & Markdown editor
-- **Admin Control Center (`/admin`)**: Metric overviews, access queue, and **Users** (see who has Discord/YouTube, merge duplicate accounts, unlink, delete).
+- **Admin Control Center (`/admin`)**: Metric overviews, access queue, **Discord bot** (`/admin/bot`: gateway status and on/off for news, forum, and access announcements), and **Users** (see who has Discord/YouTube, merge duplicate accounts, unlink, delete).
 - **Basic editor**: `textarea[name=content_raw]` on articles, custom pages, and Spot, with a live HTML preview beside it (under it below 800px). Preview is `POST /preview` → goldmark + bluemonday (Spot also fills `{{placeholders}}`).
 - **Advanced editor**: from 640px up, a button opens a near-fullscreen `<dialog>`. Hidden on smaller screens (phone stays on the basic textarea + preview). Left sidebar is the rest of the document (slug, published, …; Spot: insert chips). Center is Monaco from jsDelivr. Right is the same live preview. Palette theme `sesh-sofa`.
 
@@ -645,6 +653,7 @@ DISCORD_HUB_ADMIN_ROLE_ID=your_hub_admin_role_id
 DISCORD_SKATER_ROLE_ID=your_team_skater_role_id
 DISCORD_FRIENDS_ROLE_ID=your_friends_role_id
 DISCORD_HOSTS_ROLE_ID=your_hosts_role_id
+DISCORD_BOT_TOKEN=                    # Bot token (not the OAuth secret). Empty = bot off.
 
 # ==============================================================================
 # YouTube OAuth2 (login + link)

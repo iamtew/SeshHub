@@ -35,6 +35,7 @@ func (s *Server) accessRequest(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "request failed", http.StatusInternalServerError)
 		return
 	}
+	s.announce("access", "Access: "+display(u)+" ("+u.Username+") asked to join")
 	http.Redirect(w, r, "/access", http.StatusSeeOther)
 }
 

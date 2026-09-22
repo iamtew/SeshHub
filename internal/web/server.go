@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"seshhub/internal/auth"
+	"seshhub/internal/bot"
 	"seshhub/internal/config"
 	"seshhub/internal/forum"
 	"seshhub/internal/yt"
@@ -19,12 +20,13 @@ type Server struct {
 	cfg    config.Config
 	db     *sql.DB
 	webDir string
+	bot    *bot.Bot
 	mux    *http.ServeMux
 }
 
-func New(cfg config.Config, db *sql.DB) *Server {
+func New(cfg config.Config, db *sql.DB, b *bot.Bot) *Server {
 	yt.RefreshAccess = auth.RefreshGoogle
-	s := &Server{cfg: cfg, db: db, webDir: cfg.WebDir, mux: http.NewServeMux()}
+	s := &Server{cfg: cfg, db: db, webDir: cfg.WebDir, bot: b, mux: http.NewServeMux()}
 	s.mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir(filepath.Join(cfg.WebDir, "static")))))
 	s.mux.HandleFunc("GET /favicon.ico", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, filepath.Join(s.webDir, "static", "favicon.ico"))
@@ -106,6 +108,8 @@ func New(cfg config.Config, db *sql.DB) *Server {
 	s.mux.HandleFunc("POST /admin/forum/sections", s.adminForum)
 	s.mux.HandleFunc("POST /admin/forum/sections/{id}/delete", s.adminForumDelete)
 	s.mux.HandleFunc("GET /admin", s.adminHome)
+	s.mux.HandleFunc("GET /admin/bot", s.adminBot)
+	s.mux.HandleFunc("POST /admin/bot", s.adminBot)
 	s.mux.HandleFunc("GET /admin/spot", s.adminSpot)
 	s.mux.HandleFunc("POST /admin/spot", s.adminSpot)
 	s.mux.HandleFunc("GET /admin/episodes", s.adminEpisodes)

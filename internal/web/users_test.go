@@ -28,7 +28,7 @@ func TestAdminUsersSuperAdminOnly(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s := New(config.Config{WebDir: filepath.Join("..", "..", "web"), SuperAdminIDs: []string{"super"}}, sqldb)
+	s := New(config.Config{WebDir: filepath.Join("..", "..", "web"), SuperAdminIDs: []string{"super"}}, sqldb, nil)
 	hit := func(u auth.User) int {
 		tok, err := auth.CreateSession(sqldb, u.ID)
 		if err != nil {

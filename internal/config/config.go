@@ -17,6 +17,7 @@ type Config struct {
 	MigrationsDir         string
 	DiscordClientID       string
 	DiscordClientSecret   string
+	DiscordBotToken       string
 	DiscordGuildID        string
 	DiscordHubAdminRoleID string
 	DiscordHostsRoleID    string
@@ -41,6 +42,7 @@ func Load() Config {
 		MigrationsDir:         getenv("MIGRATIONS_DIR", filepath.Join("internal", "db", "migrations")),
 		DiscordClientID:       getenv("DISCORD_CLIENT_ID", ""),
 		DiscordClientSecret:   getenv("DISCORD_CLIENT_SECRET", ""),
+		DiscordBotToken:       getenv("DISCORD_BOT_TOKEN", ""),
 		DiscordGuildID:        getenv("DISCORD_GUILD_ID", ""),
 		DiscordHubAdminRoleID: getenv("DISCORD_HUB_ADMIN_ROLE_ID", ""),
 		DiscordHostsRoleID:    getenv("DISCORD_HOSTS_ROLE_ID", ""),

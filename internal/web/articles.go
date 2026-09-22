@@ -132,6 +132,7 @@ func (s *Server) articleCreate(admin bool) http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
+		s.announcePublished(article.Article{}, saved)
 		http.Redirect(w, r, afterSave(r, pathFor(admin)+"/"+saved.ID, pathFor(admin)), http.StatusSeeOther)
 	}
 }
@@ -159,15 +160,24 @@ func (s *Server) articleEdit(admin bool) http.HandlerFunc {
 		if r.Method == http.MethodPost {
 			np := formArticle(r, a.AuthorID)
 			np.ID = a.ID
-			if _, err := article.Save(s.db, np, admin); err != nil {
+			saved, err := article.Save(s.db, np, admin)
+			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
+			s.announcePublished(a, saved)
 			http.Redirect(w, r, afterSave(r, pathFor(admin)+"/"+a.ID, pathFor(admin)), http.StatusSeeOther)
 			return
 		}
 		s.render(w, r, "article_form.html", map[string]any{"Title": "Edit " + a.Title, "Path": pathFor(admin), "A": a, "Action": pathFor(admin) + "/" + a.ID, "Admin": admin, "Monaco": true})
 	}
+}
+
+func (s *Server) announcePublished(prev, saved article.Article) {
+	if saved.Status != "published" || prev.Status == "published" || saved.Visibility == "internal" {
+		return
+	}
+	s.announce("news", "News: "+saved.Title+" "+s.publicURL("/news/"+saved.Slug))
 }
 
 func (s *Server) articleDelete(w http.ResponseWriter, r *http.Request) {

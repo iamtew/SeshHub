@@ -206,6 +206,7 @@ func (s *Server) forumNew(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	s.announce("forum", "Forum: "+display(u)+" started "+th.Title+" "+s.publicURL("/forum/"+sec.Slug+"/"+th.Slug))
 	http.Redirect(w, r, "/forum/"+sec.Slug+"/"+th.Slug, http.StatusSeeOther)
 }
 
