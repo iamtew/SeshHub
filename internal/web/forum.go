@@ -215,7 +215,7 @@ func (s *Server) forumNew(w http.ResponseWriter, r *http.Request) {
 	}
 	s.announce("forum", "New forum thread: **"+th.Title+"**\n"+s.publicURL("/forum/"+sec.Slug+"/"+th.Slug))
 	if pid, err := forum.FirstPostID(s.db, th.ID); err == nil {
-		s.announceMentions(pid, th.Title, forum.PostURL(sec.Slug, th.Slug, pid), nil)
+		s.announceMentions(u, pid, th.Title, "/forum/"+sec.Slug+"/"+th.Slug, nil)
 	}
 	http.Redirect(w, r, "/forum/"+sec.Slug+"/"+th.Slug, http.StatusSeeOther)
 }
@@ -308,7 +308,7 @@ func (s *Server) forumReply(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if pid, err := forum.LatestPostID(s.db, th.ID, u.ID); err == nil {
-		s.announceMentions(pid, th.Title, forum.PostURL(sec.Slug, th.Slug, pid), nil)
+		s.announceMentions(u, pid, th.Title, "/forum/"+sec.Slug+"/"+th.Slug, nil)
 		http.Redirect(w, r, forum.PostURL(sec.Slug, th.Slug, pid), http.StatusSeeOther)
 		return
 	}
@@ -346,7 +346,7 @@ func (s *Server) forumPostEdit(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	s.announceMentions(p.ID, th.Title, forum.PostURL(sec.Slug, th.Slug, p.ID), prev)
+	s.announceMentions(u, p.ID, th.Title, "/forum/"+sec.Slug+"/"+th.Slug, prev)
 	http.Redirect(w, r, forum.PostURL(sec.Slug, th.Slug, p.ID), http.StatusSeeOther)
 }
 

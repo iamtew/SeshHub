@@ -171,19 +171,24 @@ func (s *Server) announce(kind, text string) {
 	go s.bot.Announce(kind, text)
 }
 
-func (s *Server) announceMentions(postID, title, path string, skip []string) {
+func (s *Server) announceMentions(author *auth.User, postID, title, path string, skip []string) {
 	ids, err := forum.MentionDiscords(s.db, postID, skip)
-	if err != nil || len(ids) == 0 {
+	if err != nil || len(ids) == 0 || author == nil {
 		return
 	}
+	who := "**" + display(author) + "**"
+	if author.DiscordID != "" && channelID(author.DiscordID) {
+		who = "<@" + author.DiscordID + ">"
+	}
 	var b strings.Builder
+	b.WriteString("User " + who + " mentioned ")
 	for i, id := range ids {
 		if i > 0 {
 			b.WriteByte(' ')
 		}
 		b.WriteString("<@" + id + ">")
 	}
-	b.WriteString(" mentioned in **" + title + "**\n")
+	b.WriteString(" in forum thread: **" + title + "**\n")
 	b.WriteString(s.publicURL(path))
 	s.announce("mention", b.String())
 }
