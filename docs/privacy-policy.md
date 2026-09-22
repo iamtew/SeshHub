@@ -2,7 +2,7 @@
 
 **Website:** https://hub.seshsofa.nl
 
-**Last updated:** 20 September 2026
+**Last updated:** 22 September 2026
 
 ## 1. Who we are
 
@@ -67,11 +67,11 @@ Our database is a SQLite file on the server that runs the Service.
 
 **Created:** the first time you sign in with Discord or YouTube. The YouTube Feed Filter is created when you save one on `/dashboard/profile`.
 
-**Read:** on every request you make while signed in, to resolve your session to an account. Your display name is also shown publicly as the author of any article you write, and to signed-in users as the author of Message Board posts. The YouTube Feed Filter is read to decide which of your cached clips appear on `/videos` and your public roster page.
+**Read:** on every request you make while signed in, to resolve your session to an account. Your display name is also shown publicly as the author of any article you write, and to signed-in users as the author of Forum posts. The YouTube Feed Filter is read to decide which of your cached clips appear on `/videos` and your public roster page.
 
 **Updated:** on **every** subsequent sign-in. We re-copy your current username, display name, avatar and roles from the provider, so changing your name or avatar on Discord changes it here the next time you log in. Linking or unlinking a provider also updates this record. Saving or clearing the YouTube Feed Filter on `/dashboard/profile` updates this record.
 
-**Deleted:** by you at `/account`, or by an administrator. The YouTube Feed Filter is deleted with the account. Articles and remaining Message Board posts stay with the byline "Former member". See sections 4.5 and 4.11.
+**Deleted:** by you at `/account`, or by an administrator. The YouTube Feed Filter is deleted with the account. Articles and remaining Forum posts stay with the byline "Former member". See sections 4.5 and 4.11.
 
 The refresh token deserves a specific mention: it is a long-lived credential that lets us request read-only access to your YouTube channel without you signing in again. It is stored in the database in plain text. It is cleared when a YouTube account is unlinked or the account is deleted. You can also revoke it yourself at any time from [Google's security settings](https://security.google.com/settings/security/permissions), which invalidates it immediately regardless of what we hold.
 
@@ -167,7 +167,7 @@ We do not send email. There is no newsletter and no notification system. The onl
 
 **Deleted:** when you delete a photo on `/dashboard/gallery`, when your account is deleted, or when an administrator deletes the profile. The database row and the JPEG file both go.
 
-### 4.11 Message Board (`forum_sections`, `forum_threads`, `forum_posts`, `forum_thread_reads`)
+### 4.11 Forum (`forum_sections`, `forum_threads`, `forum_posts`, `forum_thread_reads`)
 
 **What:** categories (name, slug, description, sort order, active flag); threads (title, slug, author account id, last-activity time, locked/sticky flags); posts (markdown source, sanitized HTML, author account id, timestamps); and a per-user watermark of when you last opened a thread (for the unread badge). No IP addresses.
 
@@ -219,7 +219,7 @@ Each of these companies handles your data under its own privacy policy. You can 
 | Read your Discord roles to decide your permissions | To keep members' areas restricted to members | Art. 6(1)(f) - legitimate interest in access control |
 | Keep a hash of a YouTube channel ID after a rejected YouTube-only access request | To tell you once that the request was denied, after we deleted the account | Art. 6(1)(f) - legitimate interest in informing you of the decision |
 | Publish your skater profile, gallery photos, and article authorship | This is the purpose of the roster, `/photos`, and the news section, and you control the content | Art. 6(1)(f), with your role in publishing it |
-| Host the Message Board | Signed-in discussion is part of the members' service | Art. 6(1)(b), and Art. 6(1)(f) legitimate interest in a private community board |
+| Host the Forum | Signed-in discussion is part of the members' service | Art. 6(1)(b), and Art. 6(1)(f) legitimate interest in a private community board |
 | Cache your YouTube clips | To show the gallery without hammering the YouTube API | Art. 6(1)(f) - legitimate interest in a functioning site |
 | Google Analytics | Audience statistics | Art. 6(1)(a) - consent, via the banner. Declining (or ignoring the banner) means the tag never loads. |
 
@@ -231,16 +231,16 @@ Each of these companies handles your data under its own privacy policy. You can 
 - **Cached YouTube clips:** kept until the owning account is deleted.
 - **Access requests:** kept until the account is deleted. A YouTube-only rejection deletes the account immediately.
 - **Access denial hash:** SHA-256 of a YouTube channel ID, kept only until that channel’s next sign-in (the denial notice), then deleted.
-- **Articles, episode entries, and Message Board posts:** kept as part of the site's archive. Deleted authors are shown as "Former member". Forum read watermarks are deleted with the account.
+- **Articles, episode entries, and Forum posts:** kept as part of the site's archive. Deleted authors are shown as "Former member". Forum read watermarks are deleted with the account.
 
 ## 9. Your rights under the GDPR
 
 You have the right of access (Art. 15), rectification (Art. 16), erasure (Art. 17), restriction (Art. 18), data portability (Art. 20), and objection (Art. 21).
 
-**How to exercise these rights.** Most of them are on `/account` while you are signed in: unlink a provider, download a JSON export of your account, profile (including photo URL and frame settings), gallery photo URLs, former slugs, YouTube Feed Filter, access request, and Message Board posts (thread title plus markdown body), or delete the account. Logging out ends every session. You can also email the contact address in section 1. We will respond within one month, as Art. 12(3) requires.
+**How to exercise these rights.** Most of them are on `/account` while you are signed in: unlink a provider, download a JSON export of your account, profile (including photo URL and frame settings), gallery photo URLs, former slugs, YouTube Feed Filter, access request, and Forum posts (thread title plus markdown body), or delete the account. Logging out ends every session. You can also email the contact address in section 1. We will respond within one month, as Art. 12(3) requires.
 
 - **Access or portability:** use **Download my data** on `/account`, or ask us by email. The export includes the public URL of a site photo if you uploaded one, and the public URLs of gallery photos, not the image bytes.
-- **Erasure:** use **Delete my account** on `/account`. That removes your account record (including the YouTube Feed Filter), sessions, access request, skater profile, former-slug redirects, cached clips, any site profile photo file, any gallery photo files, and Message Board read watermarks. Articles and remaining forum posts stay, shown as "Former member". An administrator rejecting a YouTube-only access request does the same erasure, except we keep the short-lived channel-ID hash described in section 4.4 until your next YouTube sign-in.
+- **Erasure:** use **Delete my account** on `/account`. That removes your account record (including the YouTube Feed Filter), sessions, access request, skater profile, former-slug redirects, cached clips, any site profile photo file, any gallery photo files, and Forum read watermarks. Articles and remaining forum posts stay, shown as "Former member". An administrator rejecting a YouTube-only access request does the same erasure, except we keep the short-lived channel-ID hash described in section 4.4 until your next YouTube sign-in.
 - **Rectification:** most profile fields update themselves from Discord or YouTube on your next sign-in. Your display name, slug, biography, location, featured clip, YouTube Feed Filter, site photo and photo frame (including border style, width, and blur) are yours to edit at `/dashboard/profile`. Gallery photos are yours to add and delete at `/dashboard/gallery`.
 - **Objection or restriction:** tell us what you object to and we will stop it or explain why we believe we may continue.
 

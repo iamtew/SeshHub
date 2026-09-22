@@ -54,7 +54,7 @@ func TestForumLoggedIn(t *testing.T) {
 	req.AddCookie(&http.Cookie{Name: auth.CookieName, Value: tok})
 	rec := httptest.NewRecorder()
 	s.ServeHTTP(rec, req)
-	if rec.Code != 200 || !strings.Contains(rec.Body.String(), "Message Board") {
+	if rec.Code != 200 || !strings.Contains(rec.Body.String(), "Forum") {
 		t.Fatalf("%d %s", rec.Code, rec.Body.String())
 	}
 	if !strings.Contains(rec.Body.String(), "General") {

@@ -35,7 +35,7 @@ func (s *Server) forumIndex(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.render(w, r, "forum_index.html", map[string]any{
-		"Title": "Message Board", "Path": "/forum", "Sections": list, "Admin": u.Role == auth.RoleAdmin,
+		"Title": "Forum", "Path": "/forum", "Sections": list, "Admin": u.Role == auth.RoleAdmin,
 	})
 }
 

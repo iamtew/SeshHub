@@ -1,6 +1,6 @@
 # SeshHub
 
-SeshHub is the website and CMS for **Sesh Sofa** and the fakeskate scene. One Go process, a SQLite file, templates on disk. Public FS Team (Discord skater role), Friends (Discord friends role, queue approval, or former members), news, videos, custom pages, and a signed-in Message Board. Login is Discord or YouTube only — no passwords. Discord guild roles (plus a superadmin list) decide who is admin, skater, or friend; everyone else can request access.
+SeshHub is the website and CMS for **Sesh Sofa** and the fakeskate scene. One Go process, a SQLite file, templates on disk. Public FS Team (Discord skater role), Friends (Discord friends role, queue approval, or former members), news, videos, custom pages, and a signed-in Forum. Login is Discord or YouTube only — no passwords. Discord guild roles (plus a superadmin list) decide who is admin, skater, or friend; everyone else can request access.
 
 Local default listen address is **port 53053**. That port is yours. Don't let a Clanker steal it; they use `-port`.
 
@@ -140,7 +140,7 @@ The rest of this file is the architecture spec (what the system is supposed to b
    - [Special page: Spot](#special-page-spot)
    - [Special page: Episodes](#special-page-episodes)
    - [Admin UI & Markdown editor](#5-admin-ui--markdown-editor)
-   - [Message Board](#6-message-board)
+   - [Forum](#6-forum)
 6. [Data Models & Database Schema (libSQL)](#data-models--database-schema-libsql)
 7. [Project Directory Layout](#project-directory-layout)
 8. [Configuration & Environment Variables](#configuration--environment-variables)
@@ -317,9 +317,9 @@ Two header modes. Same public nav (Spot / Episodes / FS Team / Friends / News / 
 - **Basic editor**: `textarea[name=content_raw]` on articles, custom pages, and Spot, with a live HTML preview beside it (under it below 800px). Preview is `POST /preview` → goldmark + bluemonday (Spot also fills `{{placeholders}}`).
 - **Advanced editor**: from 640px up, a button opens a near-fullscreen `<dialog>`. Hidden on smaller screens (phone stays on the basic textarea + preview). Left sidebar is the rest of the document (slug, published, …; Spot: insert chips). Center is Monaco from jsDelivr. Right is the same live preview. Palette theme `sesh-sofa`.
 
-### 6. Message Board
-- **Logged-in only (`/forum`)**: Any signed-in user can read, start threads, and reply. Guests are sent to `/login?next=…`. Link lives in the fold nav (Message Board), not the public main menu. Unread pill is other people’s posts since you last opened each thread; it hides at 0.
-- **Sections → threads → posts**: Seeded General, Skateboarding, Off topic. Markdown bodies go through the same goldmark + bluemonday path as news. Author can edit/delete own posts (and thread title); admin can edit/delete anything. First-post delete removes the thread.
+### 6. Forum
+- **Logged-in only (`/forum`)**: Any signed-in user can read, start threads, and reply. Guests are sent to `/login?next=…`. Link lives in the fold nav (Forum), not the public main menu. Unread pill is other people’s posts since you last opened each thread; it hides at 0.
+- **Sections → threads → posts**: Seeded once when the table is empty (General, Skateboarding, Off topic). Later deletes stay gone across deploys. Markdown bodies go through the same goldmark + bluemonday path as news. Author can edit/delete own posts (and thread title); admin can edit/delete anything. First-post delete removes the thread.
 - **Admin (`/admin/forum/sections`)**: Create, edit, deactivate, reorder sections. No guest access, attachments, search, or realtime.
 
 ---
@@ -536,7 +536,7 @@ SeshHub/
 │   ├── db/                          # libSQL connection, migrations, query helper routines
 │   │   ├── db.go
 │   │   └── migrations/              # Runtime-loaded SQL migration files (.sql)
-│   ├── forum/                       # Message Board store (sections, threads, posts, unread)
+│   ├── forum/                       # Forum store (sections, threads, posts, unread)
 │   ├── models/                      # Go structs representing database entities
 │   │   ├── article.go
 │   │   ├── page.go

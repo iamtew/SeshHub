@@ -48,7 +48,10 @@ CREATE INDEX IF NOT EXISTS idx_forum_posts_thread_created
 CREATE INDEX IF NOT EXISTS idx_forum_thread_reads_user
     ON forum_thread_reads(user_id);
 
-INSERT OR IGNORE INTO forum_sections (id, name, slug, description, sort_order) VALUES
-    ('forum-general', 'General', 'general', '', 0),
-    ('forum-skateboarding', 'Skateboarding', 'skateboarding', '', 1),
-    ('forum-off-topic', 'Off topic', 'off-topic', '', 2);
+-- Seed only on an empty table so a later delete is not undone on every deploy.
+INSERT INTO forum_sections (id, name, slug, description, sort_order)
+SELECT * FROM (
+    SELECT 'forum-general' AS id, 'General' AS name, 'general' AS slug, '' AS description, 0 AS sort_order
+    UNION ALL SELECT 'forum-skateboarding', 'Skateboarding', 'skateboarding', '', 1
+    UNION ALL SELECT 'forum-off-topic', 'Off topic', 'off-topic', '', 2
+) WHERE NOT EXISTS (SELECT 1 FROM forum_sections);

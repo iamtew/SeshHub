@@ -68,4 +68,10 @@ func TestCreateUnreadReply(t *testing.T) {
 	if _, err := GetSection(sqldb, "general"); err != sql.ErrNoRows {
 		t.Fatalf("section lingered %v", err)
 	}
+	if err := db.Migrate(sqldb, "../db/migrations"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := GetSection(sqldb, "general"); err != sql.ErrNoRows {
+		t.Fatalf("migrate reseeded %v", err)
+	}
 }
