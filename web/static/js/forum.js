@@ -78,20 +78,63 @@
   });
 
   var box = document.createElement("ul");
+  box.id = "forum-ac";
   box.className = "forum-ac";
+  box.setAttribute("role", "listbox");
   box.hidden = true;
   document.body.appendChild(box);
   var acStart = 0;
   var acTimer;
   var acGen = 0;
   var acTa = null;
+  var acHits = [];
+  var acIdx = 0;
+  var acAbort;
 
   function hideAc() {
     clearTimeout(acTimer);
     acGen++;
+    if (acAbort) acAbort.abort();
     acTa = null;
+    acHits = [];
     box.hidden = true;
     box.innerHTML = "";
+  }
+
+  function mentionToken(h) {
+    var n = (h.display_name || "").trim();
+    if (/^[A-Za-z0-9_]{2,32}$/.test(n)) return n;
+    return h.username;
+  }
+
+  function mentionLabel(h) {
+    var n = (h.display_name || "").trim() || h.username;
+    if (h.username && n.toLowerCase() !== h.username.toLowerCase()) return n + " (@" + h.username + ")";
+    return n;
+  }
+
+  function acButtons() {
+    return box.querySelectorAll("button");
+  }
+
+  function setActive(i) {
+    var buttons = acButtons();
+    if (!buttons.length) return;
+    acIdx = (i + buttons.length) % buttons.length;
+    for (var n = 0; n < buttons.length; n++) {
+      buttons[n].setAttribute("aria-selected", n === acIdx ? "true" : "false");
+    }
+    buttons[acIdx].scrollIntoView({ block: "nearest" });
+  }
+
+  function insertHit(ta, h) {
+    var name = mentionToken(h);
+    ta.value = ta.value.slice(0, acStart) + name + " " + ta.value.slice(ta.selectionStart);
+    var p = acStart + name.length + 1;
+    ta.selectionStart = ta.selectionEnd = p;
+    ta.focus();
+    hideAc();
+    ta.dispatchEvent(new Event("input"));
   }
 
   // ponytail: visualViewport is the visible area above the keyboard. Caret coords if the list must sit on the @.
@@ -137,13 +180,38 @@
     visualViewport.addEventListener("scroll", onViewChange);
   }
 
+  document.addEventListener("keydown", function (ev) {
+    if (box.hidden || !acTa || document.activeElement !== acTa) return;
+    if (ev.isComposing || ev.keyCode === 229) return;
+    if (ev.key === "Escape") {
+      ev.preventDefault();
+      hideAc();
+      return;
+    }
+    if (ev.key === "ArrowDown") {
+      ev.preventDefault();
+      setActive(acIdx + 1);
+      return;
+    }
+    if (ev.key === "ArrowUp") {
+      ev.preventDefault();
+      setActive(acIdx - 1);
+      return;
+    }
+    if (ev.key === "Enter" || ev.key === "Tab") {
+      if (!acHits[acIdx]) return;
+      ev.preventDefault();
+      insertHit(acTa, acHits[acIdx]);
+    }
+  });
+
   document.addEventListener("input", function (ev) {
     var ta = ev.target.closest && ev.target.closest(".forum-body");
     if (!ta) return;
     var pos = ta.selectionStart;
     var before = ta.value.slice(0, pos);
-    var m = before.match(/(^|[^A-Za-z0-9_])@([A-Za-z0-9_]{0,32})$/);
-    if (!m) {
+    var m = before.match(/(^|[^A-Za-z0-9_])@([A-Za-z0-9_ ]{0,48})$/);
+    if (!m || / $/.test(m[2])) {
       hideAc();
       return;
     }
@@ -152,41 +220,40 @@
     clearTimeout(acTimer);
     var gen = ++acGen;
     acTimer = setTimeout(function () {
-      fetch("/forum/users?q=" + encodeURIComponent(q), { credentials: "same-origin" })
-        .then(function (r) { return r.json(); })
+      if (acAbort) acAbort.abort();
+      acAbort = new AbortController();
+      fetch("/forum/users?q=" + encodeURIComponent(q), { credentials: "same-origin", signal: acAbort.signal })
+        .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
         .then(function (hits) {
           if (gen !== acGen) return;
           box.innerHTML = "";
-          if (!hits || !hits.length) {
+          acHits = Array.isArray(hits) ? hits : [];
+          if (!acHits.length) {
             box.hidden = true;
             return;
           }
-          hits.forEach(function (h) {
+          acHits.forEach(function (h, i) {
             var li = document.createElement("li");
+            li.setAttribute("role", "presentation");
             var b = document.createElement("button");
             b.type = "button";
-            b.textContent = h.username + (h.display_name && h.display_name !== h.username ? " (" + h.display_name + ")" : "");
-            function pick(ev) {
-              ev.preventDefault();
-              if (b.disabled) return;
-              b.disabled = true;
-              ta.value = ta.value.slice(0, acStart) + h.username + " " + ta.value.slice(ta.selectionStart);
-              var p = acStart + h.username.length + 1;
-              ta.selectionStart = ta.selectionEnd = p;
-              ta.focus();
-              hideAc();
-              ta.dispatchEvent(new Event("input"));
-            }
-            b.addEventListener("pointerdown", pick);
-            b.addEventListener("click", pick);
+            b.setAttribute("role", "option");
+            b.textContent = mentionLabel(h);
+            b.addEventListener("pointerdown", function (e) {
+              e.preventDefault();
+              insertHit(ta, h);
+            });
             li.appendChild(b);
             box.appendChild(li);
+            if (i === 0) b.setAttribute("aria-selected", "true");
           });
           acTa = ta;
+          acIdx = 0;
           box.hidden = false;
           placeAc();
         })
-        .catch(function () {
+        .catch(function (err) {
+          if (err && err.name === "AbortError") return;
           if (gen === acGen) hideAc();
         });
     }, 150);

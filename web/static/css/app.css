@@ -390,7 +390,7 @@ form[action*="/unlink/"] button { background: var(--magenta); }
     display: block; width: 100%; text-align: left; background: none; border: 0; color: var(--fg);
     min-height: 2.75rem; padding: 0.55rem 0.75rem; font: inherit; touch-action: manipulation;
 }
-.forum-ac button:hover { background: rgb(134 0 223 / 0.35); }
+.forum-ac button:hover, .forum-ac button[aria-selected="true"] { background: rgb(134 0 223 / 0.35); }
 img.emoji { height: 1.2em; width: 1.2em; margin: 0 0.05em; vertical-align: -0.15em; }
 .forum-composer {
     padding: 1rem 1.1rem 1.15rem;

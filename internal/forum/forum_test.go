@@ -125,6 +125,17 @@ func TestReplyParentMentionsAndPhotos(t *testing.T) {
 	if err := Reply(sqldb, th.ID, bob.ID, "nope @missing", "", nil); err == nil {
 		t.Fatal("unknown mention")
 	}
+	hits, err := SearchUsers(sqldb, "Ali", 8)
+	if err != nil || len(hits) != 1 || hits[0].DisplayName != "Alice" {
+		t.Fatalf("search %+v %v", hits, err)
+	}
+	if _, err := CreateThread(sqldb, sec.ID, bob.ID, "Named", "hi @Alice", nil); err != nil {
+		t.Fatal(err)
+	}
+	n, err = UnreadMentions(sqldb, alice.ID)
+	if err != nil || n != 1 {
+		t.Fatalf("display mention %d %v", n, err)
+	}
 	posts, err := ListPosts(sqldb, th.ID)
 	if err != nil || len(posts) != 1 {
 		t.Fatalf("posts %d %v", len(posts), err)

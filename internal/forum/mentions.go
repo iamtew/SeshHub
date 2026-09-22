@@ -48,19 +48,50 @@ type mentionUser struct {
 	ID, Username, DisplayName, Role, Slug string
 }
 
+func mentionSelect() string {
+	return `SELECT u.id, u.username, u.display_name, u.role, IFNULL(sp.slug,'')
+		FROM users u LEFT JOIN skater_profiles sp ON sp.user_id = u.id`
+}
+
+func scanMention(row *sql.Row) (mentionUser, error) {
+	var u mentionUser
+	err := row.Scan(&u.ID, &u.Username, &u.DisplayName, &u.Role, &u.Slug)
+	return u, err
+}
+
+func findMentionUser(db *sql.DB, handle string) (mentionUser, error) {
+	u, err := scanMention(db.QueryRow(mentionSelect()+`
+		WHERE u.id != ? AND lower(u.username) = lower(?)`, auth.TombstoneID, handle))
+	if err == nil {
+		return u, nil
+	}
+	if err != sql.ErrNoRows {
+		return mentionUser{}, err
+	}
+	rows, err := db.Query(mentionSelect()+`
+		WHERE u.id != ? AND lower(u.display_name) = lower(?)`, auth.TombstoneID, handle)
+	if err != nil {
+		return mentionUser{}, err
+	}
+	defer rows.Close()
+	if !rows.Next() {
+		return mentionUser{}, fmt.Errorf("unknown @%s", handle)
+	}
+	if err := rows.Scan(&u.ID, &u.Username, &u.DisplayName, &u.Role, &u.Slug); err != nil {
+		return mentionUser{}, err
+	}
+	if rows.Next() {
+		return mentionUser{}, fmt.Errorf("ambiguous @%s", handle)
+	}
+	return u, rows.Err()
+}
+
 func cookBody(db *sql.DB, authorID, body string) ([]string, string, error) {
 	handles := extractHandles(body)
 	users := make([]mentionUser, 0, len(handles))
 	var mentionIDs []string
 	for _, h := range handles {
-		var u mentionUser
-		err := db.QueryRow(`
-			SELECT u.id, u.username, u.display_name, u.role, IFNULL(sp.slug,'')
-			FROM users u LEFT JOIN skater_profiles sp ON sp.user_id = u.id
-			WHERE u.id != ? AND lower(u.username) = lower(?)`, auth.TombstoneID, h).Scan(&u.ID, &u.Username, &u.DisplayName, &u.Role, &u.Slug)
-		if err == sql.ErrNoRows {
-			return nil, "", fmt.Errorf("unknown @%s", h)
-		}
+		u, err := findMentionUser(db, h)
 		if err != nil {
 			return nil, "", err
 		}
@@ -72,20 +103,43 @@ func cookBody(db *sql.DB, authorID, body string) ([]string, string, error) {
 	return mentionIDs, linkMentions(article.Render(body), users), nil
 }
 
+func mentionNeedles(u mentionUser) []string {
+	seen := map[string]bool{}
+	var out []string
+	for _, n := range []string{u.Username, u.DisplayName} {
+		if n == "" || seen[n] {
+			continue
+		}
+		seen[n] = true
+		out = append(out, n)
+		low := strings.ToLower(n)
+		if low != n && !seen[low] {
+			seen[low] = true
+			out = append(out, low)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return len(out[i]) > len(out[j]) })
+	return out
+}
+
 func linkMentions(htmlBody string, users []mentionUser) string {
-	sort.Slice(users, func(i, j int) bool { return len(users[i].Username) > len(users[j].Username) })
+	sort.Slice(users, func(i, j int) bool {
+		return len(users[i].DisplayName)+len(users[i].Username) > len(users[j].DisplayName)+len(users[j].Username)
+	})
 	for _, u := range users {
-		label := "@" + html.EscapeString(u.Username)
-		needle := "@" + u.Username
+		name := u.DisplayName
+		if name == "" {
+			name = u.Username
+		}
+		label := "@" + html.EscapeString(name)
 		var repl string
 		if href := authorURL(u.Role, u.Slug); href != "" {
 			repl = `<a class="forum-mention" href="` + href + `">` + label + `</a>`
 		} else {
 			repl = `<span class="forum-mention">` + label + `</span>`
 		}
-		htmlBody = strings.ReplaceAll(htmlBody, needle, repl)
-		if u.Username != strings.ToLower(u.Username) {
-			htmlBody = strings.ReplaceAll(htmlBody, "@"+strings.ToLower(u.Username), repl)
+		for _, n := range mentionNeedles(u) {
+			htmlBody = strings.ReplaceAll(htmlBody, "@"+n, repl)
 		}
 	}
 	return htmlBody
@@ -178,16 +232,21 @@ func saveMentions(tx *sql.Tx, postID string, userIDs []string) error {
 	return nil
 }
 
+func likeHas(q string) string {
+	r := strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
+	return "%" + r.Replace(q) + "%"
+}
+
 func SearchUsers(db *sql.DB, q string, limit int) ([]UserHit, error) {
 	q = strings.TrimSpace(q)
 	if limit < 1 || limit > 20 {
 		limit = 8
 	}
-	like := "%" + q + "%"
+	like := likeHas(q)
 	rows, err := db.Query(`
 		SELECT username, display_name FROM users
-		WHERE id != ? AND (username LIKE ? OR display_name LIKE ?)
-		ORDER BY username LIMIT ?`, auth.TombstoneID, like, like, limit)
+		WHERE id != ? AND (username LIKE ? ESCAPE '\' OR display_name LIKE ? ESCAPE '\')
+		ORDER BY display_name, username LIMIT ?`, auth.TombstoneID, like, like, limit)
 	if err != nil {
 		return nil, err
 	}
