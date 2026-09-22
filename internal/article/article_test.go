@@ -39,6 +39,17 @@ func TestRenderTable(t *testing.T) {
 	}
 }
 
+func TestRenderHardWrapsAndStrike(t *testing.T) {
+	html := Render("line1\nline2")
+	if !strings.Contains(html, "<br") {
+		t.Fatalf("hard wrap: %s", html)
+	}
+	html = Render("~~x~~")
+	if !strings.Contains(html, "<del>") && !strings.Contains(html, "<s>") {
+		t.Fatalf("strike: %s", html)
+	}
+}
+
 func TestRenderStripsScript(t *testing.T) {
 	html := Render("hi <script>alert(1)</script> **x**")
 	if strings.Contains(html, "<script") {

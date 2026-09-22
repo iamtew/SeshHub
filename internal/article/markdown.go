@@ -17,8 +17,8 @@ import (
 // goldmark + bluemonday, not marked.js. WithUnsafe lets <img> through; the sanitizer is the XSS gate.
 // ponytail: UGCPolicy strips relative src unless AllowRelativeURLs; /static/... images need it.
 var md = goldmark.New(
-	goldmark.WithExtensions(extension.Table),
-	goldmark.WithRendererOptions(gmhtml.WithUnsafe()),
+	goldmark.WithExtensions(extension.Table, extension.Strikethrough),
+	goldmark.WithRendererOptions(gmhtml.WithUnsafe(), gmhtml.WithHardWraps()),
 )
 
 var policy = func() *bluemonday.Policy {
