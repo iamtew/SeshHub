@@ -20,6 +20,7 @@ type Settings struct {
 	News          bool
 	Forum         bool
 	Access        bool
+	Mentions      bool
 }
 
 type Channel struct {
@@ -312,21 +313,21 @@ func hears(homeID, selfID string, m *discordgo.Message) bool {
 
 func (b *Bot) Settings() (Settings, error) {
 	var s Settings
-	var news, forum, access int
-	err := b.db.QueryRow(`SELECT channel_id, IFNULL(home_channel_id,''), news, forum, access FROM bot_settings WHERE id = 1`).
-		Scan(&s.ChannelID, &s.HomeChannelID, &news, &forum, &access)
+	var news, forum, access, mentions int
+	err := b.db.QueryRow(`SELECT channel_id, IFNULL(home_channel_id,''), news, forum, access, mentions FROM bot_settings WHERE id = 1`).
+		Scan(&s.ChannelID, &s.HomeChannelID, &news, &forum, &access, &mentions)
 	if err != nil {
 		return s, err
 	}
-	s.News, s.Forum, s.Access = news != 0, forum != 0, access != 0
+	s.News, s.Forum, s.Access, s.Mentions = news != 0, forum != 0, access != 0, mentions != 0
 	return s, nil
 }
 
 func (b *Bot) SaveSettings(s Settings) error {
 	s.ChannelID = strings.TrimSpace(s.ChannelID)
 	s.HomeChannelID = strings.TrimSpace(s.HomeChannelID)
-	_, err := b.db.Exec(`UPDATE bot_settings SET channel_id=?, home_channel_id=?, news=?, forum=?, access=? WHERE id=1`,
-		s.ChannelID, s.HomeChannelID, bit(s.News), bit(s.Forum), bit(s.Access))
+	_, err := b.db.Exec(`UPDATE bot_settings SET channel_id=?, home_channel_id=?, news=?, forum=?, access=?, mentions=? WHERE id=1`,
+		s.ChannelID, s.HomeChannelID, bit(s.News), bit(s.Forum), bit(s.Access), bit(s.Mentions))
 	return err
 }
 
@@ -345,6 +346,8 @@ func enabled(s Settings, kind string) bool {
 		return s.Forum
 	case "access":
 		return s.Access
+	case "mention":
+		return s.Mentions
 	default:
 		return false
 	}

@@ -7,6 +7,7 @@ import (
 
 	"seshhub/internal/auth"
 	"seshhub/internal/bot"
+	"seshhub/internal/forum"
 )
 
 func (s *Server) adminBot(w http.ResponseWriter, r *http.Request) {
@@ -32,6 +33,7 @@ func (s *Server) adminBot(w http.ResponseWriter, r *http.Request) {
 			News:          r.FormValue("news") == "1",
 			Forum:         r.FormValue("forum") == "1",
 			Access:        r.FormValue("access") == "1",
+			Mentions:      r.FormValue("mentions") == "1",
 		})
 		if err != nil {
 			http.Error(w, "db error", http.StatusInternalServerError)
@@ -167,6 +169,23 @@ func (s *Server) announce(kind, text string) {
 		return
 	}
 	go s.bot.Announce(kind, text)
+}
+
+func (s *Server) announceMentions(postID, title, path string, skip []string) {
+	ids, err := forum.MentionDiscords(s.db, postID, skip)
+	if err != nil || len(ids) == 0 {
+		return
+	}
+	var b strings.Builder
+	for i, id := range ids {
+		if i > 0 {
+			b.WriteByte(' ')
+		}
+		b.WriteString("<@" + id + ">")
+	}
+	b.WriteString(" mentioned in **" + title + "**\n")
+	b.WriteString(s.publicURL(path))
+	s.announce("mention", b.String())
 }
 
 func (s *Server) publicURL(path string) string {

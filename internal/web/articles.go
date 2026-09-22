@@ -177,7 +177,7 @@ func (s *Server) announcePublished(prev, saved article.Article) {
 	if saved.Status != "published" || prev.Status == "published" || saved.Visibility == "internal" {
 		return
 	}
-	s.announce("news", "News: "+saved.Title+" "+s.publicURL("/news/"+saved.Slug))
+	s.announce("news", "New article: **"+saved.Title+"**\n"+s.publicURL("/news/"+saved.Slug))
 }
 
 func (s *Server) articleDelete(w http.ResponseWriter, r *http.Request) {

@@ -91,6 +91,76 @@ func linkMentions(htmlBody string, users []mentionUser) string {
 	return htmlBody
 }
 
+// MentionUserIDs are the hub accounts @mentioned on a post.
+func MentionUserIDs(db *sql.DB, postID string) ([]string, error) {
+	rows, err := db.Query(`SELECT user_id FROM forum_mentions WHERE post_id=?`, postID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		out = append(out, id)
+	}
+	return out, rows.Err()
+}
+
+// MentionDiscords are Discord user ids for mentions on a post. skip are hub user ids already pinged. Accounts without Discord are left out.
+func MentionDiscords(db *sql.DB, postID string, skip []string) ([]string, error) {
+	skipSet := map[string]bool{}
+	for _, id := range skip {
+		skipSet[id] = true
+	}
+	rows, err := db.Query(`
+		SELECT m.user_id, IFNULL(u.discord_id,'')
+		FROM forum_mentions m JOIN users u ON u.id = m.user_id
+		WHERE m.post_id=?`, postID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []string
+	for rows.Next() {
+		var uid, discord string
+		if err := rows.Scan(&uid, &discord); err != nil {
+			return nil, err
+		}
+		if skipSet[uid] || !snowflake(discord) {
+			continue
+		}
+		out = append(out, discord)
+	}
+	return out, rows.Err()
+}
+
+func snowflake(s string) bool {
+	if len(s) < 5 {
+		return false
+	}
+	for _, c := range s {
+		if c < '0' || c > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+func FirstPostID(db *sql.DB, threadID string) (string, error) {
+	var id string
+	err := db.QueryRow(`SELECT id FROM forum_posts WHERE thread_id=? AND is_first_post=1`, threadID).Scan(&id)
+	return id, err
+}
+
+func LatestPostID(db *sql.DB, threadID, userID string) (string, error) {
+	var id string
+	err := db.QueryRow(`SELECT id FROM forum_posts WHERE thread_id=? AND user_id=? ORDER BY rowid DESC LIMIT 1`, threadID, userID).Scan(&id)
+	return id, err
+}
+
 func saveMentions(tx *sql.Tx, postID string, userIDs []string) error {
 	if _, err := tx.Exec(`DELETE FROM forum_mentions WHERE post_id=?`, postID); err != nil {
 		return err

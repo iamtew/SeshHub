@@ -169,6 +169,48 @@ func TestReplyParentMentionsAndPhotos(t *testing.T) {
 	}
 }
 
+func TestMentionDiscords(t *testing.T) {
+	sqldb, err := db.Open(":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = sqldb.Close() })
+	if err := db.Migrate(sqldb, "../db/migrations"); err != nil {
+		t.Fatal(err)
+	}
+	alice, err := auth.UpsertDiscord(sqldb, "111111111111111111", "alice", "Alice", "", auth.RoleFriend, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bob, err := auth.UpsertDiscord(sqldb, "223456789012345678", "bob", "Bob", "", auth.RoleFriend, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := sqldb.Exec(`INSERT INTO users (id, username, display_name, role) VALUES ('c','cara','Cara','friend')`); err != nil {
+		t.Fatal(err)
+	}
+	sec, err := GetSection(sqldb, "general")
+	if err != nil {
+		t.Fatal(err)
+	}
+	th, err := CreateThread(sqldb, sec.ID, alice.ID, "Hi", "hey @bob @cara", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pid, err := FirstPostID(sqldb, th.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := MentionDiscords(sqldb, pid, nil)
+	if err != nil || len(got) != 1 || got[0] != bob.DiscordID {
+		t.Fatalf("%v %v", got, err)
+	}
+	got, err = MentionDiscords(sqldb, pid, []string{bob.ID})
+	if err != nil || len(got) != 0 {
+		t.Fatalf("already mentioned %v %v", got, err)
+	}
+}
+
 func tinyPNG() []byte {
 	src := image.NewRGBA(image.Rect(0, 0, 8, 8))
 	for y := 0; y < 8; y++ {
