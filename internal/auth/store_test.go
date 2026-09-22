@@ -174,6 +174,12 @@ func TestDeleteUserErasure(t *testing.T) {
 	if _, err := sqldb.Exec(`INSERT INTO forum_thread_reads (user_id, thread_id) VALUES (?, 't-erase')`, u.ID); err != nil {
 		t.Fatal(err)
 	}
+	if _, err := sqldb.Exec(`INSERT INTO forum_mentions (post_id, user_id) VALUES ('p-erase', ?)`, u.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := sqldb.Exec(`INSERT INTO forum_mention_reads (user_id) VALUES (?)`, u.ID); err != nil {
+		t.Fatal(err)
+	}
 	if _, err := sqldb.Exec(`INSERT INTO youtube_videos (id, channel_id, title, published_at, thumbnail_url) VALUES ('vid-erase', 'ch-erase', 'Clip', '2020-01-01', 'https://img')`); err != nil {
 		t.Fatal(err)
 	}
@@ -217,6 +223,14 @@ func TestDeleteUserErasure(t *testing.T) {
 	_ = sqldb.QueryRow(`SELECT COUNT(*) FROM forum_thread_reads WHERE user_id=?`, u.ID).Scan(&n)
 	if n != 0 {
 		t.Fatal("forum reads survived")
+	}
+	_ = sqldb.QueryRow(`SELECT COUNT(*) FROM forum_mentions WHERE user_id=?`, u.ID).Scan(&n)
+	if n != 0 {
+		t.Fatal("forum mentions survived")
+	}
+	_ = sqldb.QueryRow(`SELECT COUNT(*) FROM forum_mention_reads WHERE user_id=?`, u.ID).Scan(&n)
+	if n != 0 {
+		t.Fatal("forum mention reads survived")
 	}
 	list, err := ListUsers(sqldb)
 	if err != nil {

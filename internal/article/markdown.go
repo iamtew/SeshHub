@@ -10,6 +10,7 @@ import (
 
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark-emoji"
 	"github.com/yuin/goldmark/extension"
 	gmhtml "github.com/yuin/goldmark/renderer/html"
 )
@@ -17,7 +18,7 @@ import (
 // goldmark + bluemonday, not marked.js. WithUnsafe lets <img> through; the sanitizer is the XSS gate.
 // ponytail: UGCPolicy strips relative src unless AllowRelativeURLs; /static/... images need it.
 var md = goldmark.New(
-	goldmark.WithExtensions(extension.Table, extension.Strikethrough),
+	goldmark.WithExtensions(extension.Table, extension.Strikethrough, emoji.Emoji),
 	goldmark.WithRendererOptions(gmhtml.WithUnsafe(), gmhtml.WithHardWraps()),
 )
 

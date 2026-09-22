@@ -1,9 +1,12 @@
 {{define "content"}}
 <p class="who"><a href="/forum">Forum</a> · <a href="/forum/{{.S.Slug}}">{{.S.Name}}</a></p>
 <h1>New thread</h1>
-<form method="post" action="/forum/{{.S.Slug}}/new" class="form">
+<form method="post" action="/forum/{{.S.Slug}}/new" class="form forum-compose" enctype="multipart/form-data">
     <label>Title <input name="title" required value="{{.TitleVal}}"></label>
-    <label>Body <textarea name="body" rows="12" required>{{.Body}}</textarea></label>
+    {{template "forum_mdbar"}}
+    <label>Body <textarea name="body" class="forum-body" rows="12" required>{{.Body}}</textarea></label>
+    <div class="forum-preview prose forum-cooked" aria-live="polite"></div>
+    <label>Images (JPEG or PNG, 15MB, max 3) <input type="file" name="photos" accept="image/jpeg,image/png" multiple></label>
     <button type="submit">Create thread</button>
 </form>
 {{end}}

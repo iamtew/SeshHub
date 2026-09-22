@@ -3,6 +3,7 @@ package web
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -10,6 +11,7 @@ import (
 	"seshhub/internal/auth"
 	"seshhub/internal/config"
 	"seshhub/internal/db"
+	"seshhub/internal/forum"
 )
 
 func TestForumGuestRedirect(t *testing.T) {
@@ -59,5 +61,76 @@ func TestForumLoggedIn(t *testing.T) {
 	}
 	if !strings.Contains(rec.Body.String(), "General") {
 		t.Fatalf("missing section %s", rec.Body.String())
+	}
+}
+
+func TestForumMentionsAndMedia(t *testing.T) {
+	sqldb, err := db.Open(":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = sqldb.Close() })
+	if err := db.Migrate(sqldb, "../db/migrations"); err != nil {
+		t.Fatal(err)
+	}
+	alice, err := auth.UpsertDiscord(sqldb, "d1", "alice", "Alice", "", auth.RoleFriend, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bob, err := auth.UpsertDiscord(sqldb, "d2", "bob", "Bob", "", auth.RoleFriend, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tok, err := auth.CreateSession(sqldb, bob.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sec, err := forum.GetSection(sqldb, "general")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := forum.CreateThread(sqldb, sec.ID, alice.ID, "Hi", "hey @bob", nil); err != nil {
+		t.Fatal(err)
+	}
+	s := New(config.Config{WebDir: filepath.Join("..", "..", "web")}, sqldb)
+	req := httptest.NewRequest(http.MethodGet, "/forum/mentions", nil)
+	req.AddCookie(&http.Cookie{Name: auth.CookieName, Value: tok})
+	rec := httptest.NewRecorder()
+	s.ServeHTTP(rec, req)
+	if rec.Code != 200 || !strings.Contains(rec.Body.String(), "Hi") {
+		t.Fatalf("mentions %d %s", rec.Code, rec.Body.String())
+	}
+	rec = httptest.NewRecorder()
+	s.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/forum/users?q=al", nil))
+	if rec.Code != http.StatusFound {
+		t.Fatalf("users guest %d", rec.Code)
+	}
+	req = httptest.NewRequest(http.MethodGet, "/forum/users?q=al", nil)
+	req.AddCookie(&http.Cookie{Name: auth.CookieName, Value: tok})
+	rec = httptest.NewRecorder()
+	s.ServeHTTP(rec, req)
+	if rec.Code != 200 || !strings.Contains(rec.Body.String(), "alice") {
+		t.Fatalf("users %d %s", rec.Code, rec.Body.String())
+	}
+	id := strings.Repeat("a", 32)
+	path := forum.PhotoPath(id)
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte("jpg"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Remove(path) })
+	rec = httptest.NewRecorder()
+	s.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/media/forum/"+id+".jpg", nil))
+	if rec.Code != http.StatusFound {
+		t.Fatalf("media guest %d", rec.Code)
+	}
+	req = httptest.NewRequest(http.MethodGet, "/media/forum/"+id+".jpg", nil)
+	req.AddCookie(&http.Cookie{Name: auth.CookieName, Value: tok})
+	rec = httptest.NewRecorder()
+	s.ServeHTTP(rec, req)
+	if rec.Code != 200 {
+		t.Fatalf("media auth %d", rec.Code)
 	}
 }

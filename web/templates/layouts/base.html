@@ -58,12 +58,14 @@
     </section>
     {{end}}
     {{if not .AuthPage}}{{template "nav.html" .}}{{end}}
+    {{if .MentionBanner}}<aside class="forum-mention-banner"><a href="/forum/mentions">You have {{.MentionBanner}} new mention{{if ne .MentionBanner 1}}s{{end}}</a></aside>{{end}}
     <main class="wrap{{if .AuthPage}} auth{{end}}">
         {{template "content" .}}
         {{if and .User .EditHref}}<p><a href="{{.EditHref}}">Edit</a></p>{{end}}
     </main>
     {{if not .AuthPage}}{{template "footer.html" .}}{{end}}
     {{template "consent.html" .}}
+    {{if .ForumJS}}<script src="/static/js/twemoji.min.js" defer></script><script src="/static/js/forum.js" defer></script>{{end}}
 </body>
 </html>
 {{end}}

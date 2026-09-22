@@ -151,7 +151,7 @@ There is also an unused `sync_logs` table in our database schema. Nothing ever w
 
 ### 4.9 What we do not do at all
 
-We do not send email. There is no newsletter and no notification system. The only files you can upload are an optional square profile photo on `/dashboard/profile` (JPEG or PNG, 15 MB) and up to 10 gallery photos on `/dashboard/gallery` (JPEG or PNG, 15 MB each), stored as described in sections 4.3 and 4.10. We do not sell, rent or trade personal data. We do not profile you, build advertising audiences, or use your data for anything beyond operating the site.
+We do not send email. There is no newsletter. Mentions on the Forum are in-site only: a banner while you are signed in, a count on Mentions, and a list at `/forum/mentions`. We do not send mention notices off the site. The files you can upload are an optional square profile photo on `/dashboard/profile` (JPEG or PNG, 15 MB), up to 10 gallery photos on `/dashboard/gallery` (JPEG or PNG, 15 MB each), and up to 3 images per Forum post (JPEG or PNG, 15 MB each), stored as described in sections 4.3, 4.10 and 4.12. We do not sell, rent or trade personal data. We do not profile you, build advertising audiences, or use your data for anything beyond operating the site.
 
 ### 4.10 Your gallery photos (`gallery_photos` table)
 
@@ -167,19 +167,33 @@ We do not send email. There is no newsletter and no notification system. The onl
 
 **Deleted:** when you delete a photo on `/dashboard/gallery`, when your account is deleted, or when an administrator deletes the profile. The database row and the JPEG file both go.
 
-### 4.11 Forum (`forum_sections`, `forum_threads`, `forum_posts`, `forum_thread_reads`)
+### 4.11 Forum (`forum_sections`, `forum_threads`, `forum_posts`, `forum_thread_reads`, `forum_mentions`, `forum_mention_reads`)
 
-**What:** categories (name, slug, description, sort order, active flag); threads (title, slug, author account id, last-activity time, locked/sticky flags); posts (markdown source, sanitized HTML, author account id, timestamps); and a per-user watermark of when you last opened a thread (for the unread badge). No IP addresses.
+**What:** categories (name, slug, description, sort order, active flag); threads (title, slug, author account id, last-activity time, locked/sticky flags); posts (markdown source, sanitized HTML, author account id, optional parent post id for a quoted reply, timestamps); @username mentions pointing at an account id; a per-user watermark of when you last opened a thread (for the unread badge); and a per-user watermark of when you last opened `/forum/mentions`. No IP addresses.
 
-**Why:** a signed-in-only forum at `/forum`. Guests cannot read it.
+**Why:** a signed-in-only forum at `/forum`. Guests cannot read it. Mentions exist so you can find posts that named you.
 
-**Created:** when an administrator adds a section, or when you start a thread or reply. The watermark is created or updated when you open a thread.
+**Created:** when an administrator adds a section, or when you start a thread or reply. A mention row is created when a post contains `@username` for an existing account other than your own. The thread watermark is created or updated when you open a thread. The mention watermark is created or updated when you open `/forum/mentions`.
 
-**Read:** by anyone who is signed in. Posts are not shown on the public site.
+**Read:** by anyone who is signed in. Posts are not shown on the public site. Your mention list is only shown to you.
 
-**Updated:** when you (or an administrator) edit a post or thread title, when someone replies (thread last-activity time), or when an administrator edits, reorders, or deactivates a section.
+**Updated:** when you (or an administrator) edit a post or thread title, when someone replies (thread last-activity time), or when an administrator edits, reorders, or deactivates a section. Editing a post re-parses @usernames.
 
-**Deleted:** you or an administrator can delete a post. Deleting the first post removes the whole thread. An administrator can remove a section, which deletes its threads and posts. If your account is deleted, authorship of remaining threads and posts is reassigned to the reserved "Former member" record (same as articles). Your read watermarks are deleted.
+**Deleted:** you or an administrator can delete a post. Deleting the first post removes the whole thread. An administrator can remove a section, which deletes its threads, posts, images, and mentions. If your account is deleted, authorship of remaining threads and posts is reassigned to the reserved "Former member" record (same as articles). Your thread-read and mention-read watermarks, and mention rows naming you, are deleted.
+
+### 4.12 Forum images (`forum_post_photos` table)
+
+**What:** up to 3 photo records per forum post: an internal file id, the post id, and a sort position. Each photo is a re-encoded JPEG on the same Amsterdam server (`data/forum/{id}.jpg`, shown at `/media/forum/{id}.jpg` only while you are signed in). The original upload is not kept. We strip metadata by re-encoding. Maximum upload size is 15 MB per photo; we keep the original aspect ratio and store a JPEG whose long edge is at most 1600 pixels.
+
+**Why:** so a post can include pictures without putting the files on a third-party host.
+
+**Created:** when you attach JPEG or PNG files while creating or editing a post, while that post still has fewer than 3 images.
+
+**Read:** by anyone who is signed in. Guests cannot load `/media/forum/…`.
+
+**Updated:** we do not edit the image file. You can remove an image when editing the post, or add more until the limit.
+
+**Deleted:** when you remove it from the post, when the post or thread is deleted, or when an administrator deletes the section. If your account is deleted, images on remaining "Former member" posts stay with those posts.
 
 ## 5. Cookies
 
@@ -200,7 +214,8 @@ Any time your browser loads something from another company's server, that compan
 - **Web fonts** from `fonts.cdnfonts.com`, on every page. These faces are commercially licensed, so we load them from the CDN rather than copying the files onto our server.
 - **YouTube video thumbnails** from `img.youtube.com` and `i.ytimg.com`, on the videos gallery, episode archive and profile pages.
 - **YouTube video players** from `youtube-nocookie.com`, on skater profile pages that have clips. We deliberately use YouTube's privacy-enhanced domain, which does not set tracking cookies until you press play.
-- **Discord avatar images** from `cdn.discordapp.com`, wherever a Discord (or YouTube) avatar is displayed and you have not uploaded a site photo. These are loaded with `referrerpolicy="no-referrer"`, so Discord is not told which page you were on. Site photos are served from this Service at `/media/avatars/…`. Gallery photos are served from this Service at `/media/gallery/…`.
+- **Discord avatar images** from `cdn.discordapp.com`, wherever a Discord (or YouTube) avatar is displayed and you have not uploaded a site photo. These are loaded with `referrerpolicy="no-referrer"`, so Discord is not told which page you were on. Site photos are served from this Service at `/media/avatars/…`. Gallery photos are served from this Service at `/media/gallery/…`. Forum images are served from this Service at `/media/forum/…` and only after you sign in.
+- **Twemoji images** from `cdn.jsdelivr.net` (the `jdecked/twemoji` files), on Forum pages, so emoji look the same on every device. They are loaded with `referrerpolicy="no-referrer"`. The parser script is served from this Service.
 
 Our server also talks to these services directly. In those cases your IP address is not sent; ours is.
 
@@ -231,16 +246,16 @@ Each of these companies handles your data under its own privacy policy. You can 
 - **Cached YouTube clips:** kept until the owning account is deleted.
 - **Access requests:** kept until the account is deleted. A YouTube-only rejection deletes the account immediately.
 - **Access denial hash:** SHA-256 of a YouTube channel ID, kept only until that channel’s next sign-in (the denial notice), then deleted.
-- **Articles, episode entries, and Forum posts:** kept as part of the site's archive. Deleted authors are shown as "Former member". Forum read watermarks are deleted with the account.
+- **Articles, episode entries, and Forum posts:** kept as part of the site's archive. Deleted authors are shown as "Former member". Forum thread-read and mention-read watermarks, and mention rows naming you, are deleted with the account. Images attached to remaining forum posts stay with those posts.
 
 ## 9. Your rights under the GDPR
 
 You have the right of access (Art. 15), rectification (Art. 16), erasure (Art. 17), restriction (Art. 18), data portability (Art. 20), and objection (Art. 21).
 
-**How to exercise these rights.** Most of them are on `/account` while you are signed in: unlink a provider, download a JSON export of your account, profile (including photo URL and frame settings), gallery photo URLs, former slugs, YouTube Feed Filter, access request, and Forum posts (thread title plus markdown body), or delete the account. Logging out ends every session. You can also email the contact address in section 1. We will respond within one month, as Art. 12(3) requires.
+**How to exercise these rights.** Most of them are on `/account` while you are signed in: unlink a provider, download a JSON export of your account, profile (including photo URL and frame settings), gallery photo URLs, former slugs, YouTube Feed Filter, access request, Forum posts (thread title plus markdown body and attachment URLs), and Forum mentions, or delete the account. Logging out ends every session. You can also email the contact address in section 1. We will respond within one month, as Art. 12(3) requires.
 
-- **Access or portability:** use **Download my data** on `/account`, or ask us by email. The export includes the public URL of a site photo if you uploaded one, and the public URLs of gallery photos, not the image bytes.
-- **Erasure:** use **Delete my account** on `/account`. That removes your account record (including the YouTube Feed Filter), sessions, access request, skater profile, former-slug redirects, cached clips, any site profile photo file, any gallery photo files, and Forum read watermarks. Articles and remaining forum posts stay, shown as "Former member". An administrator rejecting a YouTube-only access request does the same erasure, except we keep the short-lived channel-ID hash described in section 4.4 until your next YouTube sign-in.
+- **Access or portability:** use **Download my data** on `/account`, or ask us by email. The export includes the public URL of a site photo if you uploaded one, the public URLs of gallery photos, and the signed-in URLs of your forum attachments, not the image bytes.
+- **Erasure:** use **Delete my account** on `/account`. That removes your account record (including the YouTube Feed Filter), sessions, access request, skater profile, former-slug redirects, cached clips, any site profile photo file, any gallery photo files, Forum thread-read and mention-read watermarks, and mention rows naming you. Articles and remaining forum posts stay, shown as "Former member", including any images still attached to those posts. An administrator rejecting a YouTube-only access request does the same erasure, except we keep the short-lived channel-ID hash described in section 4.4 until your next YouTube sign-in.
 - **Rectification:** most profile fields update themselves from Discord or YouTube on your next sign-in. Your display name, slug, biography, location, featured clip, YouTube Feed Filter, site photo and photo frame (including border style, width, and blur) are yours to edit at `/dashboard/profile`. Gallery photos are yours to add and delete at `/dashboard/gallery`.
 - **Objection or restriction:** tell us what you object to and we will stop it or explain why we believe we may continue.
 
@@ -270,7 +285,7 @@ We do not verify anyone's age, and we have no practical way to do so. If we beco
 
 ## 12. Where your data is processed
 
-The Service runs on a single virtual private server in Amsterdam, the Netherlands. The database file, any site profile photos, and any gallery photos sit on that server.
+The Service runs on a single virtual private server in Amsterdam, the Netherlands. The database file, any site profile photos, gallery photos, and forum post images sit on that server.
 
 Some of the third parties in section 6 are based in the United States, including Google and Discord. When your browser loads their resources, or when our server calls their APIs, data reaches them there. Those transfers rely on the safeguards those companies provide, such as the EU-US Data Privacy Framework and standard contractual clauses. We have no separate transfer mechanism of our own to offer beyond choosing not to send them more than is necessary.
 

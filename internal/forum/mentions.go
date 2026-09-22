@@ -1,0 +1,200 @@
+package forum
+
+import (
+	"database/sql"
+	"fmt"
+	"html"
+	"regexp"
+	"sort"
+	"strings"
+
+	"seshhub/internal/article"
+	"seshhub/internal/auth"
+)
+
+var mentionAt = regexp.MustCompile(`(?:^|[^A-Za-z0-9_])@([A-Za-z0-9_]{2,32})\b`)
+
+type UserHit struct {
+	Username    string `json:"username"`
+	DisplayName string `json:"display_name"`
+}
+
+type MentionItem struct {
+	PostID      string `json:"post_id"`
+	SectionSlug string `json:"section_slug"`
+	ThreadSlug  string `json:"thread_slug"`
+	ThreadTitle string `json:"thread_title"`
+	AuthorName  string `json:"author_name"`
+	Excerpt     string `json:"excerpt"`
+	CreatedAt   string `json:"created_at"`
+	Index       int    `json:"-"`
+}
+
+func extractHandles(raw string) []string {
+	seen := map[string]bool{}
+	var out []string
+	for _, m := range mentionAt.FindAllStringSubmatch(raw, -1) {
+		h := strings.ToLower(m[1])
+		if seen[h] {
+			continue
+		}
+		seen[h] = true
+		out = append(out, m[1])
+	}
+	return out
+}
+
+type mentionUser struct {
+	ID, Username, DisplayName, Role, Slug string
+}
+
+func cookBody(db *sql.DB, authorID, body string) ([]string, string, error) {
+	handles := extractHandles(body)
+	users := make([]mentionUser, 0, len(handles))
+	var mentionIDs []string
+	for _, h := range handles {
+		var u mentionUser
+		err := db.QueryRow(`
+			SELECT u.id, u.username, u.display_name, u.role, IFNULL(sp.slug,'')
+			FROM users u LEFT JOIN skater_profiles sp ON sp.user_id = u.id
+			WHERE u.id != ? AND lower(u.username) = lower(?)`, auth.TombstoneID, h).Scan(&u.ID, &u.Username, &u.DisplayName, &u.Role, &u.Slug)
+		if err == sql.ErrNoRows {
+			return nil, "", fmt.Errorf("unknown @%s", h)
+		}
+		if err != nil {
+			return nil, "", err
+		}
+		users = append(users, u)
+		if u.ID != authorID {
+			mentionIDs = append(mentionIDs, u.ID)
+		}
+	}
+	return mentionIDs, linkMentions(article.Render(body), users), nil
+}
+
+func linkMentions(htmlBody string, users []mentionUser) string {
+	sort.Slice(users, func(i, j int) bool { return len(users[i].Username) > len(users[j].Username) })
+	for _, u := range users {
+		label := "@" + html.EscapeString(u.Username)
+		needle := "@" + u.Username
+		var repl string
+		if href := authorURL(u.Role, u.Slug); href != "" {
+			repl = `<a class="forum-mention" href="` + href + `">` + label + `</a>`
+		} else {
+			repl = `<span class="forum-mention">` + label + `</span>`
+		}
+		htmlBody = strings.ReplaceAll(htmlBody, needle, repl)
+		if u.Username != strings.ToLower(u.Username) {
+			htmlBody = strings.ReplaceAll(htmlBody, "@"+strings.ToLower(u.Username), repl)
+		}
+	}
+	return htmlBody
+}
+
+func saveMentions(tx *sql.Tx, postID string, userIDs []string) error {
+	if _, err := tx.Exec(`DELETE FROM forum_mentions WHERE post_id=?`, postID); err != nil {
+		return err
+	}
+	seen := map[string]bool{}
+	for _, id := range userIDs {
+		if id == "" || seen[id] {
+			continue
+		}
+		seen[id] = true
+		if _, err := tx.Exec(`INSERT INTO forum_mentions (post_id, user_id) VALUES (?,?)`, postID, id); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func SearchUsers(db *sql.DB, q string, limit int) ([]UserHit, error) {
+	q = strings.TrimSpace(q)
+	if limit < 1 || limit > 20 {
+		limit = 8
+	}
+	if q == "" {
+		return nil, nil
+	}
+	like := "%" + q + "%"
+	rows, err := db.Query(`
+		SELECT username, display_name FROM users
+		WHERE id != ? AND (username LIKE ? OR display_name LIKE ?)
+		ORDER BY username LIMIT ?`, auth.TombstoneID, like, like, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []UserHit
+	for rows.Next() {
+		var h UserHit
+		if err := rows.Scan(&h.Username, &h.DisplayName); err != nil {
+			return nil, err
+		}
+		out = append(out, h)
+	}
+	return out, rows.Err()
+}
+
+func UnreadMentions(db *sql.DB, userID string) (int, error) {
+	var n int
+	err := db.QueryRow(`
+		SELECT COUNT(*) FROM forum_mentions m
+		JOIN forum_posts p ON p.id = m.post_id
+		JOIN forum_threads t ON t.id = p.thread_id
+		JOIN forum_sections s ON s.id = t.section_id AND s.is_active = 1
+		LEFT JOIN forum_mention_reads r ON r.user_id = m.user_id
+		WHERE m.user_id = ? AND (r.last_read_at IS NULL OR m.created_at > r.last_read_at)`, userID).Scan(&n)
+	return n, err
+}
+
+func MarkMentionsRead(db *sql.DB, userID string) error {
+	_, err := db.Exec(`
+		INSERT INTO forum_mention_reads (user_id, last_read_at)
+		VALUES (?, CURRENT_TIMESTAMP)
+		ON CONFLICT(user_id) DO UPDATE SET last_read_at = CURRENT_TIMESTAMP`, userID)
+	return err
+}
+
+func ListMentions(db *sql.DB, userID string) ([]MentionItem, error) {
+	rows, err := db.Query(`
+		SELECT p.id, s.slug, t.slug, t.title, u.display_name, p.body_raw, p.created_at,
+			(SELECT COUNT(*) FROM forum_posts x WHERE x.thread_id = p.thread_id AND (x.created_at < p.created_at OR (x.created_at = p.created_at AND x.id <= p.id)))
+		FROM forum_mentions m
+		JOIN forum_posts p ON p.id = m.post_id
+		JOIN forum_threads t ON t.id = p.thread_id
+		JOIN forum_sections s ON s.id = t.section_id AND s.is_active = 1
+		JOIN users u ON u.id = p.user_id
+		WHERE m.user_id = ?
+		ORDER BY m.created_at DESC`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []MentionItem
+	for rows.Next() {
+		var it MentionItem
+		var raw string
+		if err := rows.Scan(&it.PostID, &it.SectionSlug, &it.ThreadSlug, &it.ThreadTitle, &it.AuthorName, &raw, &it.CreatedAt, &it.Index); err != nil {
+			return nil, err
+		}
+		it.Excerpt = article.Excerpt(raw, "")
+		out = append(out, it)
+	}
+	return out, rows.Err()
+}
+
+func ExportMentions(db *sql.DB, userID string) ([]MentionItem, error) {
+	return ListMentions(db, userID)
+}
+
+func MentionHref(it MentionItem, per int) string {
+	if per < 1 {
+		per = 24
+	}
+	page := (it.Index-1)/per + 1
+	if page < 1 {
+		page = 1
+	}
+	return fmt.Sprintf("/forum/%s/%s?n=24&p=%d#p-%s", it.SectionSlug, it.ThreadSlug, page, it.PostID)
+}

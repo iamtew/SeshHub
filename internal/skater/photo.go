@@ -91,6 +91,24 @@ func SavePhoto(id string, r io.Reader) (string, error) {
 	return PhotoURL(id), nil
 }
 
+func SaveFittedJPEG(path string, r io.Reader, maxBytes, maxEdge int) error {
+	raw, err := io.ReadAll(io.LimitReader(r, int64(maxBytes)+1))
+	if err != nil {
+		return err
+	}
+	if len(raw) == 0 {
+		return fmt.Errorf("empty")
+	}
+	if len(raw) > maxBytes {
+		return fmt.Errorf("too large")
+	}
+	img, err := decodePhoto(raw)
+	if err != nil {
+		return err
+	}
+	return writeJPEG(path, fitJPEG(img, maxEdge))
+}
+
 func writeJPEG(path string, img image.Image) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err

@@ -1,14 +1,20 @@
 package web
 
 import (
+	"bytes"
 	"database/sql"
+	"encoding/json"
 	"html/template"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 
+	"seshhub/internal/article"
 	"seshhub/internal/auth"
 	"seshhub/internal/forum"
+	"seshhub/internal/skater"
 )
 
 func (s *Server) requireLogin(w http.ResponseWriter, r *http.Request) *auth.User {
@@ -24,6 +30,45 @@ func (s *Server) requireLogin(w http.ResponseWriter, r *http.Request) *auth.User
 	return u
 }
 
+func (s *Server) forumIncoming(w http.ResponseWriter, r *http.Request) (body, parent string, files []forum.FileIn, remove []string, ok bool) {
+	r.Body = http.MaxBytesReader(w, r.Body, int64(skater.PhotoMax)*forum.PhotoMax+1<<20)
+	ct := r.Header.Get("Content-Type")
+	var err error
+	if strings.HasPrefix(ct, "multipart/") {
+		err = r.ParseMultipartForm(int64(skater.PhotoMax) * forum.PhotoMax)
+	} else {
+		err = r.ParseForm()
+	}
+	if err != nil {
+		http.Error(w, "too large", http.StatusRequestEntityTooLarge)
+		return "", "", nil, nil, false
+	}
+	body = r.FormValue("body")
+	parent = strings.TrimSpace(r.FormValue("parent_id"))
+	remove = r.Form["remove_photo"]
+	if r.MultipartForm != nil {
+		for _, fh := range r.MultipartForm.File["photos"] {
+			f, err := fh.Open()
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return "", "", nil, nil, false
+			}
+			raw, err := io.ReadAll(io.LimitReader(f, int64(skater.PhotoMax)+1))
+			_ = f.Close()
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return "", "", nil, nil, false
+			}
+			files = append(files, forum.FileIn{R: bytes.NewReader(raw)})
+		}
+	}
+	if len(files) > forum.PhotoMax {
+		http.Error(w, "max 3 images", http.StatusBadRequest)
+		return "", "", nil, nil, false
+	}
+	return body, parent, files, remove, true
+}
+
 func (s *Server) forumIndex(w http.ResponseWriter, r *http.Request) {
 	u := s.requireLogin(w, r)
 	if u == nil {
@@ -36,7 +81,61 @@ func (s *Server) forumIndex(w http.ResponseWriter, r *http.Request) {
 	}
 	s.render(w, r, "forum_index.html", map[string]any{
 		"Title": "Forum", "Path": "/forum", "Sections": list, "Admin": u.Role == auth.RoleAdmin,
+		"ForumJS": true,
 	})
+}
+
+func (s *Server) forumMentions(w http.ResponseWriter, r *http.Request) {
+	u := s.requireLogin(w, r)
+	if u == nil {
+		return
+	}
+	list, err := forum.ListMentions(s.db, u.ID)
+	if err != nil {
+		http.Error(w, "db error", http.StatusInternalServerError)
+		return
+	}
+	_ = forum.MarkMentionsRead(s.db, u.ID)
+	type row struct {
+		forum.MentionItem
+		Href string
+	}
+	views := make([]row, len(list))
+	for i, it := range list {
+		views[i] = row{MentionItem: it, Href: forum.MentionHref(it, 24)}
+	}
+	s.render(w, r, "forum_mentions.html", map[string]any{
+		"Title": "Mentions", "Path": "/forum/mentions", "Items": views, "ForumJS": true,
+	})
+}
+
+func (s *Server) forumUsers(w http.ResponseWriter, r *http.Request) {
+	u := s.requireLogin(w, r)
+	if u == nil {
+		return
+	}
+	hits, err := forum.SearchUsers(s.db, r.URL.Query().Get("q"), 8)
+	if err != nil {
+		http.Error(w, "db error", http.StatusInternalServerError)
+		return
+	}
+	if hits == nil {
+		hits = []forum.UserHit{}
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(hits)
+}
+
+func (s *Server) mediaForum(w http.ResponseWriter, r *http.Request) {
+	if s.requireLogin(w, r) == nil {
+		return
+	}
+	path, ok := forum.PhotoFile(r.PathValue("file"))
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+	serveMedia(w, r, path)
 }
 
 func (s *Server) forumSection(w http.ResponseWriter, r *http.Request) {
@@ -74,6 +173,7 @@ func (s *Server) forumSection(w http.ResponseWriter, r *http.Request) {
 		"PagerLabel": "Thread pagination", "PagerBase": "/forum/" + sec.Slug,
 		"Per": per, "Page": page, "Total": len(list), "From": from, "To": to,
 		"Prev": page - 1, "Next": page + 1, "HasPrev": page > 1, "HasNext": to < len(list),
+		"ForumJS": true,
 	})
 }
 
@@ -93,11 +193,15 @@ func (s *Server) forumNew(w http.ResponseWriter, r *http.Request) {
 	}
 	if r.Method == http.MethodGet {
 		s.render(w, r, "forum_form.html", map[string]any{
-			"Title": "New thread", "Path": "/forum", "S": sec, "TitleVal": "", "Body": "",
+			"Title": "New thread", "Path": "/forum", "S": sec, "TitleVal": "", "Body": "", "ForumJS": true,
 		})
 		return
 	}
-	th, err := forum.CreateThread(s.db, sec.ID, u.ID, r.FormValue("title"), r.FormValue("body"))
+	body, _, files, _, ok := s.forumIncoming(w, r)
+	if !ok {
+		return
+	}
+	th, err := forum.CreateThread(s.db, sec.ID, u.ID, r.FormValue("title"), body, files)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -110,6 +214,7 @@ type forumPostView struct {
 	HTML    template.HTML
 	CanEdit bool
 	Latest  bool
+	Quote   string
 }
 
 func (s *Server) forumThread(w http.ResponseWriter, r *http.Request) {
@@ -153,7 +258,7 @@ func (s *Server) forumThread(w http.ResponseWriter, r *http.Request) {
 	}
 	views := make([]forumPostView, len(shown))
 	for i, post := range shown {
-		views[i] = forumPostView{Post: post, HTML: template.HTML(post.BodyHTML), CanEdit: forum.CanEdit(u.Role, u.ID, post.UserID), Latest: i == len(shown)-1 && to >= len(posts)}
+		views[i] = forumPostView{Post: post, HTML: template.HTML(post.BodyHTML), CanEdit: forum.CanEdit(u.Role, u.ID, post.UserID), Latest: i == len(shown)-1 && to >= len(posts), Quote: article.Excerpt(post.BodyRaw, "")}
 	}
 	s.render(w, r, "forum_thread.html", map[string]any{
 		"Title": th.Title, "Path": "/forum", "S": sec, "T": th, "Posts": views,
@@ -161,6 +266,7 @@ func (s *Server) forumThread(w http.ResponseWriter, r *http.Request) {
 		"PagerLabel":    "Post pagination", "PagerBase": "/forum/" + sec.Slug + "/" + th.Slug,
 		"Per": per, "Page": page, "Total": len(posts), "From": from, "To": to,
 		"Prev": page - 1, "Next": page + 1, "HasPrev": page > 1, "HasNext": to < len(posts),
+		"ForumJS": true,
 	})
 }
 
@@ -173,7 +279,11 @@ func (s *Server) forumReply(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if err := forum.Reply(s.db, th.ID, u.ID, r.FormValue("body")); err != nil {
+	body, parent, files, _, ok := s.forumIncoming(w, r)
+	if !ok {
+		return
+	}
+	if err := forum.Reply(s.db, th.ID, u.ID, body, parent, files); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -202,11 +312,15 @@ func (s *Server) forumPostEdit(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}
-	if err := forum.UpdatePost(s.db, p.ID, r.FormValue("body")); err != nil {
+	body, _, files, remove, ok := s.forumIncoming(w, r)
+	if !ok {
+		return
+	}
+	if err := forum.UpdatePost(s.db, p.ID, body, remove, files); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	http.Redirect(w, r, "/forum/"+sec.Slug+"/"+th.Slug, http.StatusSeeOther)
+	http.Redirect(w, r, "/forum/"+sec.Slug+"/"+th.Slug+"#p-"+p.ID, http.StatusSeeOther)
 }
 
 func (s *Server) forumPostDelete(w http.ResponseWriter, r *http.Request) {

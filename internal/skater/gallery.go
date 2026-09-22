@@ -74,21 +74,7 @@ func saveGalleryFile(id string, r io.Reader) error {
 	if !ValidPhotoID(id) {
 		return fmt.Errorf("bad id")
 	}
-	raw, err := io.ReadAll(io.LimitReader(r, GalleryBytes+1))
-	if err != nil {
-		return err
-	}
-	if len(raw) == 0 {
-		return fmt.Errorf("empty")
-	}
-	if len(raw) > GalleryBytes {
-		return fmt.Errorf("too large")
-	}
-	img, err := decodePhoto(raw)
-	if err != nil {
-		return err
-	}
-	return writeJPEG(GalleryPath(id), fitJPEG(img, galleryEdge))
+	return SaveFittedJPEG(GalleryPath(id), r, GalleryBytes, galleryEdge)
 }
 
 func AddGallery(db *sql.DB, profileID string, r io.Reader) (Photo, error) {

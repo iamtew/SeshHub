@@ -252,6 +252,12 @@ func DeleteUser(db *sql.DB, id, actorID string) error {
 	if _, err := tx.Exec(`UPDATE forum_posts SET user_id=? WHERE user_id=?`, TombstoneID, id); err != nil {
 		return err
 	}
+	if _, err := tx.Exec(`DELETE FROM forum_mentions WHERE user_id=?`, id); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(`DELETE FROM forum_mention_reads WHERE user_id=?`, id); err != nil {
+		return err
+	}
 	if _, err := tx.Exec(`DELETE FROM forum_thread_reads WHERE user_id=?`, id); err != nil {
 		return err
 	}
@@ -349,6 +355,15 @@ func MergeUsers(db *sql.DB, keepID, fromID string) error {
 		return err
 	}
 	if _, err = tx.Exec(`UPDATE forum_posts SET user_id=? WHERE user_id=?`, keepID, fromID); err != nil {
+		return err
+	}
+	if _, err = tx.Exec(`DELETE FROM forum_mentions WHERE user_id=? AND post_id IN (SELECT post_id FROM forum_mentions WHERE user_id=?)`, fromID, keepID); err != nil {
+		return err
+	}
+	if _, err = tx.Exec(`UPDATE forum_mentions SET user_id=? WHERE user_id=?`, keepID, fromID); err != nil {
+		return err
+	}
+	if _, err = tx.Exec(`DELETE FROM forum_mention_reads WHERE user_id=?`, fromID); err != nil {
 		return err
 	}
 	if _, err = tx.Exec(`DELETE FROM forum_thread_reads WHERE user_id=?`, fromID); err != nil {

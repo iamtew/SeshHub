@@ -2,6 +2,7 @@
 <div class="signin">
     <div class="signin-links">
         <a href="/forum" {{if eq .Path "/forum"}}aria-current="page"{{end}}>Forum{{template "forum_badge.html" .}}</a>
+        <a href="/forum/mentions" {{if eq .Path "/forum/mentions"}}aria-current="page"{{end}}>Mentions{{if .MentionUnread}} <span class="forum-badge">{{.MentionUnread}}</span>{{end}}</a>
         {{if eq .User.Role "pending"}}<a href="/access" {{if eq .Path "/access"}}aria-current="page"{{end}}>Access</a>{{end}}
         {{if or (eq .User.Role "skater") (eq .User.Role "admin") (eq .User.Role "friend")}}<a href="/dashboard/profile" {{if eq .Path "/dashboard/profile"}}aria-current="page"{{end}}>Profile</a><a href="/dashboard/gallery" {{if eq .Path "/dashboard/gallery"}}aria-current="page"{{end}}>Gallery</a>{{end}}
         {{if eq .User.Role "skater"}}<a href="/dashboard/articles" {{if eq .Path "/dashboard/articles"}}aria-current="page"{{end}}>Drafts</a>{{end}}

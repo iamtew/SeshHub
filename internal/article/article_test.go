@@ -50,6 +50,13 @@ func TestRenderHardWrapsAndStrike(t *testing.T) {
 	}
 }
 
+func TestRenderEmojiShortcode(t *testing.T) {
+	html := Render(":smile:")
+	if !strings.Contains(html, "😄") && !strings.Contains(html, "😀") && !strings.Contains(html, "emoji") {
+		t.Fatalf("shortcode: %s", html)
+	}
+}
+
 func TestRenderStripsScript(t *testing.T) {
 	html := Render("hi <script>alert(1)</script> **x**")
 	if strings.Contains(html, "<script") {

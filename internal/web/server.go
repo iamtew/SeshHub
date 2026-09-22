@@ -31,6 +31,7 @@ func New(cfg config.Config, db *sql.DB) *Server {
 	})
 	s.mux.HandleFunc("GET /media/avatars/{file}", s.mediaAvatar)
 	s.mux.HandleFunc("GET /media/gallery/{file}", s.mediaGallery)
+	s.mux.HandleFunc("GET /media/forum/{file}", s.mediaForum)
 	s.mux.HandleFunc("GET /healthz", s.healthz)
 	s.mux.HandleFunc("GET /{$}", s.home)
 	s.mux.HandleFunc("GET /team", s.team)
@@ -91,6 +92,8 @@ func New(cfg config.Config, db *sql.DB) *Server {
 	s.mux.HandleFunc("GET /dashboard/articles/{id}", s.articleEdit(false))
 	s.mux.HandleFunc("POST /dashboard/articles/{id}", s.articleEdit(false))
 	s.mux.HandleFunc("GET /forum", s.forumIndex)
+	s.mux.HandleFunc("GET /forum/mentions", s.forumMentions)
+	s.mux.HandleFunc("GET /forum/users", s.forumUsers)
 	s.mux.HandleFunc("GET /forum/{sectionSlug}/new", s.forumNew)
 	s.mux.HandleFunc("POST /forum/{sectionSlug}/new", s.forumNew)
 	s.mux.HandleFunc("GET /forum/{sectionSlug}", s.forumSection)
@@ -163,6 +166,12 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, dat
 			if n, err := forum.UnreadCount(s.db, u.ID); err == nil && n > 0 {
 				data["ForumUnread"] = n
 			}
+			if n, err := forum.UnreadMentions(s.db, u.ID); err == nil && n > 0 {
+				data["MentionUnread"] = n
+				if path != "/forum/mentions" {
+					data["MentionBanner"] = n
+				}
+			}
 		} else if publicHero(path) {
 			data["Hero"] = true
 		}
@@ -176,6 +185,7 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, dat
 		filepath.Join(s.webDir, "templates", "partials", "md_editor.html"),
 		filepath.Join(s.webDir, "templates", "partials", "pager.html"),
 		filepath.Join(s.webDir, "templates", "partials", "forum_badge.html"),
+		filepath.Join(s.webDir, "templates", "partials", "forum_md.html"),
 		filepath.Join(s.webDir, "templates", "partials", "slideshow.html"),
 		filepath.Join(s.webDir, "templates", "pages", page),
 	}

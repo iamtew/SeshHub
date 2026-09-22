@@ -1,0 +1,17 @@
+{{define "content"}}
+<p class="who"><a href="/forum">Forum</a> · Mentions</p>
+<h1>Mentions</h1>
+{{if not .Items}}
+<p>No mentions yet.</p>
+{{else}}
+<ul class="forum-cats">
+{{range .Items}}
+<li>
+    <a href="{{.Href}}">{{.ThreadTitle}}</a>
+    <p class="who">{{.AuthorName}} · {{.CreatedAt}}</p>
+    {{if .Excerpt}}<p>{{.Excerpt}}</p>{{end}}
+</li>
+{{end}}
+</ul>
+{{end}}
+{{end}}

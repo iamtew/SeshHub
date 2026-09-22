@@ -38,10 +38,16 @@ type Thread struct {
 	ReplyCount int
 }
 
+type Photo struct {
+	ID  string
+	URL string
+}
+
 type Post struct {
 	ID                string
 	ThreadID          string
 	UserID            string
+	ParentID          string
 	BodyRaw           string
 	BodyHTML          string
 	First             bool
@@ -58,6 +64,9 @@ type Post struct {
 	AvatarBorderBlur  int
 	AvatarBorderStyle string
 	AvatarBorderColor string
+	ParentAuthor      string
+	ParentExcerpt     string
+	Photos            []Photo
 }
 
 func (p Post) AvatarStyle() template.CSS {
@@ -71,10 +80,11 @@ func (p Post) AvatarClass() string {
 }
 
 type OwnPost struct {
-	ThreadTitle string `json:"thread_title"`
-	BodyRaw     string `json:"body_raw"`
-	CreatedAt   string `json:"created_at"`
-	First       bool   `json:"is_first_post"`
+	ThreadTitle string   `json:"thread_title"`
+	BodyRaw     string   `json:"body_raw"`
+	CreatedAt   string   `json:"created_at"`
+	First       bool     `json:"is_first_post"`
+	Photos      []string `json:"photos,omitempty"`
 }
 
 func newID() string {
@@ -208,13 +218,16 @@ func GetThread(db *sql.DB, sectionID, slug string) (Thread, error) {
 
 func ListPosts(db *sql.DB, threadID string) ([]Post, error) {
 	rows, err := db.Query(`
-		SELECT p.id, p.thread_id, p.user_id, p.body_raw, p.body_html, p.is_first_post, p.created_at, p.updated_at,
+		SELECT p.id, p.thread_id, p.user_id, IFNULL(p.parent_id,''), p.body_raw, p.body_html, p.is_first_post, p.created_at, p.updated_at,
 			u.display_name, u.role, IFNULL(sp.slug,''), IFNULL(NULLIF(sp.avatar_url,''), IFNULL(u.avatar_url,'')),
 			IFNULL(sp.avatar_r1,50), IFNULL(sp.avatar_r2,50), IFNULL(sp.avatar_r3,50), IFNULL(sp.avatar_r4,50),
-			IFNULL(sp.avatar_border,0), IFNULL(sp.avatar_border_style,''), IFNULL(sp.avatar_border_color,''), IFNULL(sp.avatar_border_blur,0)
+			IFNULL(sp.avatar_border,0), IFNULL(sp.avatar_border_style,''), IFNULL(sp.avatar_border_color,''), IFNULL(sp.avatar_border_blur,0),
+			IFNULL(pu.display_name,''), IFNULL(par.body_raw,'')
 		FROM forum_posts p
 		JOIN users u ON u.id = p.user_id
 		LEFT JOIN skater_profiles sp ON sp.user_id = p.user_id
+		LEFT JOIN forum_posts par ON par.id = p.parent_id
+		LEFT JOIN users pu ON pu.id = par.user_id
 		WHERE p.thread_id = ?
 		ORDER BY p.created_at`, threadID)
 	if err != nil {
@@ -225,23 +238,33 @@ func ListPosts(db *sql.DB, threadID string) ([]Post, error) {
 	for rows.Next() {
 		var p Post
 		var first int
-		var role, slug string
-		if err := rows.Scan(&p.ID, &p.ThreadID, &p.UserID, &p.BodyRaw, &p.BodyHTML, &first, &p.CreatedAt, &p.UpdatedAt, &p.AuthorName, &role, &slug, &p.AuthorAvatar,
-			&p.AvatarR1, &p.AvatarR2, &p.AvatarR3, &p.AvatarR4, &p.AvatarBorder, &p.AvatarBorderStyle, &p.AvatarBorderColor, &p.AvatarBorderBlur); err != nil {
+		var role, slug, parentRaw string
+		if err := rows.Scan(&p.ID, &p.ThreadID, &p.UserID, &p.ParentID, &p.BodyRaw, &p.BodyHTML, &first, &p.CreatedAt, &p.UpdatedAt, &p.AuthorName, &role, &slug, &p.AuthorAvatar,
+			&p.AvatarR1, &p.AvatarR2, &p.AvatarR3, &p.AvatarR4, &p.AvatarBorder, &p.AvatarBorderStyle, &p.AvatarBorderColor, &p.AvatarBorderBlur,
+			&p.ParentAuthor, &parentRaw); err != nil {
 			return nil, err
 		}
 		p.First = first != 0
 		p.AuthorURL = authorURL(role, slug)
+		if p.ParentID != "" && parentRaw != "" {
+			p.ParentExcerpt = article.Excerpt(parentRaw, "")
+		}
 		out = append(out, p)
 	}
-	return out, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if err := attachPhotos(db, out); err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func GetPost(db *sql.DB, id string) (Post, error) {
 	var p Post
 	var first int
-	err := db.QueryRow(`SELECT id, thread_id, user_id, body_raw, body_html, is_first_post, created_at, updated_at FROM forum_posts WHERE id = ?`, id).
-		Scan(&p.ID, &p.ThreadID, &p.UserID, &p.BodyRaw, &p.BodyHTML, &first, &p.CreatedAt, &p.UpdatedAt)
+	err := db.QueryRow(`SELECT id, thread_id, user_id, IFNULL(parent_id,''), body_raw, body_html, is_first_post, created_at, updated_at FROM forum_posts WHERE id = ?`, id).
+		Scan(&p.ID, &p.ThreadID, &p.UserID, &p.ParentID, &p.BodyRaw, &p.BodyHTML, &first, &p.CreatedAt, &p.UpdatedAt)
 	p.First = first != 0
 	return p, err
 }
@@ -269,18 +292,24 @@ func uniqueSlug(db *sql.DB, sectionID, title, exceptID string) (string, error) {
 	return "", fmt.Errorf("slug taken")
 }
 
-func CreateThread(db *sql.DB, sectionID, userID, title, body string) (Thread, error) {
+func CreateThread(db *sql.DB, sectionID, userID, title, body string, files []FileIn) (Thread, error) {
 	title = strings.TrimSpace(title)
 	body = strings.TrimSpace(body)
 	if title == "" || body == "" {
 		return Thread{}, fmt.Errorf("title and body required")
+	}
+	if len(files) > PhotoMax {
+		return Thread{}, fmt.Errorf("max %d images", PhotoMax)
+	}
+	mentions, html, err := cookBody(db, userID, body)
+	if err != nil {
+		return Thread{}, err
 	}
 	slug, err := uniqueSlug(db, sectionID, title, "")
 	if err != nil {
 		return Thread{}, err
 	}
 	tid, pid := newID(), newID()
-	html := article.Render(body)
 	tx, err := db.Begin()
 	if err != nil {
 		return Thread{}, err
@@ -292,18 +321,30 @@ func CreateThread(db *sql.DB, sectionID, userID, title, body string) (Thread, er
 	if _, err := tx.Exec(`INSERT INTO forum_posts (id, thread_id, user_id, body_raw, body_html, is_first_post) VALUES (?,?,?,?,?,1)`, pid, tid, userID, body, html); err != nil {
 		return Thread{}, err
 	}
+	if err := saveMentions(tx, pid, mentions); err != nil {
+		return Thread{}, err
+	}
+	if err := addPhotos(tx, pid, 0, files); err != nil {
+		return Thread{}, err
+	}
 	if err := tx.Commit(); err != nil {
 		return Thread{}, err
 	}
 	return GetThread(db, sectionID, slug)
 }
 
-func Reply(db *sql.DB, threadID, userID, body string) error {
+func Reply(db *sql.DB, threadID, userID, body, parentID string, files []FileIn) error {
 	body = strings.TrimSpace(body)
 	if body == "" {
 		return fmt.Errorf("body required")
 	}
-	html := article.Render(body)
+	if len(files) > PhotoMax {
+		return fmt.Errorf("max %d images", PhotoMax)
+	}
+	mentions, html, err := cookBody(db, userID, body)
+	if err != nil {
+		return err
+	}
 	tx, err := db.Begin()
 	if err != nil {
 		return err
@@ -316,7 +357,23 @@ func Reply(db *sql.DB, threadID, userID, body string) error {
 	if locked != 0 {
 		return fmt.Errorf("thread locked")
 	}
-	if _, err := tx.Exec(`INSERT INTO forum_posts (id, thread_id, user_id, body_raw, body_html) VALUES (?,?,?,?,?)`, newID(), threadID, userID, body, html); err != nil {
+	if parentID != "" {
+		var ptid string
+		if err := tx.QueryRow(`SELECT thread_id FROM forum_posts WHERE id = ?`, parentID).Scan(&ptid); err != nil {
+			return fmt.Errorf("parent post not found")
+		}
+		if ptid != threadID {
+			return fmt.Errorf("parent post not in thread")
+		}
+	}
+	pid := newID()
+	if _, err := tx.Exec(`INSERT INTO forum_posts (id, thread_id, user_id, parent_id, body_raw, body_html) VALUES (?,?,?,?,?,?)`, pid, threadID, userID, nullIfEmpty(parentID), body, html); err != nil {
+		return err
+	}
+	if err := saveMentions(tx, pid, mentions); err != nil {
+		return err
+	}
+	if err := addPhotos(tx, pid, 0, files); err != nil {
 		return err
 	}
 	if _, err := tx.Exec(`UPDATE forum_threads SET last_post_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, threadID); err != nil {
@@ -338,13 +395,51 @@ func UpdateThreadTitle(db *sql.DB, t Thread, title string) (string, error) {
 	return slug, err
 }
 
-func UpdatePost(db *sql.DB, id, body string) error {
+func UpdatePost(db *sql.DB, id, body string, remove []string, files []FileIn) error {
 	body = strings.TrimSpace(body)
 	if body == "" {
 		return fmt.Errorf("body required")
 	}
-	_, err := db.Exec(`UPDATE forum_posts SET body_raw=?, body_html=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`, body, article.Render(body), id)
-	return err
+	var author string
+	if err := db.QueryRow(`SELECT user_id FROM forum_posts WHERE id=?`, id).Scan(&author); err != nil {
+		return err
+	}
+	mentions, html, err := cookBody(db, author, body)
+	if err != nil {
+		return err
+	}
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if _, err := tx.Exec(`UPDATE forum_posts SET body_raw=?, body_html=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`, body, html, id); err != nil {
+		return err
+	}
+	if err := saveMentions(tx, id, mentions); err != nil {
+		return err
+	}
+	gone, err := dropPhotos(tx, id, remove)
+	if err != nil {
+		return err
+	}
+	var n int
+	if err := tx.QueryRow(`SELECT COUNT(*) FROM forum_post_photos WHERE post_id=?`, id).Scan(&n); err != nil {
+		return err
+	}
+	if n+len(files) > PhotoMax {
+		return fmt.Errorf("max %d images", PhotoMax)
+	}
+	if err := addPhotos(tx, id, n, files); err != nil {
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	for _, pid := range gone {
+		RemovePhoto(pid)
+	}
+	return nil
 }
 
 func DeletePost(db *sql.DB, p Post) (deletedThread bool, err error) {
@@ -353,8 +448,22 @@ func DeletePost(db *sql.DB, p Post) (deletedThread bool, err error) {
 		return false, err
 	}
 	defer tx.Rollback()
+	var photoIDs []string
 	if p.First {
+		photoIDs, err = photoIDsIn(tx, `SELECT id FROM forum_post_photos WHERE post_id IN (SELECT id FROM forum_posts WHERE thread_id=?)`, p.ThreadID)
+		if err != nil {
+			return false, err
+		}
+		if _, err := tx.Exec(`DELETE FROM forum_mentions WHERE post_id IN (SELECT id FROM forum_posts WHERE thread_id=?)`, p.ThreadID); err != nil {
+			return false, err
+		}
+		if _, err := tx.Exec(`DELETE FROM forum_post_photos WHERE post_id IN (SELECT id FROM forum_posts WHERE thread_id=?)`, p.ThreadID); err != nil {
+			return false, err
+		}
 		if _, err := tx.Exec(`DELETE FROM forum_thread_reads WHERE thread_id=?`, p.ThreadID); err != nil {
+			return false, err
+		}
+		if _, err := tx.Exec(`UPDATE forum_posts SET parent_id=NULL WHERE thread_id=?`, p.ThreadID); err != nil {
 			return false, err
 		}
 		if _, err := tx.Exec(`DELETE FROM forum_posts WHERE thread_id=?`, p.ThreadID); err != nil {
@@ -363,7 +472,24 @@ func DeletePost(db *sql.DB, p Post) (deletedThread bool, err error) {
 		if _, err := tx.Exec(`DELETE FROM forum_threads WHERE id=?`, p.ThreadID); err != nil {
 			return false, err
 		}
-		return true, tx.Commit()
+		if err := tx.Commit(); err != nil {
+			return false, err
+		}
+		RemovePhotos(photoIDs)
+		return true, nil
+	}
+	photoIDs, err = photoIDsIn(tx, `SELECT id FROM forum_post_photos WHERE post_id=?`, p.ID)
+	if err != nil {
+		return false, err
+	}
+	if _, err := tx.Exec(`DELETE FROM forum_mentions WHERE post_id=?`, p.ID); err != nil {
+		return false, err
+	}
+	if _, err := tx.Exec(`DELETE FROM forum_post_photos WHERE post_id=?`, p.ID); err != nil {
+		return false, err
+	}
+	if _, err := tx.Exec(`UPDATE forum_posts SET parent_id=NULL WHERE parent_id=?`, p.ID); err != nil {
+		return false, err
 	}
 	if _, err := tx.Exec(`DELETE FROM forum_posts WHERE id=?`, p.ID); err != nil {
 		return false, err
@@ -371,7 +497,11 @@ func DeletePost(db *sql.DB, p Post) (deletedThread bool, err error) {
 	if _, err := tx.Exec(`UPDATE forum_threads SET last_post_at = IFNULL((SELECT MAX(created_at) FROM forum_posts WHERE thread_id=?), last_post_at), updated_at=CURRENT_TIMESTAMP WHERE id=?`, p.ThreadID, p.ThreadID); err != nil {
 		return false, err
 	}
-	return false, tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return false, err
+	}
+	RemovePhotos(photoIDs)
+	return false, nil
 }
 
 func (p Post) Edited() bool {
@@ -387,7 +517,7 @@ func uniqueSectionSlug(db *sql.DB, name, exceptID string) (string, error) {
 	if base == "" {
 		base = "section"
 	}
-	if base == "new" {
+	if base == "new" || base == "mentions" || base == "users" {
 		base = "section"
 	}
 	slug := base
@@ -443,7 +573,20 @@ func DeleteSection(db *sql.DB, id string) error {
 		return err
 	}
 	defer tx.Rollback()
+	photoIDs, err := photoIDsIn(tx, `SELECT id FROM forum_post_photos WHERE post_id IN (SELECT id FROM forum_posts WHERE thread_id IN (SELECT id FROM forum_threads WHERE section_id=?))`, id)
+	if err != nil {
+		return err
+	}
+	if _, err := tx.Exec(`DELETE FROM forum_mentions WHERE post_id IN (SELECT id FROM forum_posts WHERE thread_id IN (SELECT id FROM forum_threads WHERE section_id=?))`, id); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(`DELETE FROM forum_post_photos WHERE post_id IN (SELECT id FROM forum_posts WHERE thread_id IN (SELECT id FROM forum_threads WHERE section_id=?))`, id); err != nil {
+		return err
+	}
 	if _, err := tx.Exec(`DELETE FROM forum_thread_reads WHERE thread_id IN (SELECT id FROM forum_threads WHERE section_id=?)`, id); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(`UPDATE forum_posts SET parent_id=NULL WHERE thread_id IN (SELECT id FROM forum_threads WHERE section_id=?)`, id); err != nil {
 		return err
 	}
 	if _, err := tx.Exec(`DELETE FROM forum_posts WHERE thread_id IN (SELECT id FROM forum_threads WHERE section_id=?)`, id); err != nil {
@@ -455,7 +598,11 @@ func DeleteSection(db *sql.DB, id string) error {
 	if _, err := tx.Exec(`DELETE FROM forum_sections WHERE id=?`, id); err != nil {
 		return err
 	}
-	return tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	RemovePhotos(photoIDs)
+	return nil
 }
 
 func MoveSection(db *sql.DB, id string, dir int) error {
@@ -492,7 +639,7 @@ func MoveSection(db *sql.DB, id string, dir int) error {
 
 func Export(db *sql.DB, userID string) ([]OwnPost, error) {
 	rows, err := db.Query(`
-		SELECT t.title, p.body_raw, p.created_at, p.is_first_post
+		SELECT p.id, t.title, p.body_raw, p.created_at, p.is_first_post
 		FROM forum_posts p JOIN forum_threads t ON t.id = p.thread_id
 		WHERE p.user_id = ? ORDER BY p.created_at`, userID)
 	if err != nil {
@@ -500,14 +647,34 @@ func Export(db *sql.DB, userID string) ([]OwnPost, error) {
 	}
 	defer rows.Close()
 	var out []OwnPost
+	var ids []string
 	for rows.Next() {
 		var p OwnPost
 		var first int
-		if err := rows.Scan(&p.ThreadTitle, &p.BodyRaw, &p.CreatedAt, &first); err != nil {
+		var id string
+		if err := rows.Scan(&id, &p.ThreadTitle, &p.BodyRaw, &p.CreatedAt, &first); err != nil {
 			return nil, err
 		}
 		p.First = first != 0
 		out = append(out, p)
+		ids = append(ids, id)
 	}
-	return out, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	urls, err := photoURLsByPosts(db, ids)
+	if err != nil {
+		return nil, err
+	}
+	for i, id := range ids {
+		out[i].Photos = urls[id]
+	}
+	return out, nil
+}
+
+func nullIfEmpty(s string) any {
+	if s == "" {
+		return nil
+	}
+	return s
 }

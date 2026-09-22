@@ -132,6 +132,12 @@ func (s *Server) accountExport(w http.ResponseWriter, r *http.Request) {
 	} else if len(posts) > 0 {
 		out["forum"] = posts
 	}
+	if ments, err := forum.ExportMentions(s.db, fresh.ID); err != nil {
+		http.Error(w, "db error", http.StatusInternalServerError)
+		return
+	} else if len(ments) > 0 {
+		out["forum_mentions"] = ments
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Content-Disposition", `attachment; filename="seshhub-export.json"`)
 	_ = json.NewEncoder(w).Encode(out)

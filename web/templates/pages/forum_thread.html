@@ -14,7 +14,8 @@
 </header>
 <div class="forum-stream">
 {{range .Posts}}
-<article class="forum-post{{if .First}} forum-post--op{{end}}"{{if .Latest}} id="latest"{{end}}>
+{{if .Latest}}<span id="latest"></span>{{end}}
+<article class="forum-post{{if .First}} forum-post--op{{end}}" id="p-{{.ID}}">
     <header class="forum-post-meta">
         {{if .AuthorAvatar}}{{if .AuthorURL}}<a class="avframe {{.AvatarClass}}" href="{{.AuthorURL}}" style="{{.AvatarStyle}}" aria-label="{{.AuthorName}}"><img class="avatar" src="{{.AuthorAvatar}}" alt="" referrerpolicy="no-referrer"></a>{{else}}<span class="avframe {{.AvatarClass}}" style="{{.AvatarStyle}}"><img class="avatar" src="{{.AuthorAvatar}}" alt="" referrerpolicy="no-referrer"></span>{{end}}{{end}}
         <div>
@@ -22,12 +23,34 @@
             <p class="who">{{.CreatedAt}}{{if .Edited}} · edited{{end}}</p>
         </div>
     </header>
+    {{if .ParentID}}
+    <a class="forum-quote" href="#p-{{.ParentID}}">{{if .ParentAuthor}}{{.ParentAuthor}}{{else}}Deleted post{{end}}{{if .ParentExcerpt}} — {{.ParentExcerpt}}{{end}}</a>
+    {{end}}
     <div class="forum-cooked prose">{{.HTML}}</div>
+    {{if .Photos}}
+    <ul class="forum-thumbs">
+    {{range .Photos}}<li><a href="{{.URL}}"><img src="{{.URL}}" alt=""></a></li>{{end}}
+    </ul>
+    {{end}}
+    <p class="forum-post-actions">
+        {{if not $.T.Locked}}<button type="button" class="forum-reply-btn" data-parent="{{.ID}}" data-author="{{.AuthorName}}" data-excerpt="{{.Quote}}">Reply</button>{{end}}
+    </p>
     {{if .CanEdit}}
     <details class="forum-edit">
         <summary>Edit</summary>
-        <form method="post" action="/forum/{{$.S.Slug}}/{{$.T.Slug}}/posts/{{.ID}}" class="form">
-            <label>Body <textarea name="body" rows="6" required>{{.BodyRaw}}</textarea></label>
+        <form method="post" action="/forum/{{$.S.Slug}}/{{$.T.Slug}}/posts/{{.ID}}" class="form forum-compose" enctype="multipart/form-data">
+            {{template "forum_mdbar"}}
+            <label>Body <textarea name="body" rows="6" required class="forum-body">{{.BodyRaw}}</textarea></label>
+            <div class="forum-preview prose forum-cooked" aria-live="polite"></div>
+            {{if .Photos}}
+            <fieldset class="forum-existing">
+                <legend>Images</legend>
+                {{range .Photos}}
+                <label><input type="checkbox" name="remove_photo" value="{{.ID}}"> Remove <img src="{{.URL}}" alt=""></label>
+                {{end}}
+            </fieldset>
+            {{end}}
+            <label>Add images (JPEG or PNG, 15MB, max 3) <input type="file" name="photos" accept="image/jpeg,image/png" multiple></label>
             <button type="submit">Save</button>
         </form>
         <form method="post" action="/forum/{{$.S.Slug}}/{{$.T.Slug}}/posts/{{.ID}}/delete">
@@ -42,11 +65,16 @@
 {{if .T.Locked}}
 <p class="who">This thread is locked.</p>
 {{else}}
-<section class="forum-composer">
+<section class="forum-composer" id="forum-reply">
     <h2>Reply</h2>
-    <form method="post" action="/forum/{{.S.Slug}}/{{.T.Slug}}/reply" class="form">
-        <label class="visually-hidden" for="forum-reply">Reply</label>
-        <textarea id="forum-reply" name="body" rows="6" required placeholder="Write a reply…"></textarea>
+    <p class="forum-quote-preview who" hidden></p>
+    <form method="post" action="/forum/{{.S.Slug}}/{{.T.Slug}}/reply" class="form forum-compose" enctype="multipart/form-data">
+        <input type="hidden" name="parent_id" id="forum-parent" value="">
+        {{template "forum_mdbar"}}
+        <label class="visually-hidden" for="forum-reply-body">Reply</label>
+        <textarea id="forum-reply-body" class="forum-body" name="body" rows="6" required placeholder="Write a reply…"></textarea>
+        <div class="forum-preview prose forum-cooked" aria-live="polite"></div>
+        <label>Images (JPEG or PNG, 15MB, max 3) <input type="file" name="photos" accept="image/jpeg,image/png" multiple></label>
         <button type="submit">Post reply</button>
     </form>
 </section>
