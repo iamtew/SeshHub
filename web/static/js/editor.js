@@ -69,10 +69,27 @@
     insertText(btn.getAttribute("data-insert") || "");
   });
 
-  function bindForm(root, id) {
-    if (!root || !id) return;
-    var nodes = root.querySelectorAll("input, select, textarea");
-    for (var i = 0; i < nodes.length; i++) nodes[i].setAttribute("form", id);
+  function mirrorMeta() {
+    if (!form) return;
+    var box = form.querySelector(".md-snap");
+    if (!box) {
+      box = document.createElement("div");
+      box.className = "md-snap";
+      box.hidden = true;
+      form.appendChild(box);
+    }
+    box.textContent = "";
+    if (!meta) return;
+    var nodes = meta.querySelectorAll("input, select, textarea");
+    for (var i = 0; i < nodes.length; i++) {
+      var n = nodes[i];
+      if (!n.name || (n.type === "checkbox" && !n.checked)) continue;
+      var h = document.createElement("input");
+      h.type = "hidden";
+      h.name = n.name;
+      h.value = n.value;
+      box.appendChild(h);
+    }
   }
 
   function theme(monaco) {
@@ -134,11 +151,9 @@
     mount = dialog && dialog.querySelector("#monaco-mount");
     form = ta.form;
     if (!dialog || !form) return;
-    if (!form.id) form.id = "md-form";
     if (meta && side && meta.parentNode !== side) {
       metaHome = meta.parentNode;
       metaNext = meta.nextSibling;
-      bindForm(meta, form.id);
       side.appendChild(meta);
     }
     if (typeof dialog.showModal === "function") dialog.showModal();
@@ -219,6 +234,12 @@
       openAdv();
     }
   });
+  document.addEventListener("click", function (ev) {
+    var b = ev.target.closest("button");
+    if (!b || !form || b.form !== form || b.type !== "submit") return;
+    if (ed && dialog && dialog.open) ta.value = ed.getValue();
+    mirrorMeta();
+  }, true);
   if (dialog) {
     dialog.querySelector(".md-overlay-close").addEventListener("click", function () {
       dialog.close();
@@ -234,7 +255,7 @@
   }
   if (form) {
     form.addEventListener("submit", function () {
-      if (ed) ta.value = ed.getValue();
+      if (ed && dialog && dialog.open) ta.value = ed.getValue();
       if (meta && metaHome && meta.parentNode !== metaHome) {
         metaHome.insertBefore(meta, metaNext);
       }
