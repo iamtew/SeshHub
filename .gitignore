@@ -37,6 +37,7 @@ web/static/uploads/
 data/avatars/
 data/gallery/
 data/forum/
+internal/forum/data/
 
 # Hero video: copy onto the VPS by hand (GitHub 100MB cap)
 web/static/vid/seshsofa.mp4
