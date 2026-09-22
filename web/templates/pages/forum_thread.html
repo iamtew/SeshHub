@@ -31,9 +31,10 @@
     {{range .Photos}}
     <li>
       {{if .IsImage}}<button type="button" data-src="{{.URL}}"><img src="{{.URL}}" alt=""></button>
-      {{else if .IsAudio}}<audio controls preload="metadata" src="{{.URL}}"></audio>
-      {{else if .IsVideo}}<video controls playsinline preload="metadata" src="{{.URL}}"></video>
-      {{else if .IsPDF}}<iframe class="forum-pdf" src="{{.URL}}" title="PDF"></iframe><a href="{{.URL}}">Open</a>
+      {{else if .IsAudio}}<audio controls preload="metadata"><source src="{{.URL}}"{{if .MIME}} type="{{.MIME}}"{{end}}></audio>
+      {{else if .IsVideo}}<video controls playsinline webkit-playsinline preload="metadata"><source src="{{.URL}}"{{if .MIME}} type="{{.MIME}}"{{end}}></video>
+      {{else if .IsPDF}}<iframe class="forum-pdf" src="{{.URL}}" title="PDF"></iframe><a href="{{.URL}}">Open PDF</a>
+      {{else}}<a href="{{.URL}}">{{.Kind}}</a>
       {{end}}
     </li>
     {{end}}

@@ -9,8 +9,9 @@
 {{end}}
 {{define "forum_files"}}
 <label class="gallery-drop forum-drop">
-    Drop files here, or tap (15MB, max 3)
-    <input type="file" name="photos" accept="image/jpeg,image/png,image/gif,image/webp,audio/mpeg,audio/wav,audio/ogg,audio/flac,audio/mp4,video/mp4,video/webm,video/ogg,application/pdf" multiple>
+    <span class="forum-drop-desk">Drop files here, or tap (15MB, max 3)</span>
+    <span class="forum-drop-phone">Tap to add files (15MB, max 3)</span>
+    <input type="file" name="photos" accept="image/*,audio/*,video/*,application/pdf" multiple>
 </label>
 <p class="forum-drop-names who" hidden></p>
 {{end}}

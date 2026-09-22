@@ -336,7 +336,8 @@
 
 (function () {
   var MAX = 15 * 1024 * 1024;
-  var OK = /^(image\/(jpeg|png|gif|webp)|audio\/(mpeg|mp3|wav|x-wav|ogg|flac|mp4|aac)|video\/(mp4|webm|ogg)|application\/pdf)$/;
+  var OK = /^(image\/(jpeg|png|gif|webp)|audio\/(mpeg|mp3|mp4|aac|wav|x-wav|x-m4a|ogg|flac|webm)|video\/(mp4|webm|ogg)|application\/pdf)$/;
+  var OKNAME = /\.(jpe?g|png|gif|webp|mp3|wav|ogg|oga|flac|m4a|aac|mp4|m4v|webm|ogv|pdf)$/;
 
   function hasFiles(e) {
     var t = e.dataTransfer;
@@ -353,8 +354,9 @@
     var n = (f.name || "").toLowerCase();
     var t = (f.type || "").toLowerCase();
     if (/\.hei[cf]$/.test(n) || t.indexOf("heic") !== -1 || t.indexOf("heif") !== -1) return false;
-    if (!t) return true;
-    return OK.test(t);
+    if (OK.test(t)) return true;
+    if (!t || t === "application/octet-stream") return OKNAME.test(n);
+    return false;
   }
 
   function used(form) {

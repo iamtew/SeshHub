@@ -371,13 +371,26 @@ form[action*="/unlink/"] button { background: var(--magenta); }
     color: var(--offwhite); font-size: 0.92rem;
 }
 .forum-quote-preview[hidden] { display: none; }
-.forum-thumbs { list-style: none; padding: 0; margin: 0.6rem 0 0; display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: flex-end; }
-.forum-thumbs button { padding: 0; background: transparent; border: 0; cursor: pointer; min-width: 2.75rem; min-height: 2.75rem; }
+.forum-thumbs { list-style: none; padding: 0; margin: 0.6rem 0 0; display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: flex-end; width: 100%; }
+.forum-thumbs li { min-width: 0; max-width: 100%; }
+.forum-thumbs button { padding: 0; background: transparent; border: 0; cursor: pointer; min-width: 2.75rem; min-height: 2.75rem; max-width: 100%; }
 .forum-thumbs img, .forum-existing img { max-width: 16rem; max-height: 16rem; object-fit: cover; display: block; }
-.forum-thumbs video { max-width: 100%; max-height: 16rem; display: block; }
-.forum-thumbs audio { width: min(100%, 20rem); }
-.forum-pdf { width: min(100%, 24rem); height: 16rem; border: 0; display: block; }
-.forum-drop { max-width: none; margin: 0.5rem 0; }
+.forum-thumbs audio {
+    display: block;
+    width: min(20rem, 100%);
+    min-height: 2.75rem;
+    color-scheme: light;
+}
+.forum-thumbs video {
+    display: block;
+    width: min(20rem, 100%);
+    max-height: 16rem;
+    min-height: 8rem;
+    background: #000;
+}
+.forum-pdf { display: block; width: min(20rem, 100%); height: 16rem; border: 0; }
+.forum-drop { max-width: none; margin: 0.5rem 0; touch-action: manipulation; }
+.forum-drop-phone { display: none; }
 .forum-compose.drag .forum-drop { outline: 3px solid var(--chartreuse); outline-offset: 4px; }
 .forum-mdbar { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.35rem 0; }
 .forum-md {
@@ -838,9 +851,15 @@ input, select, textarea { accent-color: var(--green); }
     .forum-post, .forum-composer { padding: 0.55rem 0.6rem 0.65rem; border-radius: 0.55rem; }
     .forum-post-meta { gap: 0.45rem; margin-bottom: 0.4rem; }
     .forum-thumbs { flex-direction: column; align-items: stretch; }
+    .forum-thumbs button { width: 100%; }
     .forum-thumbs img, .forum-existing img { max-width: 100%; max-height: 14rem; width: 100%; }
-    .forum-thumbs video, .forum-thumbs audio, .forum-pdf { width: 100%; max-width: none; }
+    .forum-thumbs video, .forum-thumbs audio, .forum-pdf { width: 100%; }
     .forum-drop { min-height: 7rem; padding: 1rem; }
+    .forum-drop-desk { display: none; }
+    .forum-drop-phone { display: inline; }
+    .slideshow-full .slideshow-stage { max-width: calc(100vw - 5.5rem); max-height: calc(100dvh - 4rem); }
+    .slideshow-full-prev, .slideshow-full-next { flex: 0 0 2.75rem; width: 2.75rem; height: 2.75rem; }
+    .slideshow-full-close { top: max(0.5rem, env(safe-area-inset-top)); right: max(0.5rem, env(safe-area-inset-right)); min-height: 2.75rem; }
     .nav { flex-direction: column; align-items: stretch; }
     .nav nav { flex: none; }
     .nav .signin { justify-content: flex-start; }

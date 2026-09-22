@@ -111,12 +111,23 @@ func Sniff(raw []byte) (kind, ext, mime string, err error) {
 	case bytes.HasPrefix(raw, []byte("ID3")) || (raw[0] == 0xff && raw[1]&0xe0 == 0xe0):
 		return "audio", "mp3", "audio/mpeg", nil
 	case bytes.Equal(raw[4:8], []byte("ftyp")):
-		return sniffFtyp(raw[8:12])
+		return sniffISO(raw)
 	case raw[0] == 0x1a && raw[1] == 0x45 && raw[2] == 0xdf && raw[3] == 0xa3:
 		return "video", "webm", "video/webm", nil
 	default:
 		return "", "", "", fmt.Errorf("unsupported file")
 	}
+}
+
+func sniffISO(raw []byte) (kind, ext, mime string, err error) {
+	n := int(raw[0])<<24 | int(raw[1])<<16 | int(raw[2])<<8 | int(raw[3])
+	if n < 16 || n > len(raw) {
+		n = min(len(raw), 256)
+	}
+	if bytes.Contains(raw[8:n], []byte("M4A ")) || bytes.Contains(raw[8:n], []byte("M4B ")) {
+		return "audio", "m4a", "audio/mp4", nil
+	}
+	return sniffFtyp(raw[8:12])
 }
 
 func sniffFtyp(brand []byte) (kind, ext, mime string, err error) {

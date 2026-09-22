@@ -24,6 +24,14 @@ func TestSniffAndAttach(t *testing.T) {
 	if _, _, _, err := Sniff([]byte("<svg xmlns='x")); err == nil {
 		t.Fatal("svg")
 	}
+	m4a := make([]byte, 24)
+	m4a[3] = 24
+	copy(m4a[4:], "ftypisom")
+	copy(m4a[16:], "M4A ")
+	k, e, _, err = Sniff(m4a)
+	if err != nil || k != "audio" || e != "m4a" {
+		t.Fatalf("m4a %s %s %v", k, e, err)
+	}
 
 	sqldb, err := db.Open(":memory:")
 	if err != nil {
