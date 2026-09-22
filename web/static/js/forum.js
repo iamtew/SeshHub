@@ -274,3 +274,172 @@
     if (!box.contains(ev.target)) hideAc();
   });
 })();
+
+(function () {
+  var dlg = document.getElementById("forum-full");
+  if (!dlg || !dlg.showModal) return;
+  var img = dlg.querySelector(".slideshow-full-img");
+  var prev = dlg.querySelector(".slideshow-full-prev");
+  var next = dlg.querySelector(".slideshow-full-next");
+  var close = dlg.querySelector(".slideshow-full-close");
+  var urls = [];
+  var i = 0;
+  function paint() {
+    if (!urls.length) return;
+    img.src = urls[i];
+    prev.hidden = urls.length < 2;
+    next.hidden = urls.length < 2;
+  }
+  function go(d) {
+    if (!urls.length) return;
+    i = (i + d + urls.length) % urls.length;
+    paint();
+  }
+  document.addEventListener("click", function (ev) {
+    var btn = ev.target.closest(".forum-thumbs button[data-src]");
+    if (!btn) return;
+    var list = btn.closest("ul");
+    urls = [];
+    list.querySelectorAll("button[data-src]").forEach(function (b) {
+      urls.push(b.getAttribute("data-src"));
+    });
+    i = urls.indexOf(btn.getAttribute("data-src"));
+    if (i < 0) i = 0;
+    paint();
+    dlg.showModal();
+  });
+  prev.addEventListener("click", function (e) { e.stopPropagation(); go(-1); });
+  next.addEventListener("click", function (e) { e.stopPropagation(); go(1); });
+  close.addEventListener("click", function () { dlg.close(); });
+  dlg.addEventListener("click", function (e) { if (e.target === dlg) dlg.close(); });
+  dlg.addEventListener("keydown", function (e) {
+    if (e.key === "ArrowLeft") { e.preventDefault(); go(-1); }
+    if (e.key === "ArrowRight") { e.preventDefault(); go(1); }
+  });
+  var tx = 0, ty = 0;
+  dlg.addEventListener("touchstart", function (e) {
+    var t = e.changedTouches[0];
+    tx = t.clientX;
+    ty = t.clientY;
+  }, { passive: true });
+  dlg.addEventListener("touchend", function (e) {
+    var t = e.changedTouches[0];
+    var dx = t.clientX - tx, dy = t.clientY - ty;
+    if (Math.abs(dx) < 40 && Math.abs(dy) < 40) return;
+    if (Math.abs(dy) > Math.abs(dx)) {
+      if (dy > 40) dlg.close();
+      return;
+    }
+    go(dx < 0 ? 1 : -1);
+  });
+})();
+
+(function () {
+  var MAX = 15 * 1024 * 1024;
+  var OK = /^(image\/(jpeg|png|gif|webp)|audio\/(mpeg|mp3|wav|x-wav|ogg|flac|mp4|aac)|video\/(mp4|webm|ogg)|application\/pdf)$/;
+
+  function hasFiles(e) {
+    var t = e.dataTransfer;
+    if (!t) return false;
+    if (t.types) {
+      if (t.types.indexOf && t.types.indexOf("Files") !== -1) return true;
+      if (t.types.contains && t.types.contains("Files")) return true;
+    }
+    return !!(t.files && t.files.length);
+  }
+
+  function ok(f) {
+    if (!f || !f.size || f.size > MAX) return false;
+    var n = (f.name || "").toLowerCase();
+    var t = (f.type || "").toLowerCase();
+    if (/\.hei[cf]$/.test(n) || t.indexOf("heic") !== -1 || t.indexOf("heif") !== -1) return false;
+    if (!t) return true;
+    return OK.test(t);
+  }
+
+  function used(form) {
+    return form.querySelectorAll(".forum-existing input[name=remove_photo]:not(:checked)").length;
+  }
+
+  function names(form) {
+    var input = form.querySelector('input[name="photos"]');
+    var el = form.querySelector(".forum-drop-names");
+    if (!input || !el) return;
+    var bits = [];
+    for (var i = 0; i < input.files.length; i++) bits.push(input.files[i].name);
+    el.hidden = !bits.length;
+    el.textContent = bits.join(", ");
+  }
+
+  function put(form, incoming, merge) {
+    var input = form.querySelector('input[name="photos"]');
+    if (!input || !incoming || !incoming.length) return;
+    var room = 3 - used(form);
+    if (room <= 0) {
+      alert("Max 3 files on a post");
+      return;
+    }
+    var keep = [];
+    var i;
+    if (merge) {
+      for (i = 0; i < input.files.length && keep.length < room; i++) keep.push(input.files[i]);
+    }
+    for (i = 0; i < incoming.length && keep.length < room; i++) {
+      if (!ok(incoming[i])) {
+        alert("Use JPEG, PNG, GIF, WebP, audio, video, or PDF under 15MB");
+        if (!merge) input.value = "";
+        names(form);
+        return;
+      }
+      keep.push(incoming[i]);
+    }
+    try {
+      var dt = new DataTransfer();
+      keep.forEach(function (f) { dt.items.add(f); });
+      input.files = dt.files;
+    } catch (e) {
+      names(form);
+      return;
+    }
+    names(form);
+    form.classList.remove("drag");
+  }
+
+  function target(el) {
+    var form = el && el.closest && el.closest("form.forum-compose");
+    if (form && form.querySelector('input[name="photos"]')) return form;
+    return document.querySelector("#forum-reply form.forum-compose") || document.querySelector("form.forum-compose");
+  }
+
+  document.querySelectorAll("form.forum-compose").forEach(function (form) {
+    var input = form.querySelector('input[name="photos"]');
+    if (!input) return;
+    input.addEventListener("change", function () { put(form, input.files, false); });
+  });
+
+  document.addEventListener("dragover", function (e) {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+    var form = target(e.target);
+    document.querySelectorAll("form.forum-compose.drag").forEach(function (f) {
+      if (f !== form) f.classList.remove("drag");
+    });
+    if (form) form.classList.add("drag");
+  });
+  document.addEventListener("dragleave", function (e) {
+    if (e.target === document.documentElement) {
+      document.querySelectorAll("form.forum-compose.drag").forEach(function (f) { f.classList.remove("drag"); });
+    }
+  });
+  document.addEventListener("drop", function (e) {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    var form = target(e.target);
+    document.querySelectorAll("form.forum-compose.drag").forEach(function (f) { f.classList.remove("drag"); });
+    if (!form) return;
+    put(form, e.dataTransfer.files, true);
+    var box = form.closest("#forum-reply") || form;
+    if (box.scrollIntoView) box.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  });
+})();

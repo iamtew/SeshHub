@@ -39,8 +39,11 @@ type Thread struct {
 }
 
 type Photo struct {
-	ID  string
-	URL string
+	ID   string
+	URL  string
+	Kind string
+	Ext  string
+	MIME string
 }
 
 type Post struct {
@@ -299,7 +302,7 @@ func CreateThread(db *sql.DB, sectionID, userID, title, body string, files []Fil
 		return Thread{}, fmt.Errorf("title and body required")
 	}
 	if len(files) > PhotoMax {
-		return Thread{}, fmt.Errorf("max %d images", PhotoMax)
+		return Thread{}, fmt.Errorf("max %d files", PhotoMax)
 	}
 	mentions, html, err := cookBody(db, userID, body)
 	if err != nil {
@@ -339,7 +342,7 @@ func Reply(db *sql.DB, threadID, userID, body, parentID string, files []FileIn) 
 		return fmt.Errorf("body required")
 	}
 	if len(files) > PhotoMax {
-		return fmt.Errorf("max %d images", PhotoMax)
+		return fmt.Errorf("max %d files", PhotoMax)
 	}
 	mentions, html, err := cookBody(db, userID, body)
 	if err != nil {
@@ -428,7 +431,7 @@ func UpdatePost(db *sql.DB, id, body string, remove []string, files []FileIn) er
 		return err
 	}
 	if n+len(files) > PhotoMax {
-		return fmt.Errorf("max %d images", PhotoMax)
+		return fmt.Errorf("max %d files", PhotoMax)
 	}
 	if err := addPhotos(tx, id, n, files); err != nil {
 		return err
@@ -450,7 +453,7 @@ func DeletePost(db *sql.DB, p Post) (deletedThread bool, err error) {
 	defer tx.Rollback()
 	var photoIDs []string
 	if p.First {
-		photoIDs, err = photoIDsIn(tx, `SELECT id FROM forum_post_photos WHERE post_id IN (SELECT id FROM forum_posts WHERE thread_id=?)`, p.ThreadID)
+		photoIDs, err = photoIDsIn(tx, `SELECT id || '.' || ext FROM forum_post_photos WHERE post_id IN (SELECT id FROM forum_posts WHERE thread_id=?)`, p.ThreadID)
 		if err != nil {
 			return false, err
 		}
@@ -478,7 +481,7 @@ func DeletePost(db *sql.DB, p Post) (deletedThread bool, err error) {
 		RemovePhotos(photoIDs)
 		return true, nil
 	}
-	photoIDs, err = photoIDsIn(tx, `SELECT id FROM forum_post_photos WHERE post_id=?`, p.ID)
+	photoIDs, err = photoIDsIn(tx, `SELECT id || '.' || ext FROM forum_post_photos WHERE post_id=?`, p.ID)
 	if err != nil {
 		return false, err
 	}
@@ -577,7 +580,7 @@ func DeleteSection(db *sql.DB, id string) error {
 		return err
 	}
 	defer tx.Rollback()
-	photoIDs, err := photoIDsIn(tx, `SELECT id FROM forum_post_photos WHERE post_id IN (SELECT id FROM forum_posts WHERE thread_id IN (SELECT id FROM forum_threads WHERE section_id=?))`, id)
+	photoIDs, err := photoIDsIn(tx, `SELECT id || '.' || ext FROM forum_post_photos WHERE post_id IN (SELECT id FROM forum_posts WHERE thread_id IN (SELECT id FROM forum_threads WHERE section_id=?))`, id)
 	if err != nil {
 		return err
 	}

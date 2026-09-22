@@ -166,8 +166,8 @@ func TestReplyParentMentionsAndPhotos(t *testing.T) {
 	if len(posts[2].Photos) != 1 {
 		t.Fatalf("photos %d", len(posts[2].Photos))
 	}
-	photoID := posts[2].Photos[0].ID
-	t.Cleanup(func() { RemovePhotos([]string{photoID}) })
+	ph := posts[2].Photos[0]
+	t.Cleanup(func() { RemovePhotos([]string{ph.ID + "." + ph.Ext}) })
 	if _, err := DeletePost(sqldb, mid); err != nil {
 		t.Fatal(err)
 	}

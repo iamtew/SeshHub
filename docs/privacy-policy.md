@@ -2,7 +2,7 @@
 
 **Website:** https://hub.seshsofa.nl
 
-**Last updated:** 22 September 2026
+**Last updated:** 23 September 2026
 
 ## 1. Who we are
 
@@ -151,7 +151,7 @@ There is also an unused `sync_logs` table in our database schema. Nothing ever w
 
 ### 4.9 What we do not do at all
 
-We do not send email. There is no newsletter. Mentions on the Forum are in-site only: a banner while you are signed in, a count on Mentions, and a list at `/forum/mentions`. We do not send mention notices off the site. The files you can upload are an optional square profile photo on `/dashboard/profile` (JPEG or PNG, 15 MB), up to 10 gallery photos on `/dashboard/gallery` (JPEG or PNG, 15 MB each), and up to 3 images per Forum post (JPEG or PNG, 15 MB each), stored as described in sections 4.3, 4.10 and 4.12. We do not sell, rent or trade personal data. We do not profile you, build advertising audiences, or use your data for anything beyond operating the site.
+We do not send email. There is no newsletter. Mentions on the Forum are in-site only: a banner while you are signed in, a count on Mentions, and a list at `/forum/mentions`. We do not send mention notices off the site. The files you can upload are an optional square profile photo on `/dashboard/profile` (JPEG or PNG, 15 MB), up to 10 gallery photos on `/dashboard/gallery` (JPEG or PNG, 15 MB each), and up to 3 attachments per Forum post (JPEG, PNG, GIF, WebP, common audio and video, or PDF, 15 MB each), stored as described in sections 4.3, 4.10 and 4.12. We do not sell, rent or trade personal data. We do not profile you, build advertising audiences, or use your data for anything beyond operating the site.
 
 ### 4.10 Your gallery photos (`gallery_photos` table)
 
@@ -179,21 +179,21 @@ We do not send email. There is no newsletter. Mentions on the Forum are in-site 
 
 **Updated:** when you edit your own post or thread title, when someone replies (thread last-activity time), or when an administrator edits, reorders, or deactivates a section. Editing a post re-parses @usernames. Administrators cannot edit other people’s posts.
 
-**Deleted:** you or an administrator can delete a post. Deleting the first post removes the whole thread. An administrator can remove a section, which deletes its threads, posts, images, and mentions. If your account is deleted, authorship of remaining threads and posts is reassigned to the reserved "Former member" record (same as articles). Your thread-read and mention-read watermarks, and mention rows naming you, are deleted.
+**Deleted:** you or an administrator can delete a post. Deleting the first post removes the whole thread. An administrator can remove a section, which deletes its threads, posts, attachments, and mentions. If your account is deleted, authorship of remaining threads and posts is reassigned to the reserved "Former member" record (same as articles). Your thread-read and mention-read watermarks, and mention rows naming you, are deleted.
 
-### 4.12 Forum images (`forum_post_photos` table)
+### 4.12 Forum attachments (`forum_post_photos` table)
 
-**What:** up to 3 photo records per forum post: an internal file id, the post id, and a sort position. Each photo is a re-encoded JPEG on the same Amsterdam server (`data/forum/{id}.jpg`, shown at `/media/forum/{id}.jpg` only while you are signed in). The original upload is not kept. We strip metadata by re-encoding. Maximum upload size is 15 MB per photo; we keep the original aspect ratio and store a JPEG whose long edge is at most 1600 pixels.
+**What:** up to 3 attachment records per forum post: an internal file id, the post id, a sort position, a kind (`image`, `audio`, `video`, or `pdf`), a file extension, and a MIME type. Files live on the same Amsterdam server at `data/forum/{id}.{ext}`, shown at `/media/forum/{id}.{ext}` only while you are signed in. JPEG and PNG are re-encoded to JPEG (original not kept; we strip metadata by re-encoding; long edge at most 1600 pixels). GIF, WebP, audio, video, and PDF are stored as uploaded, so embedded metadata in those files may remain. Maximum upload size is 15 MB per file. We accept JPEG, PNG, GIF, WebP, MP3, WAV, OGG, FLAC, M4A, MP4, WebM, and PDF. Other types are refused.
 
-**Why:** so a post can include pictures without putting the files on a third-party host.
+**Why:** so a post can include pictures, audio, video, or a PDF without putting the files on a third-party host.
 
-**Created:** when you attach JPEG or PNG files while creating or editing a post, while that post still has fewer than 3 images.
+**Created:** when you attach an allowed file while creating or editing a post, while that post still has fewer than 3 attachments.
 
 **Read:** by anyone who is signed in. Guests cannot load `/media/forum/…`.
 
-**Updated:** we do not edit the image file. You can remove an image when editing the post, or add more until the limit.
+**Updated:** we do not edit the file. You can remove an attachment when editing the post, or add more until the limit.
 
-**Deleted:** when you remove it from the post, when the post or thread is deleted, or when an administrator deletes the section. If your account is deleted, images on remaining "Former member" posts stay with those posts.
+**Deleted:** when you remove it from the post, when the post or thread is deleted, or when an administrator deletes the section. If your account is deleted, attachments on remaining "Former member" posts stay with those posts.
 
 ## 5. Cookies
 
@@ -214,12 +214,12 @@ Any time your browser loads something from another company's server, that compan
 - **Web fonts** from `fonts.cdnfonts.com`, on every page. These faces are commercially licensed, so we load them from the CDN rather than copying the files onto our server.
 - **YouTube video thumbnails** from `img.youtube.com` and `i.ytimg.com`, on the videos gallery, episode archive and profile pages.
 - **YouTube video players** from `youtube-nocookie.com`, on skater profile pages that have clips. We deliberately use YouTube's privacy-enhanced domain, which does not set tracking cookies until you press play.
-- **Discord avatar images** from `cdn.discordapp.com`, wherever a Discord (or YouTube) avatar is displayed and you have not uploaded a site photo. These are loaded with `referrerpolicy="no-referrer"`, so Discord is not told which page you were on. Site photos are served from this Service at `/media/avatars/…`. Gallery photos are served from this Service at `/media/gallery/…`. Forum images are served from this Service at `/media/forum/…` and only after you sign in.
+- **Discord avatar images** from `cdn.discordapp.com`, wherever a Discord (or YouTube) avatar is displayed and you have not uploaded a site photo. These are loaded with `referrerpolicy="no-referrer"`, so Discord is not told which page you were on. Site photos are served from this Service at `/media/avatars/…`. Gallery photos are served from this Service at `/media/gallery/…`. Forum attachments are served from this Service at `/media/forum/…` and only after you sign in.
 - **Twemoji images** from `cdn.jsdelivr.net` (the `jdecked/twemoji` files), on Forum pages, so emoji look the same on every device. They are loaded with `referrerpolicy="no-referrer"`. The parser script is served from this Service.
 
 Our server also talks to these services directly. In those cases your IP address is not sent; ours is.
 
-- **Discord's API**, during sign-in, to read your profile and your roles in the Sesh Sofa server. When an administrator has switched an announcement on at `/admin/bot` and set an announce channel, the server also keeps a bot session on that API and posts into that channel: the title and public URL of a news article the first time it is published, and only when the article is public; the title and hub URL of a forum thread you start (not the post body, images, or your name); and your display name and username when you submit an access request. When the forum @mention switch is on, an @mention of an account that has Discord linked is posted as a Discord ping of that person and of the author (the author's display name if they have no Discord id), plus the thread title and URL. The post body is not included, and an account without Discord linked is not pinged. Editing a post pings only mentions that were not already there. Each of those stays off until an administrator enables it. When an administrator sets a **home channel**, Discord also delivers guild messages to that session (message content intent). The bot uses a message only if it is in that home channel, or if it @mentions the bot or replies to the bot in another channel. It does not store message text. Until a home channel is set, it does not use those messages. `/admin/bot` shows a short in-memory list of posts and of connect and disconnect events. That list is not written to the database and is gone when the process stops. The bot token stays in the server environment, not in the database.
+- **Discord's API**, during sign-in, to read your profile and your roles in the Sesh Sofa server. When an administrator has switched an announcement on at `/admin/bot` and set an announce channel, the server also keeps a bot session on that API and posts into that channel: the title and public URL of a news article the first time it is published, and only when the article is public; the title and hub URL of a forum thread you start (not the post body, attachments, or your name); and your display name and username when you submit an access request. When the forum @mention switch is on, an @mention of an account that has Discord linked is posted as a Discord ping of that person and of the author (the author's display name if they have no Discord id), plus the thread title and URL. The post body is not included, and an account without Discord linked is not pinged. Editing a post pings only mentions that were not already there. Each of those stays off until an administrator enables it. When an administrator sets a **home channel**, Discord also delivers guild messages to that session (message content intent). The bot uses a message only if it is in that home channel, or if it @mentions the bot or replies to the bot in another channel. It does not store message text. Until a home channel is set, it does not use those messages. `/admin/bot` shows a short in-memory list of posts and of connect and disconnect events. That list is not written to the database and is gone when the process stops. The bot token stays in the server environment, not in the database.
 - **Google's YouTube Data API**, during sign-in and during clip sync, to read your channel and its public videos; and, if configured, during an hourly stats poll of video IDs already in our database (title, channel name, view/like/comment counts only).
 - **Subotto** (`subotto.seshsofa.nl`), to fetch current episode information for the homepage. This is an anonymous request containing no information about you.
 
@@ -251,7 +251,7 @@ Each of these companies handles your data under its own privacy policy. You can 
 - **Access denial hash:** SHA-256 of a YouTube channel ID, kept only until that channel’s next sign-in (the denial notice), then deleted.
 - **Bot settings:** the announce channel ID, the home channel ID, and the on/off switches, kept until an administrator changes them. They identify channels, not a person.
 - **Bot activity list:** held in memory only (the last connects, disconnects, and posts). Cleared when the server process stops. Not stored in the database. Discord message text is not stored.
-- **Articles, episode entries, and Forum posts:** kept as part of the site's archive. Deleted authors are shown as "Former member". Forum thread-read and mention-read watermarks, and mention rows naming you, are deleted with the account. Images attached to remaining forum posts stay with those posts.
+- **Articles, episode entries, and Forum posts:** kept as part of the site's archive. Deleted authors are shown as "Former member". Forum thread-read and mention-read watermarks, and mention rows naming you, are deleted with the account. Attachments on remaining forum posts stay with those posts.
 
 ## 9. Your rights under the GDPR
 
@@ -259,8 +259,8 @@ You have the right of access (Art. 15), rectification (Art. 16), erasure (Art. 1
 
 **How to exercise these rights.** Most of them are on `/account` while you are signed in: unlink a provider, download a JSON export of your account, profile (including photo URL and frame settings), gallery photo URLs, former slugs, YouTube Feed Filter, access request, Forum posts (thread title plus markdown body and attachment URLs), and Forum mentions, or delete the account. Logging out ends every session. You can also email the contact address in section 1. We will respond within one month, as Art. 12(3) requires.
 
-- **Access or portability:** use **Download my data** on `/account`, or ask us by email. The export includes the public URL of a site photo if you uploaded one, the public URLs of gallery photos, and the signed-in URLs of your forum attachments, not the image bytes.
-- **Erasure:** use **Delete my account** on `/account`. That removes your account record (including the YouTube Feed Filter), sessions, access request, skater profile, former-slug redirects, cached clips, any site profile photo file, any gallery photo files, Forum thread-read and mention-read watermarks, and mention rows naming you. Articles and remaining forum posts stay, shown as "Former member", including any images still attached to those posts. An administrator rejecting a YouTube-only access request does the same erasure, except we keep the short-lived channel-ID hash described in section 4.4 until your next YouTube sign-in.
+- **Access or portability:** use **Download my data** on `/account`, or ask us by email. The export includes the public URL of a site photo if you uploaded one, the public URLs of gallery photos, and the signed-in URLs of your forum attachments, not the file bytes.
+- **Erasure:** use **Delete my account** on `/account`. That removes your account record (including the YouTube Feed Filter), sessions, access request, skater profile, former-slug redirects, cached clips, any site profile photo file, any gallery photo files, Forum thread-read and mention-read watermarks, and mention rows naming you. Articles and remaining forum posts stay, shown as "Former member", including any attachments still on those posts. An administrator rejecting a YouTube-only access request does the same erasure, except we keep the short-lived channel-ID hash described in section 4.4 until your next YouTube sign-in.
 - **Rectification:** most profile fields update themselves from Discord or YouTube on your next sign-in. Your display name, slug, biography, location, featured clip, YouTube Feed Filter, site photo and photo frame (including border style, width, and blur) are yours to edit at `/dashboard/profile`. Gallery photos are yours to add and delete at `/dashboard/gallery`.
 - **Objection or restriction:** tell us what you object to and we will stop it or explain why we believe we may continue.
 

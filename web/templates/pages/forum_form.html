@@ -6,7 +6,7 @@
     {{template "forum_mdbar"}}
     <label>Body <textarea name="body" class="forum-body" rows="12" required>{{.Body}}</textarea></label>
     <div class="forum-preview prose forum-cooked" aria-live="polite"></div>
-    <label>Images (JPEG or PNG, 15MB, max 3) <input type="file" name="photos" accept="image/jpeg,image/png" multiple></label>
+    {{template "forum_files"}}
     <button type="submit">Create thread</button>
 </form>
 {{end}}

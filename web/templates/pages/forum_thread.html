@@ -28,7 +28,15 @@
     <div class="forum-cooked prose">{{.HTML}}</div>
     {{if .Photos}}
     <ul class="forum-thumbs">
-    {{range .Photos}}<li><a href="{{.URL}}"><img src="{{.URL}}" alt=""></a></li>{{end}}
+    {{range .Photos}}
+    <li>
+      {{if .IsImage}}<button type="button" data-src="{{.URL}}"><img src="{{.URL}}" alt=""></button>
+      {{else if .IsAudio}}<audio controls preload="metadata" src="{{.URL}}"></audio>
+      {{else if .IsVideo}}<video controls playsinline preload="metadata" src="{{.URL}}"></video>
+      {{else if .IsPDF}}<iframe class="forum-pdf" src="{{.URL}}" title="PDF"></iframe><a href="{{.URL}}">Open</a>
+      {{end}}
+    </li>
+    {{end}}
     </ul>
     {{end}}
     <p class="forum-post-actions">
@@ -43,13 +51,13 @@
             <div class="forum-preview prose forum-cooked" aria-live="polite"></div>
             {{if .Photos}}
             <fieldset class="forum-existing">
-                <legend>Images</legend>
+                <legend>Files</legend>
                 {{range .Photos}}
-                <label><input type="checkbox" name="remove_photo" value="{{.ID}}"> Remove <img src="{{.URL}}" alt=""></label>
+                <label><input type="checkbox" name="remove_photo" value="{{.ID}}"> Remove {{if .IsImage}}<img src="{{.URL}}" alt="">{{else}}{{.Kind}}{{end}}</label>
                 {{end}}
             </fieldset>
             {{end}}
-            <label>Add images (JPEG or PNG, 15MB, max 3) <input type="file" name="photos" accept="image/jpeg,image/png" multiple></label>
+            {{template "forum_files"}}
             <button type="submit">Save</button>
         </form>
         <form method="post" action="/forum/{{$.S.Slug}}/{{$.T.Slug}}/posts/{{.ID}}/delete">
@@ -77,9 +85,19 @@
         <label class="visually-hidden" for="forum-reply-body">Reply</label>
         <textarea id="forum-reply-body" class="forum-body" name="body" rows="6" required placeholder="Write a reply…"></textarea>
         <div class="forum-preview prose forum-cooked" aria-live="polite"></div>
-        <label>Images (JPEG or PNG, 15MB, max 3) <input type="file" name="photos" accept="image/jpeg,image/png" multiple></label>
+        {{template "forum_files"}}
         <button type="submit">Post reply</button>
     </form>
 </section>
 {{end}}
+<dialog class="slideshow-full" id="forum-full">
+    <button type="button" class="slideshow-full-prev" aria-label="Previous photo">◀</button>
+    <div class="slideshow-stage">
+        <div class="slideshow-frame">
+            <img class="slideshow-full-img" alt="">
+        </div>
+    </div>
+    <button type="button" class="slideshow-full-next" aria-label="Next photo">▶</button>
+    <button type="button" class="slideshow-full-close" aria-label="Close">Close</button>
+</dialog>
 {{end}}

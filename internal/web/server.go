@@ -141,6 +141,7 @@ func (s *Server) healthz(w http.ResponseWriter, _ *http.Request) {
 
 func serveMedia(w http.ResponseWriter, r *http.Request, path string) {
 	w.Header().Set("Cache-Control", "private, max-age=0, must-revalidate")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
 	http.ServeFile(w, r, path)
 }
 

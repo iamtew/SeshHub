@@ -63,7 +63,7 @@ func (s *Server) forumIncoming(w http.ResponseWriter, r *http.Request) (body, pa
 		}
 	}
 	if len(files) > forum.PhotoMax {
-		http.Error(w, "max 3 images", http.StatusBadRequest)
+		http.Error(w, "max 3 files", http.StatusBadRequest)
 		return "", "", nil, nil, false
 	}
 	return body, parent, files, remove, true
@@ -137,10 +137,14 @@ func (s *Server) mediaForum(w http.ResponseWriter, r *http.Request) {
 	if s.requireLogin(w, r) == nil {
 		return
 	}
-	path, ok := forum.PhotoFile(r.PathValue("file"))
+	file := r.PathValue("file")
+	path, ok := forum.PhotoFile(file)
 	if !ok {
 		http.NotFound(w, r)
 		return
+	}
+	if ct := forum.MimeFor(file); ct != "" {
+		w.Header().Set("Content-Type", ct)
 	}
 	serveMedia(w, r, path)
 }

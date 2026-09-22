@@ -143,7 +143,7 @@ func TestForumMentionsAndMedia(t *testing.T) {
 		t.Fatalf("users empty %d %s", rec.Code, rec.Body.String())
 	}
 	id := strings.Repeat("a", 32)
-	path := forum.PhotoPath(id)
+	path := forum.PhotoPath(id, "jpg")
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		t.Fatal(err)
 	}

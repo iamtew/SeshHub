@@ -370,8 +370,14 @@ form[action*="/unlink/"] button { background: var(--magenta); }
     border-left: 3px solid var(--chartreuse); background: rgb(0 0 0 / 0.35);
     color: var(--offwhite); font-size: 0.92rem;
 }
-.forum-thumbs { list-style: none; padding: 0; margin: 0.6rem 0 0; display: flex; flex-wrap: wrap; gap: 0.4rem; }
-.forum-thumbs img, .forum-existing img { max-width: 8rem; max-height: 8rem; object-fit: cover; display: block; }
+.forum-thumbs { list-style: none; padding: 0; margin: 0.6rem 0 0; display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: flex-end; }
+.forum-thumbs button { padding: 0; background: transparent; border: 0; cursor: pointer; min-width: 2.75rem; min-height: 2.75rem; }
+.forum-thumbs img, .forum-existing img { max-width: 16rem; max-height: 16rem; object-fit: cover; display: block; }
+.forum-thumbs video { max-width: 100%; max-height: 16rem; display: block; }
+.forum-thumbs audio { width: min(100%, 20rem); }
+.forum-pdf { width: min(100%, 24rem); height: 16rem; border: 0; display: block; }
+.forum-drop { max-width: none; margin: 0.5rem 0; }
+.forum-compose.drag .forum-drop { outline: 3px solid var(--chartreuse); outline-offset: 4px; }
 .forum-mdbar { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.35rem 0; }
 .forum-md {
     min-height: 2.2rem; padding: 0.2rem 0.55rem; font: inherit; font-weight: 700;
@@ -830,6 +836,10 @@ input, select, textarea { accent-color: var(--green); }
     .forum-stream { gap: 0.5rem; margin: 0.55rem 0 0.85rem; }
     .forum-post, .forum-composer { padding: 0.55rem 0.6rem 0.65rem; border-radius: 0.55rem; }
     .forum-post-meta { gap: 0.45rem; margin-bottom: 0.4rem; }
+    .forum-thumbs { flex-direction: column; align-items: stretch; }
+    .forum-thumbs img, .forum-existing img { max-width: 100%; max-height: 14rem; width: 100%; }
+    .forum-thumbs video, .forum-thumbs audio, .forum-pdf { width: 100%; max-width: none; }
+    .forum-drop { min-height: 7rem; padding: 1rem; }
     .nav { flex-direction: column; align-items: stretch; }
     .nav nav { flex: none; }
     .nav .signin { justify-content: flex-start; }
