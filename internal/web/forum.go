@@ -163,7 +163,7 @@ func (s *Server) forumSection(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "db error", http.StatusInternalServerError)
 		return
 	}
-	list, err := forum.ListThreads(s.db, sec.ID)
+	list, err := forum.ListThreads(s.db, sec.ID, u.ID)
 	if err != nil {
 		http.Error(w, "db error", http.StatusInternalServerError)
 		return

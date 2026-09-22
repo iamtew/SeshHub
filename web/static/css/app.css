@@ -297,6 +297,28 @@ form[action*="/unlink/"] button { background: var(--magenta); }
     font-weight: 800;
     line-height: 1;
     vertical-align: middle;
+    flex-shrink: 0;
+    white-space: nowrap;
+    text-shadow: none;
+}
+.forum-cats li > a.forum-hit {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    width: 100%;
+    min-width: 0;
+    min-height: 2.75rem;
+    touch-action: manipulation;
+}
+.forum-cats li > a.forum-hit > span:first-child {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.forum-cats li > a.forum-hit .forum-badge {
+    margin-left: 0;
+    min-width: 1.75rem;
+    min-height: 1.75rem;
 }
 .visually-hidden {
     position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
@@ -307,6 +329,7 @@ form[action*="/unlink/"] button { background: var(--magenta); }
     display: flex;
     flex-direction: column;
     gap: 0.3rem;
+    min-width: 0;
     padding: 0.95rem 1rem 0.95rem 1.15rem;
     border: 2px solid var(--violet);
     border-left: 4px solid var(--chartreuse);

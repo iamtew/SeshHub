@@ -9,7 +9,7 @@
 <ul class="forum-cats">
 {{range .Threads}}
 <li>
-    <a href="/forum/{{$.S.Slug}}/{{.Slug}}">{{.Title}}</a>
+    <a class="forum-hit" href="/forum/{{$.S.Slug}}/{{.Slug}}"><span>{{.Title}}</span>{{if .Unread}} <span class="forum-badge" aria-label="{{.Unread}} unread">{{.Unread}}</span>{{end}}</a>
     <p class="who">{{if .AuthorURL}}<a href="{{.AuthorURL}}">{{.AuthorName}}</a>{{else}}{{.AuthorName}}{{end}} · {{.ReplyCount}} {{if eq .ReplyCount 1}}reply{{else}}replies{{end}} · {{.LastPostAt}}</p>
 </li>
 {{end}}

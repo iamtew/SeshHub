@@ -45,12 +45,20 @@ func TestCreateUnreadReply(t *testing.T) {
 	if err != nil || n != 1 {
 		t.Fatalf("bob unread %d %v", n, err)
 	}
+	list, err := ListThreads(sqldb, sec.ID, bob.ID)
+	if err != nil || len(list) != 1 || list[0].Unread != 1 {
+		t.Fatalf("bob thread pill %+v %v", list, err)
+	}
 	if err := MarkRead(sqldb, bob.ID, th.ID); err != nil {
 		t.Fatal(err)
 	}
 	n, err = UnreadCount(sqldb, bob.ID)
 	if err != nil || n != 0 {
 		t.Fatalf("after read %d %v", n, err)
+	}
+	list, err = ListThreads(sqldb, sec.ID, bob.ID)
+	if err != nil || list[0].Unread != 0 {
+		t.Fatalf("bob thread after read %+v %v", list, err)
 	}
 	if err := Reply(sqldb, th.ID, bob.ID, "reply", "", nil); err != nil {
 		t.Fatal(err)

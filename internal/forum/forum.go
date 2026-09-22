@@ -36,6 +36,7 @@ type Thread struct {
 	AuthorName string
 	AuthorURL  string
 	ReplyCount int
+	Unread     int
 }
 
 type Photo struct {
@@ -189,23 +190,30 @@ func scanThread(s func(dest ...any) error) (Thread, error) {
 	return t, err
 }
 
-func ListThreads(db *sql.DB, sectionID string) ([]Thread, error) {
-	rows, err := db.Query(`SELECT `+threadCols+`
+func ListThreads(db *sql.DB, sectionID, userID string) ([]Thread, error) {
+	rows, err := db.Query(`SELECT `+threadCols+`,
+		(SELECT COUNT(*) FROM forum_posts p
+		 LEFT JOIN forum_thread_reads r ON r.thread_id = p.thread_id AND r.user_id = ?
+		 WHERE p.thread_id = t.id AND p.user_id != ? AND (r.last_read_at IS NULL OR p.created_at > r.last_read_at))
 		FROM forum_threads t
 		JOIN users u ON u.id = t.user_id
 		LEFT JOIN skater_profiles sp ON sp.user_id = t.user_id
 		WHERE t.section_id = ?
-		ORDER BY t.is_sticky DESC, t.last_post_at DESC`, sectionID)
+		ORDER BY t.is_sticky DESC, t.last_post_at DESC`, userID, userID, sectionID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 	var out []Thread
 	for rows.Next() {
-		t, err := scanThread(rows.Scan)
+		var unread int
+		t, err := scanThread(func(dest ...any) error {
+			return rows.Scan(append(dest, &unread)...)
+		})
 		if err != nil {
 			return nil, err
 		}
+		t.Unread = unread
 		out = append(out, t)
 	}
 	return out, rows.Err()
