@@ -382,10 +382,14 @@ form[action*="/unlink/"] button { background: var(--magenta); }
 }
 .forum-mention-banner a { color: var(--black); }
 .forum-ac {
-    position: absolute; z-index: 20; margin: 0; padding: 0.25rem 0; list-style: none;
-    background: var(--panel); border: 1px solid var(--violet); border-radius: 0.5rem; min-width: 12rem;
+    position: fixed; z-index: 40; margin: 0; padding: 0.25rem 0; list-style: none;
+    background: var(--panel); border: 1px solid var(--violet); border-radius: 0.5rem; min-width: min(12rem, calc(100dvw - 1rem));
+    max-width: calc(100dvw - 1rem); overflow-y: auto; overscroll-behavior: contain;
 }
-.forum-ac button { display: block; width: 100%; text-align: left; background: none; border: 0; color: var(--fg); padding: 0.4rem 0.7rem; font: inherit; }
+.forum-ac button {
+    display: block; width: 100%; text-align: left; background: none; border: 0; color: var(--fg);
+    min-height: 2.75rem; padding: 0.55rem 0.75rem; font: inherit; touch-action: manipulation;
+}
 .forum-ac button:hover { background: rgb(134 0 223 / 0.35); }
 img.emoji { height: 1.2em; width: 1.2em; margin: 0 0.05em; vertical-align: -0.15em; }
 .forum-composer {

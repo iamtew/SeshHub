@@ -112,6 +112,13 @@ func TestForumMentionsAndMedia(t *testing.T) {
 	if rec.Code != 200 || !strings.Contains(rec.Body.String(), "alice") {
 		t.Fatalf("users %d %s", rec.Code, rec.Body.String())
 	}
+	req = httptest.NewRequest(http.MethodGet, "/forum/users?q=", nil)
+	req.AddCookie(&http.Cookie{Name: auth.CookieName, Value: tok})
+	rec = httptest.NewRecorder()
+	s.ServeHTTP(rec, req)
+	if rec.Code != 200 || !strings.Contains(rec.Body.String(), "alice") || !strings.Contains(rec.Body.String(), "bob") || strings.Contains(rec.Body.String(), "deleted") {
+		t.Fatalf("users empty %d %s", rec.Code, rec.Body.String())
+	}
 	id := strings.Repeat("a", 32)
 	path := forum.PhotoPath(id)
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {

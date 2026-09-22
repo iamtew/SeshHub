@@ -83,10 +83,58 @@
   document.body.appendChild(box);
   var acStart = 0;
   var acTimer;
+  var acGen = 0;
+  var acTa = null;
 
   function hideAc() {
+    clearTimeout(acTimer);
+    acGen++;
+    acTa = null;
     box.hidden = true;
     box.innerHTML = "";
+  }
+
+  // ponytail: visualViewport is the visible area above the keyboard. Caret coords if the list must sit on the @.
+  function placeAc() {
+    if (!acTa || box.hidden) return;
+    var rect = acTa.getBoundingClientRect();
+    var vv = window.visualViewport;
+    var vTop = vv ? vv.offsetTop : 0;
+    var vLeft = vv ? vv.offsetLeft : 0;
+    var vH = vv ? vv.height : window.innerHeight;
+    var vW = vv ? vv.width : window.innerWidth;
+    var gap = 8;
+    box.style.maxHeight = "none";
+    var contentH = box.scrollHeight;
+    var spaceBelow = vTop + vH - rect.bottom - gap;
+    var spaceAbove = rect.top - vTop - gap;
+    var above = spaceBelow < Math.min(contentH, 160) && spaceAbove > spaceBelow;
+    var room = Math.max(48, above ? spaceAbove : spaceBelow);
+    box.style.maxHeight = Math.min(room, Math.floor(vH * 0.5)) + "px";
+    box.style.maxWidth = Math.max(120, Math.floor(vW - gap * 2)) + "px";
+    var w = box.offsetWidth;
+    var h = box.offsetHeight;
+    var left = rect.left;
+    if (left + w > vLeft + vW - gap) left = vLeft + vW - gap - w;
+    if (left < vLeft + gap) left = vLeft + gap;
+    var top = above ? rect.top - h : rect.bottom;
+    if (top < vTop + gap) top = vTop + gap;
+    if (top + h > vTop + vH - gap) top = Math.max(vTop + gap, vTop + vH - gap - h);
+    box.style.left = left + "px";
+    box.style.top = top + "px";
+  }
+
+  function onViewChange() {
+    if (!box.hidden) placeAc();
+  }
+  window.addEventListener("resize", onViewChange);
+  window.addEventListener("scroll", function (ev) {
+    if (box.contains(ev.target)) return;
+    onViewChange();
+  }, true);
+  if (window.visualViewport) {
+    visualViewport.addEventListener("resize", onViewChange);
+    visualViewport.addEventListener("scroll", onViewChange);
   }
 
   document.addEventListener("input", function (ev) {
@@ -102,10 +150,12 @@
     acStart = pos - m[2].length;
     var q = m[2];
     clearTimeout(acTimer);
+    var gen = ++acGen;
     acTimer = setTimeout(function () {
       fetch("/forum/users?q=" + encodeURIComponent(q), { credentials: "same-origin" })
         .then(function (r) { return r.json(); })
         .then(function (hits) {
+          if (gen !== acGen) return;
           box.innerHTML = "";
           if (!hits || !hits.length) {
             box.hidden = true;
@@ -116,23 +166,29 @@
             var b = document.createElement("button");
             b.type = "button";
             b.textContent = h.username + (h.display_name && h.display_name !== h.username ? " (" + h.display_name + ")" : "");
-            b.addEventListener("click", function () {
+            function pick(ev) {
+              ev.preventDefault();
+              if (b.disabled) return;
+              b.disabled = true;
               ta.value = ta.value.slice(0, acStart) + h.username + " " + ta.value.slice(ta.selectionStart);
               var p = acStart + h.username.length + 1;
               ta.selectionStart = ta.selectionEnd = p;
               ta.focus();
               hideAc();
               ta.dispatchEvent(new Event("input"));
-            });
+            }
+            b.addEventListener("pointerdown", pick);
+            b.addEventListener("click", pick);
             li.appendChild(b);
             box.appendChild(li);
           });
-          var r = ta.getBoundingClientRect();
-          box.style.left = window.scrollX + r.left + "px";
-          box.style.top = window.scrollY + r.bottom + "px";
+          acTa = ta;
           box.hidden = false;
+          placeAc();
         })
-        .catch(hideAc);
+        .catch(function () {
+          if (gen === acGen) hideAc();
+        });
     }, 150);
   });
 

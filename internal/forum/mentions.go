@@ -183,9 +183,6 @@ func SearchUsers(db *sql.DB, q string, limit int) ([]UserHit, error) {
 	if limit < 1 || limit > 20 {
 		limit = 8
 	}
-	if q == "" {
-		return nil, nil
-	}
 	like := "%" + q + "%"
 	rows, err := db.Query(`
 		SELECT username, display_name FROM users
