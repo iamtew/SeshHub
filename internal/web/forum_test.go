@@ -134,3 +134,51 @@ func TestForumMentionsAndMedia(t *testing.T) {
 		t.Fatalf("media auth %d", rec.Code)
 	}
 }
+
+func TestForumAdminCannotEditOthers(t *testing.T) {
+	sqldb, err := db.Open(":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = sqldb.Close() })
+	if err := db.Migrate(sqldb, "../db/migrations"); err != nil {
+		t.Fatal(err)
+	}
+	alice, err := auth.UpsertDiscord(sqldb, "d1", "alice", "Alice", "", auth.RoleFriend, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	admin, err := auth.UpsertDiscord(sqldb, "d2", "admin", "Admin", "", auth.RoleAdmin, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tok, err := auth.CreateSession(sqldb, admin.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sec, err := forum.GetSection(sqldb, "general")
+	if err != nil {
+		t.Fatal(err)
+	}
+	th, err := forum.CreateThread(sqldb, sec.ID, alice.ID, "Hi", "body", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	posts, err := forum.ListPosts(sqldb, th.ID)
+	if err != nil || len(posts) != 1 {
+		t.Fatal(err)
+	}
+	s := New(config.Config{WebDir: filepath.Join("..", "..", "web")}, sqldb)
+	req := httptest.NewRequest(http.MethodPost, "/forum/"+sec.Slug+"/"+th.Slug+"/posts/"+posts[0].ID, strings.NewReader("body=hacked"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(&http.Cookie{Name: auth.CookieName, Value: tok})
+	rec := httptest.NewRecorder()
+	s.ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("admin edit %d %s", rec.Code, rec.Body.String())
+	}
+	got, err := forum.GetPost(sqldb, posts[0].ID)
+	if err != nil || got.BodyRaw != "body" {
+		t.Fatalf("body changed %q %v", got.BodyRaw, err)
+	}
+}

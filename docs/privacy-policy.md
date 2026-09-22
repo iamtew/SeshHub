@@ -177,7 +177,7 @@ We do not send email. There is no newsletter. Mentions on the Forum are in-site 
 
 **Read:** by anyone who is signed in. Posts are not shown on the public site. Your mention list is only shown to you.
 
-**Updated:** when you (or an administrator) edit a post or thread title, when someone replies (thread last-activity time), or when an administrator edits, reorders, or deactivates a section. Editing a post re-parses @usernames.
+**Updated:** when you edit your own post or thread title, when someone replies (thread last-activity time), or when an administrator edits, reorders, or deactivates a section. Editing a post re-parses @usernames. Administrators cannot edit other people’s posts.
 
 **Deleted:** you or an administrator can delete a post. Deleting the first post removes the whole thread. An administrator can remove a section, which deletes its threads, posts, images, and mentions. If your account is deleted, authorship of remaining threads and posts is reassigned to the reserved "Former member" record (same as articles). Your thread-read and mention-read watermarks, and mention rows naming you, are deleted.
 

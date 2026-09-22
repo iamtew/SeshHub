@@ -508,8 +508,12 @@ func (p Post) Edited() bool {
 	return p.UpdatedAt != "" && p.CreatedAt != "" && p.UpdatedAt > p.CreatedAt
 }
 
-func CanEdit(role, userID string, ownerID string) bool {
-	return role == "admin" || userID == ownerID
+func CanEdit(userID, ownerID string) bool {
+	return userID != "" && userID == ownerID
+}
+
+func CanDelete(role, userID, ownerID string) bool {
+	return role == "admin" || CanEdit(userID, ownerID)
 }
 
 func uniqueSectionSlug(db *sql.DB, name, exceptID string) (string, error) {

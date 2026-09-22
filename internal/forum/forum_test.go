@@ -180,3 +180,12 @@ func tinyPNG() []byte {
 	_ = png.Encode(&buf, src)
 	return buf.Bytes()
 }
+
+func TestCanEditOwnerOnly(t *testing.T) {
+	if !CanEdit("a", "a") || CanEdit("admin", "a") || CanEdit("", "") {
+		t.Fatal("edit")
+	}
+	if !CanDelete("admin", "x", "a") || !CanDelete("friend", "a", "a") || CanDelete("friend", "x", "a") {
+		t.Fatal("delete")
+	}
+}

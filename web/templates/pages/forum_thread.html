@@ -57,6 +57,10 @@
             <button type="submit">Delete</button>
         </form>
     </details>
+    {{else if .CanDelete}}
+    <form method="post" action="/forum/{{$.S.Slug}}/{{$.T.Slug}}/posts/{{.ID}}/delete" class="forum-edit">
+        <button type="submit">Delete</button>
+    </form>
     {{end}}
 </article>
 {{end}}

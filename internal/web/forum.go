@@ -211,10 +211,11 @@ func (s *Server) forumNew(w http.ResponseWriter, r *http.Request) {
 
 type forumPostView struct {
 	forum.Post
-	HTML    template.HTML
-	CanEdit bool
-	Latest  bool
-	Quote   string
+	HTML      template.HTML
+	CanEdit   bool
+	CanDelete bool
+	Latest    bool
+	Quote     string
 }
 
 func (s *Server) forumThread(w http.ResponseWriter, r *http.Request) {
@@ -227,7 +228,7 @@ func (s *Server) forumThread(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if r.Method == http.MethodPost {
-		if !forum.CanEdit(u.Role, u.ID, th.UserID) {
+		if !forum.CanEdit(u.ID, th.UserID) {
 			http.Error(w, "forbidden", http.StatusForbidden)
 			return
 		}
@@ -258,11 +259,11 @@ func (s *Server) forumThread(w http.ResponseWriter, r *http.Request) {
 	}
 	views := make([]forumPostView, len(shown))
 	for i, post := range shown {
-		views[i] = forumPostView{Post: post, HTML: template.HTML(post.BodyHTML), CanEdit: forum.CanEdit(u.Role, u.ID, post.UserID), Latest: i == len(shown)-1 && to >= len(posts), Quote: article.Excerpt(post.BodyRaw, "")}
+		views[i] = forumPostView{Post: post, HTML: template.HTML(post.BodyHTML), CanEdit: forum.CanEdit(u.ID, post.UserID), CanDelete: forum.CanDelete(u.Role, u.ID, post.UserID), Latest: i == len(shown)-1 && to >= len(posts), Quote: article.Excerpt(post.BodyRaw, "")}
 	}
 	s.render(w, r, "forum_thread.html", map[string]any{
 		"Title": th.Title, "Path": "/forum", "S": sec, "T": th, "Posts": views,
-		"CanEditThread": forum.CanEdit(u.Role, u.ID, th.UserID),
+		"CanEditThread": forum.CanEdit(u.ID, th.UserID),
 		"PagerLabel":    "Post pagination", "PagerBase": "/forum/" + sec.Slug + "/" + th.Slug,
 		"Per": per, "Page": page, "Total": len(posts), "From": from, "To": to,
 		"Prev": page - 1, "Next": page + 1, "HasPrev": page > 1, "HasNext": to < len(posts),
@@ -308,7 +309,7 @@ func (s *Server) forumPostEdit(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "db error", http.StatusInternalServerError)
 		return
 	}
-	if !forum.CanEdit(u.Role, u.ID, p.UserID) {
+	if !forum.CanEdit(u.ID, p.UserID) {
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -341,7 +342,7 @@ func (s *Server) forumPostDelete(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "db error", http.StatusInternalServerError)
 		return
 	}
-	if !forum.CanEdit(u.Role, u.ID, p.UserID) {
+	if !forum.CanDelete(u.Role, u.ID, p.UserID) {
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}
