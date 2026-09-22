@@ -45,12 +45,12 @@ func TestAdminBotPage(t *testing.T) {
 		t.Fatalf("get %d", rec.Code)
 	}
 	body := rec.Body.String()
-	for _, want := range []string{"Discord bot", "missing", "not configured", `<select name="channel_id"`, "New published news", "New forum thread", "New access request"} {
+	for _, want := range []string{"Discord bot", "missing", "not configured", `<select name="home_channel_id"`, `<select name="channel_id"`, "New published news", "New forum thread", "New access request"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("page missing %q", want)
 		}
 	}
-	form := url.Values{"channel_id": {"123456789012345678"}, "news": {"1"}}
+	form := url.Values{"channel_id": {"123456789012345678"}, "home_channel_id": {"223456789012345678"}, "news": {"1"}}
 	post := httptest.NewRequest(http.MethodPost, "/admin/bot", strings.NewReader(form.Encode()))
 	post.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	post.AddCookie(&http.Cookie{Name: auth.CookieName, Value: tok})
@@ -60,15 +60,15 @@ func TestAdminBotPage(t *testing.T) {
 		t.Fatalf("post %d", rec.Code)
 	}
 	settings, err := b.Settings()
-	if err != nil || settings.ChannelID != "123456789012345678" || !settings.News || settings.Forum || settings.Access {
+	if err != nil || settings.ChannelID != "123456789012345678" || settings.HomeChannelID != "223456789012345678" || !settings.News || settings.Forum || settings.Access {
 		t.Fatalf("%+v %v", settings, err)
 	}
 	body = get().Body.String()
 	if !strings.Contains(body, `name="news" value="1" checked`) {
 		t.Fatal("news toggle did not stay on")
 	}
-	if !strings.Contains(body, `123456789012345678 (not in the list)`) {
-		t.Fatal("saved channel missing from the dropdown")
+	if !strings.Contains(body, `123456789012345678 (not in the list)`) || !strings.Contains(body, `223456789012345678 (not in the list)`) {
+		t.Fatal("saved channels missing from the dropdowns")
 	}
 	bad := httptest.NewRequest(http.MethodPost, "/admin/bot", strings.NewReader("channel_id=nope"))
 	bad.Header.Set("Content-Type", "application/x-www-form-urlencoded")

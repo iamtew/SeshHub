@@ -15,10 +15,11 @@ import (
 const logCap = 50
 
 type Settings struct {
-	ChannelID string
-	News      bool
-	Forum     bool
-	Access    bool
+	ChannelID     string
+	HomeChannelID string
+	News          bool
+	Forum         bool
+	Access        bool
 }
 
 type Channel struct {
@@ -53,6 +54,7 @@ type Bot struct {
 	mu      sync.Mutex
 	state   string
 	user    string
+	selfID  string
 	since   time.Time
 	lastErr string
 	guildOK bool
@@ -74,9 +76,10 @@ func Open(db *sql.DB, token, guildID string) *Bot {
 		slog.Error("discord bot", "err", err)
 		return b
 	}
-	dg.Identify.Intents = discordgo.IntentGuilds
+	dg.Identify.Intents = discordgo.IntentGuilds | discordgo.IntentGuildMessages | discordgo.IntentMessageContent
 	dg.AddHandler(b.onReady)
 	dg.AddHandler(b.onDisconnect)
+	dg.AddHandler(b.onMessage)
 	b.sess = dg
 	b.post = func(channelID, content string) error {
 		_, err := dg.ChannelMessageSend(channelID, content)
@@ -113,6 +116,9 @@ func (b *Bot) onReady(_ *discordgo.Session, r *discordgo.Ready) {
 	b.mu.Lock()
 	b.state = "ready"
 	b.user = name
+	if r.User != nil {
+		b.selfID = r.User.ID
+	}
 	if b.since.IsZero() {
 		b.since = time.Now()
 	}
@@ -268,11 +274,47 @@ func perms(guild *discordgo.Guild, ch *discordgo.Channel, userID string, roles [
 	return p
 }
 
+func (b *Bot) onMessage(_ *discordgo.Session, m *discordgo.MessageCreate) {
+	if m == nil || m.Message == nil || m.GuildID != b.guildID {
+		return
+	}
+	s, err := b.Settings()
+	if err != nil || s.HomeChannelID == "" {
+		return
+	}
+	b.mu.Lock()
+	self := b.selfID
+	b.mu.Unlock()
+	if !hears(s.HomeChannelID, self, m.Message) {
+		return
+	}
+	// ponytail: gate only. Commands land here when there is something to say. Message text is not stored.
+}
+
+// hears is true in the home channel, and elsewhere only when the bot is @mentioned or replied to.
+func hears(homeID, selfID string, m *discordgo.Message) bool {
+	if m == nil || m.Author == nil || m.Author.Bot || homeID == "" {
+		return false
+	}
+	if m.ChannelID == homeID {
+		return true
+	}
+	if selfID == "" {
+		return false
+	}
+	for _, u := range m.Mentions {
+		if u != nil && u.ID == selfID {
+			return true
+		}
+	}
+	return m.ReferencedMessage != nil && m.ReferencedMessage.Author != nil && m.ReferencedMessage.Author.ID == selfID
+}
+
 func (b *Bot) Settings() (Settings, error) {
 	var s Settings
 	var news, forum, access int
-	err := b.db.QueryRow(`SELECT channel_id, news, forum, access FROM bot_settings WHERE id = 1`).
-		Scan(&s.ChannelID, &news, &forum, &access)
+	err := b.db.QueryRow(`SELECT channel_id, IFNULL(home_channel_id,''), news, forum, access FROM bot_settings WHERE id = 1`).
+		Scan(&s.ChannelID, &s.HomeChannelID, &news, &forum, &access)
 	if err != nil {
 		return s, err
 	}
@@ -282,8 +324,9 @@ func (b *Bot) Settings() (Settings, error) {
 
 func (b *Bot) SaveSettings(s Settings) error {
 	s.ChannelID = strings.TrimSpace(s.ChannelID)
-	_, err := b.db.Exec(`UPDATE bot_settings SET channel_id=?, news=?, forum=?, access=? WHERE id=1`,
-		s.ChannelID, bit(s.News), bit(s.Forum), bit(s.Access))
+	s.HomeChannelID = strings.TrimSpace(s.HomeChannelID)
+	_, err := b.db.Exec(`UPDATE bot_settings SET channel_id=?, home_channel_id=?, news=?, forum=?, access=? WHERE id=1`,
+		s.ChannelID, s.HomeChannelID, bit(s.News), bit(s.Forum), bit(s.Access))
 	return err
 }
 

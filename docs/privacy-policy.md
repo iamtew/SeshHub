@@ -219,7 +219,7 @@ Any time your browser loads something from another company's server, that compan
 
 Our server also talks to these services directly. In those cases your IP address is not sent; ours is.
 
-- **Discord's API**, during sign-in, to read your profile and your roles in the Sesh Sofa server. When an administrator has switched an announcement on at `/admin/bot` and set a channel, the server also keeps a bot session on that API (guilds intent only; it does not read chat) and posts into that channel: the title and public URL of a news article the first time it is published, and only when the article is public; the title, your display name, and the hub URL of a forum thread you start (not the post body or images); and your display name and username when you submit an access request. Each of those stays off until an administrator enables it. `/admin/bot` shows a short in-memory list of those posts and of connect and disconnect events. That list is not written to the database and is gone when the process stops. The bot token stays in the server environment, not in the database.
+- **Discord's API**, during sign-in, to read your profile and your roles in the Sesh Sofa server. When an administrator has switched an announcement on at `/admin/bot` and set an announce channel, the server also keeps a bot session on that API and posts into that channel: the title and public URL of a news article the first time it is published, and only when the article is public; the title, your display name, and the hub URL of a forum thread you start (not the post body or images); and your display name and username when you submit an access request. Each of those stays off until an administrator enables it. When an administrator sets a **home channel**, Discord also delivers guild messages to that session (message content intent). The bot uses a message only if it is in that home channel, or if it @mentions the bot or replies to the bot in another channel. It does not store message text. Until a home channel is set, it does not use those messages. `/admin/bot` shows a short in-memory list of posts and of connect and disconnect events. That list is not written to the database and is gone when the process stops. The bot token stays in the server environment, not in the database.
 - **Google's YouTube Data API**, during sign-in and during clip sync, to read your channel and its public videos; and, if configured, during an hourly stats poll of video IDs already in our database (title, channel name, view/like/comment counts only).
 - **Subotto** (`subotto.seshsofa.nl`), to fetch current episode information for the homepage. This is an anonymous request containing no information about you.
 
@@ -236,6 +236,7 @@ Each of these companies handles your data under its own privacy policy. You can 
 | Publish your skater profile, gallery photos, and article authorship | This is the purpose of the roster, `/photos`, and the news section, and you control the content | Art. 6(1)(f), with your role in publishing it |
 | Host the Forum | Signed-in discussion is part of the members' service | Art. 6(1)(b), and Art. 6(1)(f) legitimate interest in a private community board |
 | Post a public news title, a forum thread title and your display name, or your name on an access request into a Discord channel an administrator chose | So the Sesh Sofa Discord can see those hub events | Art. 6(1)(f) - legitimate interest in community notices, only while that announcement is switched on |
+| Read a Discord message in the home channel an administrator chose, or a message elsewhere that @mentions the bot or replies to it | So the bot can take part where it lives, and when someone addresses it | Art. 6(1)(f) - legitimate interest, only after that home channel is set. The message text is not stored |
 | Cache your YouTube clips | To show the gallery without hammering the YouTube API | Art. 6(1)(f) - legitimate interest in a functioning site |
 | Google Analytics | Audience statistics | Art. 6(1)(a) - consent, via the banner. Declining (or ignoring the banner) means the tag never loads. |
 
@@ -247,8 +248,8 @@ Each of these companies handles your data under its own privacy policy. You can 
 - **Cached YouTube clips:** kept until the owning account is deleted.
 - **Access requests:** kept until the account is deleted. A YouTube-only rejection deletes the account immediately.
 - **Access denial hash:** SHA-256 of a YouTube channel ID, kept only until that channel’s next sign-in (the denial notice), then deleted.
-- **Bot settings:** the Discord channel ID and the three on/off switches, kept until an administrator changes them. They identify a channel, not a person.
-- **Bot activity list:** held in memory only (the last connects, disconnects, and posts). Cleared when the server process stops. Not stored in the database.
+- **Bot settings:** the announce channel ID, the home channel ID, and the three on/off switches, kept until an administrator changes them. They identify channels, not a person.
+- **Bot activity list:** held in memory only (the last connects, disconnects, and posts). Cleared when the server process stops. Not stored in the database. Discord message text is not stored.
 - **Articles, episode entries, and Forum posts:** kept as part of the site's archive. Deleted authors are shown as "Former member". Forum thread-read and mention-read watermarks, and mention rows naming you, are deleted with the account. Images attached to remaining forum posts stay with those posts.
 
 ## 9. Your rights under the GDPR

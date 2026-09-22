@@ -20,16 +20,18 @@ func (s *Server) adminBot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if r.Method == http.MethodPost {
+		home := strings.TrimSpace(r.FormValue("home_channel_id"))
 		ch := strings.TrimSpace(r.FormValue("channel_id"))
-		if !channelID(ch) {
+		if !channelID(home) || !channelID(ch) {
 			http.Error(w, "channel id must be digits", http.StatusBadRequest)
 			return
 		}
 		err := s.bot.SaveSettings(bot.Settings{
-			ChannelID: ch,
-			News:      r.FormValue("news") == "1",
-			Forum:     r.FormValue("forum") == "1",
-			Access:    r.FormValue("access") == "1",
+			ChannelID:     ch,
+			HomeChannelID: home,
+			News:          r.FormValue("news") == "1",
+			Forum:         r.FormValue("forum") == "1",
+			Access:        r.FormValue("access") == "1",
 		})
 		if err != nil {
 			http.Error(w, "db error", http.StatusInternalServerError)
@@ -45,17 +47,20 @@ func (s *Server) adminBot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	channels, chErr := s.bot.Channels()
-	listed := false
+	listed, homeListed := false, false
 	for _, c := range channels {
 		if c.ID == settings.ChannelID {
 			listed = true
-			break
+		}
+		if c.ID == settings.HomeChannelID {
+			homeListed = true
 		}
 	}
 	s.render(w, r, "admin_bot.html", map[string]any{
 		"Title": "Discord bot", "Path": "/admin/bot",
 		"Bot": botView(st, s.cfg.DiscordGuildID), "Settings": settings, "Activity": activityView(s.bot.Activity()),
-		"Channels": channels, "ChannelListed": listed, "ChannelNote": channelNote(st, s.cfg.DiscordGuildID, channels, chErr),
+		"Channels": channels, "ChannelListed": listed, "HomeListed": homeListed,
+		"ChannelNote": channelNote(st, s.cfg.DiscordGuildID, channels, chErr),
 	})
 }
 

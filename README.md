@@ -78,9 +78,9 @@ Scopes used: `identify`, `guilds.members.read`. Restart the server after saving 
 
 ### Discord bot
 
-Same Discord application. **Bot → Reset Token** → `DISCORD_BOT_TOKEN` (not the OAuth client secret). Invite the bot to the Sesh Sofa server with the **bot** scope and **Send Messages**. The gateway intent is guilds only; the bot does not read messages. Empty token means no gateway and no posts.
+Same Discord application. **Bot → Reset Token** → `DISCORD_BOT_TOKEN` (not the OAuth client secret). Invite the bot to the Sesh Sofa server with the **bot** scope and **Send Messages**. Under **Bot → Privileged Gateway Intents**, turn on **Message Content Intent**. Without that the gateway closes the bot, and the home channel arrives with no text. Empty token means no gateway and no posts.
 
-**Admin → Discord bot** (`/admin/bot`): token set or missing, gateway (connecting / connected / disconnected), bot username, heartbeat latency, whether it is in `DISCORD_GUILD_ID`, last error, and an in-memory activity list (connects, disconnects, posts). A dropdown of text channels the bot can post in, and an on/off switch each for new public news, new forum threads, and access requests. All off until an admin enables them. An empty channel posts nothing. The list is cleared when the process stops.
+**Admin → Discord bot** (`/admin/bot`): token set or missing, gateway (connecting / connected / disconnected), bot username, heartbeat latency, whether it is in `DISCORD_GUILD_ID`, last error, and an in-memory activity list (connects, disconnects, posts). **Home channel** is where the bot listens. Other channels are ignored unless someone @mentions the bot or replies to it. None means it does not listen. Message text is not stored. A second dropdown is the announce channel (text channels the bot can post in), with an on/off switch each for new public news, new forum threads, and access requests. All off until an admin enables them. An empty announce channel posts nothing. The activity list is cleared when the process stops.
 
 News posts the title and `/news/…` URL the first time an article becomes published, and only if it is public. A later edit does not post again. Unpublishing and publishing again does. Forum posts the thread title, the author's display name, and the thread URL — not the body or images. Access posts the requester's display name and username when they submit `/access`.
 
@@ -321,7 +321,7 @@ Two header modes. Same public nav (Spot / Episodes / FS Team / Friends / News / 
 - **Edit (`/admin/episodes`)**: Hosts role only. Edit title, counts, rows, trick URL, winner (pick from the challenge playlist when the editor has YouTube linked, or paste a watch URL; empty winner name fills from the video’s channel and can be overwritten).
 
 ### 5. Admin UI & Markdown editor
-- **Admin Control Center (`/admin`)**: Metric overviews, access queue, **Discord bot** (`/admin/bot`: gateway status and on/off for news, forum, and access announcements), and **Users** (see who has Discord/YouTube, merge duplicate accounts, unlink, delete).
+- **Admin Control Center (`/admin`)**: Metric overviews, access queue, **Discord bot** (`/admin/bot`: gateway status, home channel, and on/off for news, forum, and access announcements), and **Users** (see who has Discord/YouTube, merge duplicate accounts, unlink, delete).
 - **Basic editor**: `textarea[name=content_raw]` on articles, custom pages, and Spot, with a live HTML preview beside it (under it below 800px). Preview is `POST /preview` → goldmark + bluemonday (Spot also fills `{{placeholders}}`).
 - **Advanced editor**: from 640px up, a button opens a near-fullscreen `<dialog>`. Hidden on smaller screens (phone stays on the basic textarea + preview). Left sidebar is the rest of the document (slug, published, …; Spot: insert chips). Center is Monaco from jsDelivr. Right is the same live preview. Palette theme `sesh-sofa`.
 

@@ -62,3 +62,28 @@ func TestPostable(t *testing.T) {
 		t.Fatalf("%+v", got)
 	}
 }
+
+func TestHears(t *testing.T) {
+	person := &discordgo.User{ID: "u"}
+	botUser := &discordgo.User{ID: "bot"}
+	home := &discordgo.Message{ChannelID: "home", Author: person}
+	if !hears("home", "bot", home) {
+		t.Fatal("home channel")
+	}
+	other := &discordgo.Message{ChannelID: "elsewhere", Author: person}
+	if hears("home", "bot", other) || hears("", "bot", home) {
+		t.Fatal("other channels and an unset home stay quiet")
+	}
+	mentioned := &discordgo.Message{ChannelID: "elsewhere", Author: person, Mentions: []*discordgo.User{botUser}}
+	if !hears("home", "bot", mentioned) {
+		t.Fatal("mention")
+	}
+	reply := &discordgo.Message{ChannelID: "elsewhere", Author: person, ReferencedMessage: &discordgo.Message{Author: botUser}}
+	if !hears("home", "bot", reply) {
+		t.Fatal("reply")
+	}
+	fromBot := &discordgo.Message{ChannelID: "home", Author: &discordgo.User{ID: "bot", Bot: true}}
+	if hears("home", "bot", fromBot) {
+		t.Fatal("bot messages")
+	}
+}

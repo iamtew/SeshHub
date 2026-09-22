@@ -10,7 +10,19 @@
     <li>Last error <span class="who">{{.Bot.LastError}}</span></li>
 </ul>
 <form method="post" action="/admin/bot" class="form">
-    <label>Channel
+    <label>Home channel
+        <select name="home_channel_id">
+            <option value="">None</option>
+            {{range .Channels}}
+            <option value="{{.ID}}" {{if eq $.Settings.HomeChannelID .ID}}selected{{end}}>{{.Name}}</option>
+            {{end}}
+            {{if and .Settings.HomeChannelID (not .HomeListed)}}
+            <option value="{{.Settings.HomeChannelID}}" selected>{{.Settings.HomeChannelID}} (not in the list)</option>
+            {{end}}
+        </select>
+    </label>
+    <p class="who">Where the bot listens. Other channels are ignored unless someone @mentions it or replies to it. None means it does not listen. Turn on Message Content Intent in the Discord developer portal, or the gateway drops the bot and the home channel has no text.</p>
+    <label>Announce channel
         <select name="channel_id">
             <option value="">None</option>
             {{range .Channels}}
