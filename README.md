@@ -80,7 +80,7 @@ Scopes used: `identify`, `guilds.members.read`. Restart the server after saving 
 
 Same Discord application. **Bot → Reset Token** → `DISCORD_BOT_TOKEN` (not the OAuth client secret). Invite the bot to the Sesh Sofa server with the **bot** scope and **Send Messages**. The gateway intent is guilds only; the bot does not read messages. Empty token means no gateway and no posts.
 
-**Admin → Discord bot** (`/admin/bot`): token set or missing, gateway (connecting / connected / disconnected), bot username, heartbeat latency, whether it is in `DISCORD_GUILD_ID`, last error, and an in-memory activity list (connects, disconnects, posts). One channel ID and an on/off switch each for new public news, new forum threads, and access requests. All off until an admin enables them. An empty channel posts nothing. The list is cleared when the process stops.
+**Admin → Discord bot** (`/admin/bot`): token set or missing, gateway (connecting / connected / disconnected), bot username, heartbeat latency, whether it is in `DISCORD_GUILD_ID`, last error, and an in-memory activity list (connects, disconnects, posts). A dropdown of text channels the bot can post in, and an on/off switch each for new public news, new forum threads, and access requests. All off until an admin enables them. An empty channel posts nothing. The list is cleared when the process stops.
 
 News posts the title and `/news/…` URL the first time an article becomes published, and only if it is public. A later edit does not post again. Unpublishing and publishing again does. Forum posts the thread title, the author's display name, and the thread URL — not the body or images. Access posts the requester's display name and username when they submit `/access`.
 

@@ -45,7 +45,7 @@ func TestAdminBotPage(t *testing.T) {
 		t.Fatalf("get %d", rec.Code)
 	}
 	body := rec.Body.String()
-	for _, want := range []string{"Discord bot", "missing", "not configured", "New published news", "New forum thread", "New access request"} {
+	for _, want := range []string{"Discord bot", "missing", "not configured", `<select name="channel_id"`, "New published news", "New forum thread", "New access request"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("page missing %q", want)
 		}
@@ -63,8 +63,12 @@ func TestAdminBotPage(t *testing.T) {
 	if err != nil || settings.ChannelID != "123456789012345678" || !settings.News || settings.Forum || settings.Access {
 		t.Fatalf("%+v %v", settings, err)
 	}
-	if body = get().Body.String(); !strings.Contains(body, `name="news" value="1" checked`) {
+	body = get().Body.String()
+	if !strings.Contains(body, `name="news" value="1" checked`) {
 		t.Fatal("news toggle did not stay on")
+	}
+	if !strings.Contains(body, `123456789012345678 (not in the list)`) {
+		t.Fatal("saved channel missing from the dropdown")
 	}
 	bad := httptest.NewRequest(http.MethodPost, "/admin/bot", strings.NewReader("channel_id=nope"))
 	bad.Header.Set("Content-Type", "application/x-www-form-urlencoded")

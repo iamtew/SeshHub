@@ -10,7 +10,18 @@
     <li>Last error <span class="who">{{.Bot.LastError}}</span></li>
 </ul>
 <form method="post" action="/admin/bot" class="form">
-    <label>Channel ID <input name="channel_id" value="{{.Settings.ChannelID}}" inputmode="numeric" autocomplete="off" placeholder="snowflake"></label>
+    <label>Channel
+        <select name="channel_id">
+            <option value="">None</option>
+            {{range .Channels}}
+            <option value="{{.ID}}" {{if eq $.Settings.ChannelID .ID}}selected{{end}}>{{.Name}}</option>
+            {{end}}
+            {{if and .Settings.ChannelID (not .ChannelListed)}}
+            <option value="{{.Settings.ChannelID}}" selected>{{.Settings.ChannelID}} (not in the list)</option>
+            {{end}}
+        </select>
+    </label>
+    {{if .ChannelNote}}<p class="who">{{.ChannelNote}}</p>{{end}}
     <label><input type="checkbox" name="news" value="1" {{if .Settings.News}}checked{{end}}> New published news</label>
     <label><input type="checkbox" name="forum" value="1" {{if .Settings.Forum}}checked{{end}}> New forum thread</label>
     <label><input type="checkbox" name="access" value="1" {{if .Settings.Access}}checked{{end}}> New access request</label>

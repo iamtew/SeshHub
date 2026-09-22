@@ -3,6 +3,8 @@ package bot
 import (
 	"testing"
 
+	"github.com/bwmarrin/discordgo"
+
 	"seshhub/internal/db"
 )
 
@@ -35,5 +37,28 @@ func TestAnnounceGate(t *testing.T) {
 	}
 	if act := b.Activity(); len(act) != 1 || act[0].Kind != "news" || act[0].Text != "News: Hello" || act[0].Err != "" {
 		t.Fatalf("%+v", act)
+	}
+}
+
+func TestPostable(t *testing.T) {
+	guild := &discordgo.Guild{
+		ID: "g",
+		Roles: []*discordgo.Role{
+			{ID: "g", Permissions: discordgo.PermissionViewChannel},
+			{ID: "r", Permissions: discordgo.PermissionViewChannel | discordgo.PermissionSendMessages},
+		},
+	}
+	raw := []*discordgo.Channel{
+		{ID: "cat", Name: "Sesh", Type: discordgo.ChannelTypeGuildCategory, Position: 1},
+		{ID: "open", Name: "general", Type: discordgo.ChannelTypeGuildText, Position: 0},
+		{ID: "news", Name: "announcements", Type: discordgo.ChannelTypeGuildNews, ParentID: "cat", Position: 2},
+		{ID: "shut", Name: "mods", Type: discordgo.ChannelTypeGuildText, ParentID: "cat", Position: 1, PermissionOverwrites: []*discordgo.PermissionOverwrite{
+			{ID: "r", Type: discordgo.PermissionOverwriteTypeRole, Deny: discordgo.PermissionSendMessages},
+		}},
+		{ID: "voice", Name: "talk", Type: discordgo.ChannelTypeGuildVoice},
+	}
+	got := postable(guild, raw, "bot", []string{"r"})
+	if len(got) != 2 || got[0].Name != "#general" || got[1].Name != "Sesh / #announcements" {
+		t.Fatalf("%+v", got)
 	}
 }

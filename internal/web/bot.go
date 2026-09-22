@@ -44,10 +44,35 @@ func (s *Server) adminBot(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "db error", http.StatusInternalServerError)
 		return
 	}
+	channels, chErr := s.bot.Channels()
+	listed := false
+	for _, c := range channels {
+		if c.ID == settings.ChannelID {
+			listed = true
+			break
+		}
+	}
 	s.render(w, r, "admin_bot.html", map[string]any{
 		"Title": "Discord bot", "Path": "/admin/bot",
 		"Bot": botView(st, s.cfg.DiscordGuildID), "Settings": settings, "Activity": activityView(s.bot.Activity()),
+		"Channels": channels, "ChannelListed": listed, "ChannelNote": channelNote(st, s.cfg.DiscordGuildID, channels, chErr),
 	})
+}
+
+func channelNote(st bot.Status, guildID string, channels []bot.Channel, err error) string {
+	if err != nil {
+		return err.Error()
+	}
+	if !st.Configured || len(channels) > 0 {
+		return ""
+	}
+	if guildID == "" {
+		return "Set DISCORD_GUILD_ID to load channels."
+	}
+	if st.State != "ready" {
+		return "Connect the bot to load channels."
+	}
+	return "The bot cannot post in any text channel."
 }
 
 func channelID(s string) bool {

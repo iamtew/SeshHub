@@ -3,6 +3,7 @@ package bot
 import (
 	"database/sql"
 	"log/slog"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -18,6 +19,11 @@ type Settings struct {
 	News      bool
 	Forum     bool
 	Access    bool
+}
+
+type Channel struct {
+	ID   string
+	Name string
 }
 
 type Status struct {
@@ -125,6 +131,137 @@ func (b *Bot) onDisconnect(_ *discordgo.Session, _ *discordgo.Disconnect) {
 	b.state = "disconnected"
 	b.mu.Unlock()
 	b.push("disconnect", "", "")
+}
+
+// Channels are text and announcement channels in the guild where the bot can view and send.
+func (b *Bot) Channels() ([]Channel, error) {
+	if b == nil || b.sess == nil || b.guildID == "" {
+		return nil, nil
+	}
+	guild, err := b.sess.Guild(b.guildID)
+	if err != nil {
+		return nil, err
+	}
+	member, err := b.sess.GuildMember(b.guildID, "@me")
+	if err != nil {
+		return nil, err
+	}
+	raw, err := b.sess.GuildChannels(b.guildID)
+	if err != nil {
+		return nil, err
+	}
+	userID := ""
+	if member.User != nil {
+		userID = member.User.ID
+	}
+	return postable(guild, raw, userID, member.Roles), nil
+}
+
+func postable(guild *discordgo.Guild, raw []*discordgo.Channel, userID string, roles []string) []Channel {
+	cats := map[string]*discordgo.Channel{}
+	var posts []*discordgo.Channel
+	for _, c := range raw {
+		if c.Type == discordgo.ChannelTypeGuildCategory {
+			cats[c.ID] = c
+			continue
+		}
+		if c.Type != discordgo.ChannelTypeGuildText && c.Type != discordgo.ChannelTypeGuildNews {
+			continue
+		}
+		if !canPost(guild, c, userID, roles) {
+			continue
+		}
+		posts = append(posts, c)
+	}
+	sort.Slice(posts, func(i, j int) bool {
+		pi, pj := catPos(cats, posts[i]), catPos(cats, posts[j])
+		if pi != pj {
+			return pi < pj
+		}
+		if posts[i].Position != posts[j].Position {
+			return posts[i].Position < posts[j].Position
+		}
+		return posts[i].Name < posts[j].Name
+	})
+	out := make([]Channel, len(posts))
+	for i, c := range posts {
+		name := "#" + c.Name
+		if parent := cats[c.ParentID]; parent != nil && parent.Name != "" {
+			name = parent.Name + " / " + name
+		}
+		out[i] = Channel{ID: c.ID, Name: name}
+	}
+	return out
+}
+
+func catPos(cats map[string]*discordgo.Channel, c *discordgo.Channel) int {
+	if p := cats[c.ParentID]; p != nil {
+		return p.Position
+	}
+	return -1
+}
+
+func canPost(guild *discordgo.Guild, ch *discordgo.Channel, userID string, roles []string) bool {
+	need := int64(discordgo.PermissionViewChannel | discordgo.PermissionSendMessages)
+	return perms(guild, ch, userID, roles)&need == need
+}
+
+// Discord overwrite order: @everyone, roles, channel @everyone, role overwrites, member overwrite.
+func perms(guild *discordgo.Guild, ch *discordgo.Channel, userID string, roles []string) int64 {
+	if userID != "" && userID == guild.OwnerID {
+		return discordgo.PermissionAll
+	}
+	var p int64
+	for _, role := range guild.Roles {
+		if role.ID == guild.ID {
+			p |= role.Permissions
+			break
+		}
+	}
+	for _, role := range guild.Roles {
+		for _, id := range roles {
+			if role.ID == id {
+				p |= role.Permissions
+				break
+			}
+		}
+	}
+	if p&discordgo.PermissionAdministrator != 0 {
+		p |= discordgo.PermissionAll
+	}
+	for _, ow := range ch.PermissionOverwrites {
+		if ow.ID == guild.ID {
+			p &^= ow.Deny
+			p |= ow.Allow
+			break
+		}
+	}
+	var deny, allow int64
+	for _, ow := range ch.PermissionOverwrites {
+		if ow.Type != discordgo.PermissionOverwriteTypeRole {
+			continue
+		}
+		for _, id := range roles {
+			if id == ow.ID {
+				deny |= ow.Deny
+				allow |= ow.Allow
+				break
+			}
+		}
+	}
+	p &^= deny
+	p |= allow
+	for _, ow := range ch.PermissionOverwrites {
+		if ow.Type == discordgo.PermissionOverwriteTypeMember && ow.ID == userID {
+			p &^= ow.Deny
+			p |= ow.Allow
+			break
+		}
+	}
+	if p&discordgo.PermissionAdministrator != 0 {
+		p |= discordgo.PermissionAllChannel
+	}
+	return p
 }
 
 func (b *Bot) Settings() (Settings, error) {
