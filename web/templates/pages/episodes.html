@@ -8,10 +8,10 @@
     <tbody>
     {{range .Episodes}}
         <tr>
-            <td><a href="#{{.Anchor}}">EP{{.Number}}</a></td>
-            <td>{{if .SubmissionsCount}}{{.SubmissionsCount}}{{end}}</td>
-            <td>{{if .ShowWinner}}{{if .WinnerWatch}}<a href="{{.WinnerWatch}}">{{.WinnerName}}</a>{{else}}{{.WinnerName}}{{end}}{{end}}</td>
-            <td>{{if .Title}}<a href="#{{.Anchor}}">{{.Title}}</a>{{end}}</td>
+            <td data-label="Episode"><a href="#{{.Anchor}}">EP{{.Number}}</a></td>
+            <td data-label="Submissions">{{if .SubmissionsCount}}{{.SubmissionsCount}}{{end}}</td>
+            <td data-label="Winner">{{if .ShowWinner}}{{if .WinnerWatch}}<a href="{{.WinnerWatch}}">{{.WinnerName}}</a>{{else}}{{.WinnerName}}{{end}}{{end}}</td>
+            <td data-label="Spot">{{if .Title}}<a href="#{{.Anchor}}">{{.Title}}</a>{{end}}</td>
         </tr>
     {{end}}
     </tbody>

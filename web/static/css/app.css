@@ -975,6 +975,32 @@ input, select, textarea { accent-color: var(--green); }
     .forum-post-body { padding: 0.55rem 0.6rem 0.65rem; }
     .forum-composer-body { padding: 0.55rem 0.6rem 0.65rem; }
     .forum-reply-btn, .forum-edit summary, .forum-mod summary, .forum-md { min-height: 2.75rem; }
+    .episodes table, .episodes tbody { display: block; }
+    .episodes thead { display: none; }
+    .episodes tr {
+        display: block;
+        padding: 0.55rem 0;
+        border-bottom: 1px solid color-mix(in srgb, var(--violet) 50%, var(--gray));
+    }
+    .episodes td {
+        display: grid;
+        grid-template-columns: 7.5rem minmax(0, 1fr);
+        gap: 0.35rem;
+        padding: 0.15rem 0;
+        border: 0;
+    }
+    .episodes td:empty { display: none; }
+    .episodes td::before {
+        content: attr(data-label);
+        color: var(--muted);
+        font-weight: 600;
+    }
+    .episodes td:first-child {
+        display: block;
+        padding-bottom: 0.25rem;
+        font-size: 1.05rem;
+    }
+    .episodes td:first-child::before { content: none; }
 }
 @media (min-width: 800px) {
     .md-basic { grid-template-columns: 1fr 1fr; }
