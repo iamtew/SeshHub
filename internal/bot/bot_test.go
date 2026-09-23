@@ -28,9 +28,9 @@ func TestAnnounceGate(t *testing.T) {
 	}
 	b := &Bot{db: sqldb}
 	var got []string
-	b.post = func(ch, content string) error {
+	b.post = func(ch, content string) (string, error) {
 		got = append(got, ch+" "+content)
-		return nil
+		return "m1", nil
 	}
 	b.Announce("news", "News: Hello")
 	if len(got) != 0 {
@@ -48,11 +48,51 @@ func TestAnnounceGate(t *testing.T) {
 		t.Fatal(err)
 	}
 	b.Announce("twitch", "Ada is live")
-	if len(got) != 2 || got[1] != "123 Ada is live" {
+	if len(got) != 1 {
+		t.Fatalf("twitch needs its own channel, got %v", got)
+	}
+	if err := b.SaveSettings(Settings{ChannelID: "123", News: true, Twitch: true, TwitchChannelID: "999"}); err != nil {
+		t.Fatal(err)
+	}
+	b.Announce("twitch", "Ada is live")
+	if len(got) != 2 || got[1] != "999 Ada is live" {
 		t.Fatalf("twitch %v", got)
 	}
 	if act := b.Activity(); len(act) != 2 || act[0].Kind != "twitch" || act[1].Kind != "news" || act[0].Text != "Ada is live" {
 		t.Fatalf("%+v", act)
+	}
+}
+
+func TestTwitchCrosspostNewsChannel(t *testing.T) {
+	sqldb, err := db.Open(":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = sqldb.Close() })
+	if err := db.Migrate(sqldb, "../db/migrations"); err != nil {
+		t.Fatal(err)
+	}
+	b := &Bot{db: sqldb}
+	if err := b.SaveSettings(Settings{Twitch: true, TwitchChannelID: "news", ChannelID: "123", News: true}); err != nil {
+		t.Fatal(err)
+	}
+	var posted, published []string
+	b.post = func(ch, content string) (string, error) {
+		posted = append(posted, ch)
+		return "mid", nil
+	}
+	b.newsChannel = func(id string) bool { return true }
+	b.crosspost = func(ch, id string) error {
+		published = append(published, ch+" "+id)
+		return nil
+	}
+	b.Announce("twitch", "live")
+	b.Announce("news", "article")
+	if len(posted) != 2 || posted[0] != "news" || posted[1] != "123" {
+		t.Fatalf("posted %v", posted)
+	}
+	if len(published) != 1 || published[0] != "news mid" {
+		t.Fatalf("crosspost %v", published)
 	}
 }
 

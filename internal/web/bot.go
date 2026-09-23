@@ -24,19 +24,21 @@ func (s *Server) adminBot(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		home := strings.TrimSpace(r.FormValue("home_channel_id"))
 		ch := strings.TrimSpace(r.FormValue("channel_id"))
-		if !channelID(home) || !channelID(ch) {
+		twch := strings.TrimSpace(r.FormValue("twitch_channel_id"))
+		if !channelID(home) || !channelID(ch) || !channelID(twch) {
 			http.Error(w, "channel id must be digits", http.StatusBadRequest)
 			return
 		}
 		err := s.bot.SaveSettings(bot.Settings{
-			ChannelID:     ch,
-			HomeChannelID: home,
-			News:          r.FormValue("news") == "1",
-			Forum:         r.FormValue("forum") == "1",
-			Access:        r.FormValue("access") == "1",
-			Mentions:      r.FormValue("mentions") == "1",
-			Twitch:        r.FormValue("twitch") == "1",
-			TwitchMsg:     r.FormValue("twitch_msg"),
+			ChannelID:       ch,
+			HomeChannelID:   home,
+			TwitchChannelID: twch,
+			News:            r.FormValue("news") == "1",
+			Forum:           r.FormValue("forum") == "1",
+			Access:          r.FormValue("access") == "1",
+			Mentions:        r.FormValue("mentions") == "1",
+			Twitch:          r.FormValue("twitch") == "1",
+			TwitchMsg:       r.FormValue("twitch_msg"),
 		})
 		if err != nil {
 			http.Error(w, "db error", http.StatusInternalServerError)
@@ -52,13 +54,16 @@ func (s *Server) adminBot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	channels, chErr := s.bot.Channels()
-	listed, homeListed := false, false
+	listed, homeListed, twitchListed := false, false, false
 	for _, c := range channels {
 		if c.ID == settings.ChannelID {
 			listed = true
 		}
 		if c.ID == settings.HomeChannelID {
 			homeListed = true
+		}
+		if c.ID == settings.TwitchChannelID {
+			twitchListed = true
 		}
 	}
 	events := activityView(s.bot.Activity())
@@ -69,7 +74,7 @@ func (s *Server) adminBot(w http.ResponseWriter, r *http.Request) {
 		"Title": "Discord bot", "Path": "/admin/bot",
 		"Bot": botView(st, s.cfg.DiscordGuildID, events), "Settings": settings, "Activity": events,
 		"HomeName": homeName(settings.HomeChannelID, channels),
-		"Channels": channels, "ChannelListed": listed, "HomeListed": homeListed,
+		"Channels": channels, "ChannelListed": listed, "HomeListed": homeListed, "TwitchListed": twitchListed,
 		"ChannelNote": channelNote(st, s.cfg.DiscordGuildID, channels, chErr),
 	})
 }

@@ -35,6 +35,7 @@ type Settings struct {
 	Mentions      bool
 	Twitch        bool
 	TwitchMsg     string
+	TwitchChannelID string
 }
 
 type Channel struct {
@@ -65,8 +66,10 @@ type Bot struct {
 	token   string
 	guildID string
 	sess    *discordgo.Session
-	post    func(channelID, content string) error
-	get     func(rawURL string) (io.ReadCloser, error)
+	post        func(channelID, content string) (msgID string, err error)
+	crosspost   func(channelID, msgID string) error
+	newsChannel func(channelID string) bool
+	get         func(rawURL string) (io.ReadCloser, error)
 	history func(channelID, beforeID string, limit int) ([]*discordgo.Message, error)
 	react   func(channelID, messageID, emoji string) error
 
@@ -100,9 +103,23 @@ func Open(db *sql.DB, token, guildID string) *Bot {
 	dg.AddHandler(b.onDisconnect)
 	dg.AddHandler(b.onMessage)
 	b.sess = dg
-	b.post = func(channelID, content string) error {
-		_, err := dg.ChannelMessageSend(channelID, content)
+	b.post = func(channelID, content string) (string, error) {
+		m, err := dg.ChannelMessageSend(channelID, content)
+		if err != nil {
+			return "", err
+		}
+		if m == nil {
+			return "", nil
+		}
+		return m.ID, nil
+	}
+	b.crosspost = func(channelID, msgID string) error {
+		_, err := dg.ChannelMessageCrosspost(channelID, msgID)
 		return err
+	}
+	b.newsChannel = func(channelID string) bool {
+		c, err := dg.State.Channel(channelID)
+		return err == nil && c != nil && c.Type == discordgo.ChannelTypeGuildNews
 	}
 	b.get = discordGet
 	b.history = func(channelID, beforeID string, limit int) ([]*discordgo.Message, error) {
@@ -577,8 +594,8 @@ func hears(homeID, selfID string, m *discordgo.Message) bool {
 func (b *Bot) Settings() (Settings, error) {
 	var s Settings
 	var news, forum, access, mentions, twitchOn int
-	err := b.db.QueryRow(`SELECT channel_id, IFNULL(home_channel_id,''), news, forum, access, mentions, twitch, IFNULL(twitch_msg,'') FROM bot_settings WHERE id = 1`).
-		Scan(&s.ChannelID, &s.HomeChannelID, &news, &forum, &access, &mentions, &twitchOn, &s.TwitchMsg)
+	err := b.db.QueryRow(`SELECT channel_id, IFNULL(home_channel_id,''), news, forum, access, mentions, twitch, IFNULL(twitch_msg,''), IFNULL(twitch_channel_id,'') FROM bot_settings WHERE id = 1`).
+		Scan(&s.ChannelID, &s.HomeChannelID, &news, &forum, &access, &mentions, &twitchOn, &s.TwitchMsg, &s.TwitchChannelID)
 	if err != nil {
 		return s, err
 	}
@@ -589,9 +606,10 @@ func (b *Bot) Settings() (Settings, error) {
 func (b *Bot) SaveSettings(s Settings) error {
 	s.ChannelID = strings.TrimSpace(s.ChannelID)
 	s.HomeChannelID = strings.TrimSpace(s.HomeChannelID)
+	s.TwitchChannelID = strings.TrimSpace(s.TwitchChannelID)
 	s.TwitchMsg = twitch.ClampMsg(s.TwitchMsg)
-	_, err := b.db.Exec(`UPDATE bot_settings SET channel_id=?, home_channel_id=?, news=?, forum=?, access=?, mentions=?, twitch=?, twitch_msg=? WHERE id=1`,
-		s.ChannelID, s.HomeChannelID, bit(s.News), bit(s.Forum), bit(s.Access), bit(s.Mentions), bit(s.Twitch), s.TwitchMsg)
+	_, err := b.db.Exec(`UPDATE bot_settings SET channel_id=?, home_channel_id=?, news=?, forum=?, access=?, mentions=?, twitch=?, twitch_msg=?, twitch_channel_id=? WHERE id=1`,
+		s.ChannelID, s.HomeChannelID, bit(s.News), bit(s.Forum), bit(s.Access), bit(s.Mentions), bit(s.Twitch), s.TwitchMsg, s.TwitchChannelID)
 	return err
 }
 
@@ -636,10 +654,12 @@ func (b *Bot) Announce(kind, text string) {
 		b.push(kind, text, err.Error())
 		return
 	}
-	if strings.TrimSpace(s.ChannelID) == "" || !enabled(s, kind) {
+	ch := announceChannel(s, kind)
+	if ch == "" || !enabled(s, kind) {
 		return
 	}
-	if err := b.post(s.ChannelID, text); err != nil {
+	id, err := b.post(ch, text)
+	if err != nil {
 		b.mu.Lock()
 		b.lastErr = err.Error()
 		b.mu.Unlock()
@@ -647,7 +667,22 @@ func (b *Bot) Announce(kind, text string) {
 		slog.Error("discord announce", "kind", kind, "err", err)
 		return
 	}
+	if kind == "twitch" && id != "" && b.newsChannel != nil && b.newsChannel(ch) && b.crosspost != nil {
+		if err := b.crosspost(ch, id); err != nil {
+			slog.Error("discord crosspost", "kind", kind, "err", err)
+			b.mu.Lock()
+			b.lastErr = err.Error()
+			b.mu.Unlock()
+		}
+	}
 	b.push(kind, text, "")
+}
+
+func announceChannel(s Settings, kind string) string {
+	if kind == "twitch" {
+		return strings.TrimSpace(s.TwitchChannelID)
+	}
+	return strings.TrimSpace(s.ChannelID)
 }
 
 func (b *Bot) Status() Status {
