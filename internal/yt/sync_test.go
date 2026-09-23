@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"seshhub/internal/db"
 )
@@ -186,6 +187,70 @@ func TestMaybeSyncUserNeedsProfile(t *testing.T) {
 	}
 	if called {
 		t.Fatal("sync without roster profile")
+	}
+}
+
+func TestMaybeSyncUserSkipBusy(t *testing.T) {
+	sqldb, err := db.Open(":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = sqldb.Close() })
+	if err := db.Migrate(sqldb, "../db/migrations"); err != nil {
+		t.Fatal(err)
+	}
+	running.Store("u:busy", &runSlot{at: time.Now()})
+	t.Cleanup(func() { running.Delete("u:busy") })
+	called := false
+	RefreshAccess = func(string, string, string) (string, string, error) {
+		called = true
+		return "tok", "", nil
+	}
+	t.Cleanup(func() {
+		RefreshAccess = func(string, string, string) (string, string, error) {
+			return "", "", nil
+		}
+	})
+	if err := MaybeSyncUser(context.Background(), sqldb, "busy", "cid", "sec", ""); err != nil {
+		t.Fatal(err)
+	}
+	if called {
+		t.Fatal("refreshed while sync running")
+	}
+}
+
+func TestMaybeSyncUserStealStale(t *testing.T) {
+	sqldb, err := db.Open(":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = sqldb.Close() })
+	if err := db.Migrate(sqldb, "../db/migrations"); err != nil {
+		t.Fatal(err)
+	}
+	_, err = sqldb.Exec(`INSERT INTO users (id, username, display_name, role, youtube_channel_id, youtube_refresh_token) VALUES ('u','u','U','skater','ch','rt')`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = sqldb.Exec(`INSERT INTO skater_profiles (id, user_id, slug, skater_name) VALUES ('p','u','u','U')`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	running.Store("u:u", &runSlot{at: time.Now().Add(-31 * time.Second)})
+	t.Cleanup(func() { running.Delete("u:u") })
+	called := false
+	RefreshAccess = func(string, string, string) (string, string, error) {
+		called = true
+		return "tok", "", nil
+	}
+	t.Cleanup(func() {
+		RefreshAccess = func(string, string, string) (string, string, error) {
+			return "", "", nil
+		}
+	})
+	_ = MaybeSyncUser(context.Background(), sqldb, "u", "cid", "sec", "")
+	if !called {
+		t.Fatal("did not steal stale occupancy")
 	}
 }
 

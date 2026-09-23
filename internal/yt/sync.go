@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -16,7 +17,36 @@ import (
 
 const apiDefault = "https://www.googleapis.com/youtube/v3"
 
-var userMu, swept sync.Map
+// ponytail: 30s steal is above the 25s caller timeout so a live run is not stolen; steal only recovers a leaked entry.
+const runHold = 30 * time.Second
+
+var errBusy = errors.New("sync already running")
+
+var running, swept sync.Map
+
+type runSlot struct{ at time.Time }
+
+func tryBegin(key string) *runSlot {
+	mine := &runSlot{at: time.Now()}
+	v, loaded := running.LoadOrStore(key, mine)
+	if !loaded {
+		return mine
+	}
+	other := v.(*runSlot)
+	if time.Since(other.at) < runHold {
+		return nil
+	}
+	if !running.CompareAndSwap(key, other, mine) {
+		return nil
+	}
+	return mine
+}
+
+func endRun(key string, mine *runSlot) {
+	if mine != nil {
+		running.CompareAndDelete(key, mine)
+	}
+}
 
 type Video struct {
 	ID           string
@@ -174,26 +204,17 @@ type Result struct {
 	Fetched, Inserted, Updated int
 }
 
-func lockUser(id string) (*sync.Mutex, bool) {
-	v, _ := userMu.LoadOrStore(id, &sync.Mutex{})
-	mu := v.(*sync.Mutex)
-	if !mu.TryLock() {
-		return nil, false
-	}
-	return mu, true
-}
-
 // ponytail: one playlist page (50 videos) per skater; page further if a channel outgrows that.
 func (c Client) Sync(ctx context.Context, db *sql.DB) (Result, error) {
 	key := c.Channel
 	if key == "" {
 		key = "sync"
 	}
-	mu, ok := lockUser(key)
-	if !ok {
-		return Result{}, fmt.Errorf("sync already running")
+	mine := tryBegin(key)
+	if mine == nil {
+		return Result{}, errBusy
 	}
-	defer mu.Unlock()
+	defer endRun(key, mine)
 	return c.sync(ctx, db)
 }
 
@@ -638,6 +659,11 @@ func MaybeSyncUser(ctx context.Context, db *sql.DB, userID, clientID, clientSecr
 	if userID == "" || clientID == "" || clientSecret == "" {
 		return nil
 	}
+	mine := tryBegin("u:" + userID)
+	if mine == nil {
+		return nil
+	}
+	defer endRun("u:"+userID, mine)
 	var n int
 	if err := db.QueryRow(`SELECT COUNT(*) FROM skater_profiles WHERE user_id = ?`, userID).Scan(&n); err != nil || n == 0 {
 		return err
@@ -661,6 +687,9 @@ func MaybeSyncUser(ctx context.Context, db *sql.DB, userID, clientID, clientSecr
 	}
 	c := Client{Token: access, Key: apiKey, Channel: channel}
 	if _, err := c.Sync(ctx, db); err != nil {
+		if errors.Is(err, errBusy) {
+			return nil
+		}
 		return err
 	}
 	swept.Store(channel, struct{}{})
@@ -678,6 +707,9 @@ func SyncWithToken(ctx context.Context, db *sql.DB, userID, access, channel, api
 	}
 	c := Client{Token: access, Key: apiKey, Channel: channel}
 	if _, err := c.Sync(ctx, db); err != nil {
+		if errors.Is(err, errBusy) {
+			return nil
+		}
 		return err
 	}
 	swept.Store(channel, struct{}{})
