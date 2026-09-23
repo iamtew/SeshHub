@@ -279,6 +279,19 @@ form[action*="/unlink/"] button { background: var(--magenta); }
 .account-delete .form { max-width: none; }
 .account-delete h2 { margin: 0; }
 #account-delete-open { background: var(--red); }
+.bot-status {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+    gap: 0.35rem 1.25rem;
+    margin: 0.4rem 0 0;
+    max-width: 100%;
+}
+.bot-status div {
+    display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 0.5rem;
+    align-items: baseline; min-width: 0;
+}
+.bot-status dt { font-weight: inherit; white-space: nowrap; }
+.bot-status dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
 .queue { list-style: none; padding: 0; margin: 1.5rem 0 0; }
 .queue li {
     display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center;

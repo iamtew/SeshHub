@@ -1,17 +1,18 @@
 {{define "content"}}
 <h1>Discord bot</h1>
-<ul class="queue">
-    <li>Token <span class="who">{{if .Bot.Configured}}set{{else}}missing{{end}}</span></li>
-    <li>Gateway <span class="who">{{.Bot.State}}</span></li>
-    <li>Bot <span class="who">{{.Bot.Username}}</span></li>
-    <li>Bot ID <span class="who">{{.Bot.SelfID}}</span></li>
-    <li>Latency <span class="who">{{.Bot.Latency}}</span></li>
-    <li>Guild <span class="who">{{.Bot.Guild}}</span></li>
-    <li>Home <span class="who">{{.HomeName}}</span></li>
-    <li>Connected since <span class="who">{{.Bot.Since}}</span></li>
-    <li>Last error <span class="who">{{.Bot.LastError}}</span></li>
-    <li>Last @mention <span class="who">{{.Bot.LastMention}}</span></li>
-</ul>
+<dl class="bot-status">
+    <div><dt>Token</dt><dd class="who">{{if .Bot.Configured}}set{{else}}missing{{end}}</dd></div>
+    <div><dt>Gateway</dt><dd class="who">{{.Bot.State}}</dd></div>
+    <div><dt>Bot</dt><dd class="who">{{.Bot.Username}}</dd></div>
+    <div><dt>Bot ID</dt><dd class="who">{{.Bot.SelfID}}</dd></div>
+    <div><dt>Latency</dt><dd class="who">{{.Bot.Latency}}</dd></div>
+    <div><dt>Guild</dt><dd class="who">{{.Bot.Guild}}</dd></div>
+    <div><dt>Home</dt><dd class="who">{{.HomeName}}</dd></div>
+    <div><dt>Connected since</dt><dd class="who">{{.Bot.Since}}</dd></div>
+    <div><dt>Last error</dt><dd class="who">{{.Bot.LastError}}</dd></div>
+    <div><dt>Last @mention</dt><dd class="who">{{.Bot.LastMention}}</dd></div>
+</dl>
+<hr>
 <form method="post" action="/admin/bot" class="form">
     <label>Home channel
         <select name="home_channel_id">
