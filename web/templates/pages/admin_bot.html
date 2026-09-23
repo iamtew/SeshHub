@@ -41,9 +41,14 @@
     <label><input type="checkbox" name="forum" value="1" {{if .Settings.Forum}}checked{{end}}> New forum thread</label>
     <label><input type="checkbox" name="access" value="1" {{if .Settings.Access}}checked{{end}}> New access request</label>
     <label><input type="checkbox" name="mentions" value="1" {{if .Settings.Mentions}}checked{{end}}> Forum @mention</label>
+    <label><input type="checkbox" name="twitch" value="1" {{if .Settings.Twitch}}checked{{end}}> Twitch going live</label>
+    <label>Going-live message
+        <textarea name="twitch_msg" rows="3" maxlength="500">{{.Settings.TwitchMsg}}</textarea>
+    </label>
+    <p class="who">Placeholders: {name} {twitch} {url} {title} {uptime}. Max 500 characters. Empty uses the default.</p>
     <button type="submit"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save</button>
 </form>
-<p class="who">Empty channel posts nothing. News is the title and public URL the first time an article is published (internal stays on the hub). Forum is the title and thread URL, not the post or the author. Access is the requester’s name and username. A forum @mention pings that person on Discord when their account has Discord linked, with the thread title and URL, not the post.</p>
+    <p class="who">Empty channel posts nothing. News is the title and public URL the first time an article is published (internal stays on the hub). Forum is the title and thread URL, not the post or the author. Access is the requester’s name and username. A forum @mention pings that person on Discord when their account has Discord linked, with the thread title and URL, not the post. Twitch going live is the roster display name, stream title, and twitch.tv link when someone with a saved Twitch name starts a stream (poll ~60s).</p>
 <h2>Activity</h2>
 {{if not .Activity}}
 <p class="who">Nothing yet. Tag the bot after this process started; skips (no home channel, unknown Discord user, not on the roster) show up here. This list is cleared when the server stops. Message text is not stored.</p>

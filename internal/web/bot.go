@@ -8,6 +8,7 @@ import (
 	"seshhub/internal/auth"
 	"seshhub/internal/bot"
 	"seshhub/internal/forum"
+	"seshhub/internal/twitch"
 )
 
 func (s *Server) adminBot(w http.ResponseWriter, r *http.Request) {
@@ -34,6 +35,8 @@ func (s *Server) adminBot(w http.ResponseWriter, r *http.Request) {
 			Forum:         r.FormValue("forum") == "1",
 			Access:        r.FormValue("access") == "1",
 			Mentions:      r.FormValue("mentions") == "1",
+			Twitch:        r.FormValue("twitch") == "1",
+			TwitchMsg:     r.FormValue("twitch_msg"),
 		})
 		if err != nil {
 			http.Error(w, "db error", http.StatusInternalServerError)
@@ -59,6 +62,9 @@ func (s *Server) adminBot(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	events := activityView(s.bot.Activity())
+	if strings.TrimSpace(settings.TwitchMsg) == "" {
+		settings.TwitchMsg = twitch.DefaultMsg
+	}
 	s.render(w, r, "admin_bot.html", map[string]any{
 		"Title": "Discord bot", "Path": "/admin/bot",
 		"Bot": botView(st, s.cfg.DiscordGuildID, events), "Settings": settings, "Activity": events,

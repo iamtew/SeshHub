@@ -44,7 +44,14 @@ func TestAnnounceGate(t *testing.T) {
 	if len(got) != 1 || got[0] != "123 News: Hello" {
 		t.Fatalf("%v", got)
 	}
-	if act := b.Activity(); len(act) != 1 || act[0].Kind != "news" || act[0].Text != "News: Hello" || act[0].Err != "" {
+	if err := b.SaveSettings(Settings{ChannelID: "123", News: true, Twitch: true}); err != nil {
+		t.Fatal(err)
+	}
+	b.Announce("twitch", "Ada is live")
+	if len(got) != 2 || got[1] != "123 Ada is live" {
+		t.Fatalf("twitch %v", got)
+	}
+	if act := b.Activity(); len(act) != 2 || act[0].Kind != "twitch" || act[1].Kind != "news" || act[0].Text != "Ada is live" {
 		t.Fatalf("%+v", act)
 	}
 }

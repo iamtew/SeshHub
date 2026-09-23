@@ -10,8 +10,10 @@ import (
 
 	"seshhub/internal/article"
 	"seshhub/internal/auth"
+	"seshhub/internal/config"
 	"seshhub/internal/page"
 	"seshhub/internal/skater"
+	"seshhub/internal/twitch"
 	"seshhub/internal/yt"
 )
 
@@ -34,6 +36,9 @@ func formProfile(r *http.Request, existing skater.Profile) skater.Profile {
 	}
 	if _, ok := r.PostForm["link"]; ok {
 		existing.SocialLinks = skater.JoinLinks(r.PostForm["link"])
+	}
+	if _, ok := r.PostForm["twitch_login"]; ok {
+		existing.TwitchLogin = r.FormValue("twitch_login")
 	}
 	return existing
 }
@@ -277,7 +282,24 @@ func (s *Server) dashboardProfile(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		next := formProfile(r, p)
-		next, err := applyPhoto(r, next)
+		login, err := twitch.Normalize(next.TwitchLogin)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		next.TwitchLogin = login
+		if login != "" && login != p.TwitchLogin && s.cfg.TwitchEnabled() {
+			ok, err := twitch.New(s.cfg.TwitchClientID, s.cfg.TwitchClientSecret).UserExists(r.Context(), login)
+			if err != nil {
+				http.Error(w, "twitch lookup failed", http.StatusBadGateway)
+				return
+			}
+			if !ok {
+				http.Error(w, "no Twitch user with that name", http.StatusBadRequest)
+				return
+			}
+		}
+		next, err = applyPhoto(r, next)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -429,6 +451,9 @@ func (s *Server) renderSkaterProfile(w http.ResponseWriter, r *http.Request, u *
 		"DefaultName": defName, "DefaultSlug": skater.Slugify(defName), "SlugPrefix": skater.RosterPath(u.Role) + "/",
 		"Social": skater.Lines(p.SocialLinks),
 	}
+	if p.TwitchLogin != "" {
+		fillTwitchInfo(r, s.cfg, p, data)
+	}
 	if test {
 		check := yt.NormalizeSpec(sspec)
 		var keep, hide []clipTest
@@ -447,10 +472,46 @@ func (s *Server) renderSkaterProfile(w http.ResponseWriter, r *http.Request, u *
 
 func profilePath(tab string) string {
 	switch tab {
-	case "profile", "youtube", "links":
+	case "profile", "youtube", "links", "twitch":
 		return "/dashboard/profile#" + tab
 	default:
 		return "/dashboard/profile#photo"
+	}
+}
+
+func fillTwitchInfo(r *http.Request, cfg config.Config, p skater.Profile, data map[string]any) {
+	data["TwitchURL"] = p.TwitchURL()
+	if p.TwitchLive() {
+		data["TwitchLive"] = true
+		data["TwitchTitle"] = p.TwitchTitle
+		data["TwitchUptime"] = p.TwitchUptime()
+	}
+	if !cfg.TwitchEnabled() {
+		data["TwitchNote"] = "Name is saved. Helix lookup is off until TWITCH_CLIENT_ID and TWITCH_CLIENT_SECRET are set."
+		return
+	}
+	c := twitch.New(cfg.TwitchClientID, cfg.TwitchClientSecret)
+	ch, err := c.User(r.Context(), p.TwitchLogin)
+	if err != nil {
+		data["TwitchNote"] = "Could not reach Twitch."
+		return
+	}
+	if ch.Login == "" {
+		data["TwitchNote"] = "No Twitch channel with that name."
+		return
+	}
+	data["TwitchCh"] = ch
+	live, err := c.Streams(r.Context(), []string{p.TwitchLogin})
+	if err != nil {
+		return
+	}
+	if s, ok := live[p.TwitchLogin]; ok {
+		data["TwitchLive"] = true
+		data["TwitchTitle"] = s.Title
+		data["TwitchGame"] = s.Game
+		data["TwitchUptime"] = twitch.Uptime(s.Started)
+	} else {
+		data["TwitchLive"] = false
 	}
 }
 

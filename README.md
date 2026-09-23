@@ -80,11 +80,11 @@ Scopes used: `identify`, `guilds.members.read`. Restart the server after saving 
 
 Same Discord application. **Bot → Reset Token** → `DISCORD_BOT_TOKEN` (not the OAuth client secret). Invite the bot to the Sesh Sofa server with the **bot** scope, **Send Messages**, **Read Message History**, and **Add Reactions**. Under **Bot → Privileged Gateway Intents**, turn on **Message Content Intent**. Without that the gateway closes the bot, and the home channel arrives with no text. Empty token means no gateway and no posts.
 
-**Admin → Discord bot** (`/admin/bot`): token set or missing, gateway (connecting / connected / disconnected), bot username and **Bot ID**, heartbeat latency, whether it is in `DISCORD_GUILD_ID`, home channel, last error, last gallery @mention, and an in-memory activity list (connects, disconnects, posts, gallery skips and adds). A gallery @mention always writes a line there (unknown user, not on the roster, no home channel, shrug, photos saved, or a reaction error). Message text is not stored. **Home channel** is where the bot listens. Other channels are ignored unless someone @mentions the bot or replies to it. None means it does not listen, and gallery @mentions are skipped with a log line. A second dropdown is the announce channel (text channels the bot can post in), with an on/off switch each for new public news, new forum threads, and access requests. All off until an admin enables them. An empty announce channel posts nothing. The activity list is cleared when the process stops.
+**Admin → Discord bot** (`/admin/bot`): token set or missing, gateway (connecting / connected / disconnected), bot username and **Bot ID**, heartbeat latency, whether it is in `DISCORD_GUILD_ID`, home channel, last error, last gallery @mention, and an in-memory activity list (connects, disconnects, posts, gallery skips and adds). A gallery @mention always writes a line there (unknown user, not on the roster, no home channel, shrug, photos saved, or a reaction error). Message text is not stored. **Home channel** is where the bot listens. Other channels are ignored unless someone @mentions the bot or replies to it. None means it does not listen, and gallery @mentions are skipped with a log line. A second dropdown is the announce channel (text channels the bot can post in), with an on/off switch each for new public news, new forum threads, access requests, and **Twitch going live**. All off until an admin enables them. An empty announce channel posts nothing. The Twitch message is a textarea (`{name}` `{twitch}` `{url}` `{title}` `{uptime}`). The activity list is cleared when the process stops.
 
 If a Discord-linked FS Team / Friends / admin user @mentions the bot, JPEG and PNG attachments on that message are copied onto their public gallery (re-encoded like `/dashboard/gallery`). If the mention has none, the bot looks at that user's previous 3 messages in the same channel and takes the nearest one that has JPEG or PNG; the others are left alone. If none qualify, it reacts 🤷‍♂️ on the mention. After a successful add it reacts 🖼 on the post whose photos were taken. A full gallery drops the oldest photo so the new one fits. Photos posted without an @mention are ignored.
 
-News posts the title and `/news/…` URL the first time an article becomes published, and only if it is public. A later edit does not post again. Unpublishing and publishing again does. Forum posts the thread title and the thread URL — not the body, attachments, or the author's name. Access posts the requester's display name and username when they submit `/access`. A forum @mention, when that switch is on, pings the person's linked Discord account and the author's, and includes the thread title and URL. The post body is not sent. Someone without Discord linked is not pinged. Editing a post pings only mentions that were not already on it.
+News posts the title and `/news/…` URL the first time an article becomes published, and only if it is public. A later edit does not post again. Unpublishing and publishing again does. Forum posts the thread title and the thread URL — not the body, attachments, or the author's name. Access posts the requester's display name and username when they submit `/access`. A forum @mention, when that switch is on, pings the person's linked Discord account and the author's, and includes the thread title and URL. The post body is not sent. Someone without Discord linked is not pinged. Editing a post pings only mentions that were not already on it. Twitch going live (when that switch is on) posts the custom message with the roster name, Twitch login, title, uptime, and twitch.tv URL the first poll after they go live.
 
 ### YouTube login and skater videos
 
@@ -116,6 +116,14 @@ OAuth only refreshes a channel when that skater is signed in. To keep title, cha
 6. Bounce `just dev` / the production process. Logs should show `youtube poll updated=N` once an hour (and once at boot).
 
 Quota is cheap: `videos.list` is 1 unit per 50 IDs. We do not download comments, only the count. Zero counts are hidden in the UI.
+
+### Twitch live (app token, not user OAuth)
+
+Roster users save a Twitch login on **Profile → Twitch**. No Twitch sign-in. Helix `Get Streams` with a client-credentials app token is enough for public live title and `started_at`. Empty `TWITCH_CLIENT_ID` / `TWITCH_CLIENT_SECRET` = poller off (the login still saves). About once a minute the server batches saved logins. LIVE + title + uptime show on `/team`, `/friends`, and the roster page. Offline → live can post to the Discord announce channel when that switch is on. The Twitch tab shows Helix display name, created date, and live/offline after save.
+
+1. [Twitch developer console](https://dev.twitch.tv/console) → your application (or new).
+2. Copy Client ID and Client Secret → `TWITCH_CLIENT_ID` / `TWITCH_CLIENT_SECRET`.
+3. Bounce the process. Logs show `twitch poll live=N` when someone goes live.
 
 ### Day-to-day
 
@@ -284,8 +292,8 @@ Two header modes. Same public nav (Spot / Episodes / FS Team / Friends / News / 
 ### 1. Skater Profiles & Team Roster
 - **Team Directory (`/team` / `/skaters`)**: People who hold `DISCORD_SKATER_ROLE_ID` (or admin) and have a linked profile. Intro markdown is a locked CMS page (`# FS Team` by default); superadmin / Discord hub-admin role edits it from Pages or an Edit link on `/team`. The roster grid sits under that block. Name comes from Discord; optional display name, stance, status, location, markdown bio (same goldmark + sanitizer as news).
 - **Friends Directory (`/friends`)**: Internal Friends — Discord `DISCORD_FRIENDS_ROLE_ID`, queue approval (including YouTube-only), or migrated former members. Intro markdown is a locked CMS page (`# Friends` by default), same as `/team`. Same profile fields as team except Discord-linked friends show **Friend** and Hub-only friends show **Sesh Hub Friend** (not on FS Team admin). Detail URL `/friends/{slug}`. Hitting the wrong prefix 302s.
-- **Detail Page (`/team/{slug}` or `/friends/{slug}`)**: Markdown bio, stance, status, location, avatar (name and who-line beside a larger photo), optional gallery slideshow (up to 10 photos, 6s auto-advance, prev/next, 3 thumbs in a column on the right), and clips from a linked YouTube channel (optional featured pin).
-- **Profile (`/dashboard/profile`)**: Own profile only — display name, user slug, stance, location, markdown bio with live preview (same editor as news/pages), featured clip, YouTube Feed Filter, optional site photo (JPEG/PNG, 15 MB, square crop), and photo frame (circle-to-square slider, optional per-corner radii, border style, thickness, blur). Border styles: none, Color Default (chartreuse), Color Custom (hex via the same iro.js wheel as sesh-helpers), Pulse, Strobe, Fire, Neon, Orbit, Chromatic aberration. Thickness (1–12px, default 3) and blur (0–16px, default 0) show for the ring styles; Chromatic aberration gets blur only; Orbit has neither. Display name and slug default from Discord (YouTube if Discord is not connected); Reset restores those. Typing a display name sets the slug until the slug field is edited. Changing slug 302s the old URL to the new one until that slug is claimed again (not reserved). Site photo is Hub-only; Discord/YouTube remain the fallback. A dirty field shows a bottom Discard / Save bar; Save stays on `/dashboard/profile`. Logged-in menu label is **Profile**.
+- **Detail Page (`/team/{slug}` or `/friends/{slug}`)**: Markdown bio, stance, status, location, avatar (name and who-line beside a larger photo), optional gallery slideshow (up to 10 photos, 6s auto-advance, prev/next, 3 thumbs in a column on the right), LIVE + title + uptime when a saved Twitch login is streaming (link to twitch.tv, no embed), and clips from a linked YouTube channel (optional featured pin).
+- **Profile (`/dashboard/profile`)**: Own profile only — display name, user slug, stance, location, markdown bio with live preview (same editor as news/pages), featured clip, YouTube Feed Filter, **Twitch** tab (login; Helix preview of display name, created date, live/offline so you can see it worked; public LIVE on the roster; no Twitch OAuth), optional site photo (JPEG/PNG, 15 MB, square crop), and photo frame (circle-to-square slider, optional per-corner radii, border style, thickness, blur). Border styles: none, Color Default (chartreuse), Color Custom (hex via the same iro.js wheel as sesh-helpers), Pulse, Strobe, Fire, Neon, Orbit, Chromatic aberration. Thickness (1–12px, default 3) and blur (0–16px, default 0) show for the ring styles; Chromatic aberration gets blur only; Orbit has neither. Display name and slug default from Discord (YouTube if Discord is not connected); Reset restores those. Typing a display name sets the slug until the slug field is edited. Changing slug 302s the old URL to the new one until that slug is claimed again (not reserved). Site photo is Hub-only; Discord/YouTube remain the fallback. A dirty field shows a bottom Discard / Save bar; Save stays on `/dashboard/profile`. Logged-in menu label is **Profile**.
 - **FS Team (`/admin/skaters`)**: Superadmin / Discord hub-admin role only. Team skaters and admins only. Set another skater’s status. No add-skater form. Friends are not listed.
 
 ### 2. YouTube clips from skaters
@@ -323,7 +331,7 @@ Two header modes. Same public nav (Spot / Episodes / FS Team / Friends / News / 
 - **Edit (`/admin/episodes`)**: Hosts role only. Edit title, counts, rows, trick URL, winner (pick from the challenge playlist when the editor has YouTube linked, or paste a watch URL; empty winner name fills from the video’s channel and can be overwritten).
 
 ### 5. Admin UI & Markdown editor
-- **Admin Control Center (`/admin`)**: Metric overviews, access queue, **Discord bot** (`/admin/bot`: gateway status, home channel, and on/off for news, forum, and access announcements), and **Users** (see who has Discord/YouTube, merge duplicate accounts, unlink, delete).
+- **Admin Control Center (`/admin`)**: Metric overviews, access queue, **Discord bot** (`/admin/bot`: gateway status, home channel, and on/off for news, forum, access, mention, and Twitch going-live announcements, plus the going-live message), and **Users** (see who has Discord/YouTube, merge duplicate accounts, unlink, delete).
 - **Basic editor**: `textarea[name=content_raw]` on articles, custom pages, and Spot, with a live HTML preview beside it (under it below 800px). Preview is `POST /preview` → goldmark + bluemonday (Spot also fills `{{placeholders}}`).
 - **Advanced editor**: from 640px up, a button opens a near-fullscreen `<dialog>`. Hidden on smaller screens (phone stays on the basic textarea + preview). Left sidebar is the rest of the document (slug, published, …; Spot: insert chips). Center is Monaco from jsDelivr. Right is the same live preview. Palette theme `sesh-sofa`.
 
@@ -389,6 +397,9 @@ CREATE TABLE IF NOT EXISTS skater_profiles (
     social_links TEXT,                         -- JSON map of platform -> URL
     signature_tricks TEXT,                     -- JSON array of strings
     featured_video_id TEXT,                    -- References youtube_videos(id)
+    twitch_login TEXT NOT NULL DEFAULT '',
+    twitch_title TEXT NOT NULL DEFAULT '',
+    twitch_started_at DATETIME,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -667,6 +678,12 @@ YOUTUBE_CLIENT_SECRET=your_google_oauth_client_secret
 # YouTube Data API (public stats poller — not OAuth)
 # ==============================================================================
 YOUTUBE_DATA_API_KEY=
+
+# ==============================================================================
+# Twitch Helix (live poller — not user OAuth)
+# ==============================================================================
+TWITCH_CLIENT_ID=
+TWITCH_CLIENT_SECRET=
 
 GTAG_ID=                             # GA4 measurement ID; empty = no tag
 ```

@@ -7,7 +7,10 @@ import (
 	"fmt"
 	"html/template"
 	"strings"
+	"time"
 	"unicode"
+
+	"seshhub/internal/twitch"
 )
 
 type Profile struct {
@@ -35,6 +38,9 @@ type Profile struct {
 	SocialLinks       string
 	SignatureTricks   string
 	FeaturedVideoID   string
+	TwitchLogin       string
+	TwitchTitle       string
+	TwitchStarted     time.Time
 	Role              string
 }
 
@@ -120,6 +126,18 @@ func (p Profile) PublicName() string {
 	return p.SkaterName
 }
 
+func (p Profile) TwitchLive() bool {
+	return p.TwitchLogin != "" && !p.TwitchStarted.IsZero()
+}
+
+func (p Profile) TwitchURL() string {
+	return twitch.ChannelURL(p.TwitchLogin)
+}
+
+func (p Profile) TwitchUptime() string {
+	return twitch.Uptime(p.TwitchStarted)
+}
+
 func CanEdit(role, userID, profileUserID string) bool {
 	if userID == "" || userID != profileUserID {
 		return false
@@ -196,7 +214,8 @@ const profileSelect = `
 			IFNULL(p.avatar_border_style,''), IFNULL(p.avatar_border_color,''), IFNULL(p.avatar_border_blur,0),
 			IFNULL(p.banner_url,''),
 			IFNULL(p.location,''), IFNULL(p.sponsors,''), IFNULL(p.social_links,''), IFNULL(p.signature_tricks,''),
-			IFNULL(p.featured_video_id,''), IFNULL(u.role,''), IFNULL(u.discord_id,'')
+			IFNULL(p.featured_video_id,''), IFNULL(p.twitch_login,''), IFNULL(p.twitch_title,''), IFNULL(p.twitch_started_at,''),
+			IFNULL(u.role,''), IFNULL(u.discord_id,'')
 		FROM skater_profiles p LEFT JOIN users u ON u.id = p.user_id`
 
 func List(db *sql.DB) ([]Profile, error) {
@@ -237,14 +256,16 @@ func list(db *sql.DB, roster string) ([]Profile, error) {
 
 func scanProfile(sc interface{ Scan(dest ...any) error }) (Profile, error) {
 	var p Profile
-	var discordID string
+	var discordID, started string
 	err := sc.Scan(&p.ID, &p.UserID, &p.Slug, &p.SkaterName, &p.RealName, &p.Bio, &p.Stance, &p.Status,
 		&p.AvatarURL, &p.PhotoURL, &p.AvatarR1, &p.AvatarR2, &p.AvatarR3, &p.AvatarR4, &p.AvatarBorder,
 		&p.AvatarBorderStyle, &p.AvatarBorderColor, &p.AvatarBorderBlur,
-		&p.BannerURL, &p.Location, &p.Sponsors, &p.SocialLinks, &p.SignatureTricks, &p.FeaturedVideoID, &p.Role, &discordID)
+		&p.BannerURL, &p.Location, &p.Sponsors, &p.SocialLinks, &p.SignatureTricks, &p.FeaturedVideoID,
+		&p.TwitchLogin, &p.TwitchTitle, &started, &p.Role, &discordID)
 	if err != nil {
 		return p, err
 	}
+	p.TwitchStarted = parseStarted(started)
 	p.AvatarBorderStyle, p.AvatarBorderColor, p.AvatarBorder = NormalizeBorder(p.AvatarBorderStyle, p.AvatarBorderColor, p.AvatarBorder)
 	p.AvatarBorderBlur = ClampBlur(p.AvatarBorderBlur)
 	if p.AvatarBorderStyle == "off" {
@@ -311,10 +332,19 @@ func Save(db *sql.DB, p Profile) (Profile, error) {
 	if err != nil {
 		return p, err
 	}
+	login, err := twitch.Normalize(p.TwitchLogin)
+	if err != nil {
+		return p, err
+	}
+	p.TwitchLogin = login
 	oldSlug := ""
 	if p.ID != "" {
 		if prev, err := Get(db, "id", p.ID); err == nil {
 			oldSlug = prev.Slug
+			if prev.TwitchLogin != p.TwitchLogin {
+				p.TwitchTitle = ""
+				p.TwitchStarted = time.Time{}
+			}
 		}
 	}
 	p.Slug = slug
@@ -339,24 +369,36 @@ func Save(db *sql.DB, p Profile) (Profile, error) {
 	if p.AvatarBorderStyle == "off" {
 		p.AvatarBorderBlur = 0
 	}
+	if p.TwitchLogin != "" {
+		var other string
+		qerr := db.QueryRow(`SELECT id FROM skater_profiles WHERE twitch_login=? AND id!=?`, p.TwitchLogin, p.ID).Scan(&other)
+		if qerr == nil {
+			return p, fmt.Errorf("twitch name already on another profile")
+		}
+		if qerr != sql.ErrNoRows {
+			return p, qerr
+		}
+	}
 	uid := any(nil)
 	if p.UserID != "" {
 		uid = p.UserID
 	}
 	if p.ID == "" {
 		p.ID = newID()
-		_, err = db.Exec(`INSERT INTO skater_profiles (id, user_id, slug, skater_name, real_name, bio, stance, status, avatar_url, avatar_r1, avatar_r2, avatar_r3, avatar_r4, avatar_border, avatar_border_style, avatar_border_color, avatar_border_blur, banner_url, location, sponsors, social_links, signature_tricks, featured_video_id)
-			VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+		_, err = db.Exec(`INSERT INTO skater_profiles (id, user_id, slug, skater_name, real_name, bio, stance, status, avatar_url, avatar_r1, avatar_r2, avatar_r3, avatar_r4, avatar_border, avatar_border_style, avatar_border_color, avatar_border_blur, banner_url, location, sponsors, social_links, signature_tricks, featured_video_id, twitch_login, twitch_title, twitch_started_at)
+			VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 			p.ID, uid, p.Slug, p.SkaterName, nullEmpty(p.RealName), nullEmpty(p.Bio), p.Stance, p.Status,
 			nullEmpty(p.PhotoURL), p.AvatarR1, p.AvatarR2, p.AvatarR3, p.AvatarR4, p.AvatarBorder, p.AvatarBorderStyle, p.AvatarBorderColor, p.AvatarBorderBlur,
 			nullEmpty(p.BannerURL), nullEmpty(p.Location), nullEmpty(p.Sponsors),
-			nullEmpty(p.SocialLinks), nullEmpty(p.SignatureTricks), nullEmpty(p.FeaturedVideoID))
+			nullEmpty(p.SocialLinks), nullEmpty(p.SignatureTricks), nullEmpty(p.FeaturedVideoID),
+			p.TwitchLogin, p.TwitchTitle, nullTime(p.TwitchStarted))
 	} else {
-		_, err = db.Exec(`UPDATE skater_profiles SET user_id=?, slug=?, skater_name=?, real_name=?, bio=?, stance=?, status=?, avatar_url=?, avatar_r1=?, avatar_r2=?, avatar_r3=?, avatar_r4=?, avatar_border=?, avatar_border_style=?, avatar_border_color=?, avatar_border_blur=?, banner_url=?, location=?, sponsors=?, social_links=?, signature_tricks=?, featured_video_id=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`,
+		_, err = db.Exec(`UPDATE skater_profiles SET user_id=?, slug=?, skater_name=?, real_name=?, bio=?, stance=?, status=?, avatar_url=?, avatar_r1=?, avatar_r2=?, avatar_r3=?, avatar_r4=?, avatar_border=?, avatar_border_style=?, avatar_border_color=?, avatar_border_blur=?, banner_url=?, location=?, sponsors=?, social_links=?, signature_tricks=?, featured_video_id=?, twitch_login=?, twitch_title=?, twitch_started_at=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`,
 			uid, p.Slug, p.SkaterName, nullEmpty(p.RealName), nullEmpty(p.Bio), p.Stance, p.Status,
 			nullEmpty(p.PhotoURL), p.AvatarR1, p.AvatarR2, p.AvatarR3, p.AvatarR4, p.AvatarBorder, p.AvatarBorderStyle, p.AvatarBorderColor, p.AvatarBorderBlur,
 			nullEmpty(p.BannerURL), nullEmpty(p.Location), nullEmpty(p.Sponsors),
-			nullEmpty(p.SocialLinks), nullEmpty(p.SignatureTricks), nullEmpty(p.FeaturedVideoID), p.ID)
+			nullEmpty(p.SocialLinks), nullEmpty(p.SignatureTricks), nullEmpty(p.FeaturedVideoID),
+			p.TwitchLogin, p.TwitchTitle, nullTime(p.TwitchStarted), p.ID)
 	}
 	if err != nil {
 		return p, err
@@ -426,4 +468,23 @@ func nullEmpty(s string) any {
 		return nil
 	}
 	return s
+}
+
+func nullTime(t time.Time) any {
+	if t.IsZero() {
+		return nil
+	}
+	return t.UTC().Format(time.RFC3339)
+}
+
+func parseStarted(s string) time.Time {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return time.Time{}
+	}
+	if t, err := time.Parse(time.RFC3339, s); err == nil {
+		return t
+	}
+	t, _ := time.Parse("2006-01-02 15:04:05", s)
+	return t
 }

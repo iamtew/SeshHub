@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -16,6 +17,7 @@ import (
 	"seshhub/internal/config"
 	"seshhub/internal/db"
 	"seshhub/internal/spot"
+	"seshhub/internal/twitch"
 	"seshhub/internal/web"
 	"seshhub/internal/yt"
 )
@@ -51,6 +53,9 @@ func main() {
 
 	b := bot.Open(sqldb, cfg.DiscordBotToken, cfg.DiscordGuildID)
 	defer b.Close()
+	if cfg.TwitchEnabled() {
+		go pollTwitch(ctx, sqldb, twitch.New(cfg.TwitchClientID, cfg.TwitchClientSecret), b)
+	}
 
 	srv := &http.Server{
 		Addr:              cfg.ListenAddr(),
@@ -81,6 +86,43 @@ func pollYouTube(ctx context.Context, db *sql.DB, key string) {
 	}
 	run()
 	t := time.NewTicker(time.Hour)
+	defer t.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+			run()
+		}
+	}
+}
+
+// ponytail: 60s Helix poll; EventSub stream.online if delay is too slow.
+func pollTwitch(ctx context.Context, db *sql.DB, c *twitch.Client, b *bot.Bot) {
+	run := func() {
+		went, err := twitch.Poll(ctx, db, c)
+		if err != nil {
+			slog.Error("twitch poll", "err", err)
+			return
+		}
+		if len(went) == 0 {
+			return
+		}
+		msg := twitch.DefaultMsg
+		if b != nil {
+			if s, err := b.Settings(); err == nil && strings.TrimSpace(s.TwitchMsg) != "" {
+				msg = s.TwitchMsg
+			}
+		}
+		for _, ev := range went {
+			if b != nil {
+				b.Announce("twitch", twitch.Render(msg, ev))
+			}
+		}
+		slog.Info("twitch poll", "live", len(went))
+	}
+	run()
+	t := time.NewTicker(time.Minute)
 	defer t.Stop()
 	for {
 		select {

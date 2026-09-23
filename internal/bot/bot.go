@@ -17,6 +17,7 @@ import (
 
 	"seshhub/internal/auth"
 	"seshhub/internal/skater"
+	"seshhub/internal/twitch"
 )
 
 const shrugEmoji = "🤷‍♂️"
@@ -32,6 +33,8 @@ type Settings struct {
 	Forum         bool
 	Access        bool
 	Mentions      bool
+	Twitch        bool
+	TwitchMsg     string
 }
 
 type Channel struct {
@@ -573,21 +576,22 @@ func hears(homeID, selfID string, m *discordgo.Message) bool {
 
 func (b *Bot) Settings() (Settings, error) {
 	var s Settings
-	var news, forum, access, mentions int
-	err := b.db.QueryRow(`SELECT channel_id, IFNULL(home_channel_id,''), news, forum, access, mentions FROM bot_settings WHERE id = 1`).
-		Scan(&s.ChannelID, &s.HomeChannelID, &news, &forum, &access, &mentions)
+	var news, forum, access, mentions, twitchOn int
+	err := b.db.QueryRow(`SELECT channel_id, IFNULL(home_channel_id,''), news, forum, access, mentions, twitch, IFNULL(twitch_msg,'') FROM bot_settings WHERE id = 1`).
+		Scan(&s.ChannelID, &s.HomeChannelID, &news, &forum, &access, &mentions, &twitchOn, &s.TwitchMsg)
 	if err != nil {
 		return s, err
 	}
-	s.News, s.Forum, s.Access, s.Mentions = news != 0, forum != 0, access != 0, mentions != 0
+	s.News, s.Forum, s.Access, s.Mentions, s.Twitch = news != 0, forum != 0, access != 0, mentions != 0, twitchOn != 0
 	return s, nil
 }
 
 func (b *Bot) SaveSettings(s Settings) error {
 	s.ChannelID = strings.TrimSpace(s.ChannelID)
 	s.HomeChannelID = strings.TrimSpace(s.HomeChannelID)
-	_, err := b.db.Exec(`UPDATE bot_settings SET channel_id=?, home_channel_id=?, news=?, forum=?, access=?, mentions=? WHERE id=1`,
-		s.ChannelID, s.HomeChannelID, bit(s.News), bit(s.Forum), bit(s.Access), bit(s.Mentions))
+	s.TwitchMsg = twitch.ClampMsg(s.TwitchMsg)
+	_, err := b.db.Exec(`UPDATE bot_settings SET channel_id=?, home_channel_id=?, news=?, forum=?, access=?, mentions=?, twitch=?, twitch_msg=? WHERE id=1`,
+		s.ChannelID, s.HomeChannelID, bit(s.News), bit(s.Forum), bit(s.Access), bit(s.Mentions), bit(s.Twitch), s.TwitchMsg)
 	return err
 }
 
@@ -608,6 +612,8 @@ func enabled(s Settings, kind string) bool {
 		return s.Access
 	case "mention":
 		return s.Mentions
+	case "twitch":
+		return s.Twitch
 	default:
 		return false
 	}

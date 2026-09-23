@@ -186,3 +186,29 @@ func TestEnsureForUser(t *testing.T) {
 		t.Fatalf("discord friend status %q", discStatus)
 	}
 }
+
+func TestTwitchLoginUnique(t *testing.T) {
+	sqldb, err := db.Open(":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = sqldb.Close() })
+	if err := db.Migrate(sqldb, "../db/migrations"); err != nil {
+		t.Fatal(err)
+	}
+	a, err := Save(sqldb, Profile{SkaterName: "Ada", TwitchLogin: "AdaLive"})
+	if err != nil || a.TwitchLogin != "adalive" {
+		t.Fatalf("%+v %v", a, err)
+	}
+	if _, err := Save(sqldb, Profile{SkaterName: "Bob", TwitchLogin: "adalive"}); err == nil {
+		t.Fatal("duplicate")
+	}
+	a.TwitchLogin = ""
+	if _, err := Save(sqldb, a); err != nil {
+		t.Fatal(err)
+	}
+	got, err := Get(sqldb, "id", a.ID)
+	if err != nil || got.TwitchLogin != "" || got.TwitchLive() {
+		t.Fatalf("cleared %+v %v", got, err)
+	}
+}

@@ -27,6 +27,8 @@ type Config struct {
 	YouTubeClientID       string
 	YouTubeClientSecret   string
 	YouTubeAPIKey         string
+	TwitchClientID        string
+	TwitchClientSecret    string
 	GTagID                string
 }
 
@@ -52,6 +54,8 @@ func Load() Config {
 		YouTubeClientID:       getenv("YOUTUBE_CLIENT_ID", ""),
 		YouTubeClientSecret:   getenv("YOUTUBE_CLIENT_SECRET", ""),
 		YouTubeAPIKey:         getenv("YOUTUBE_DATA_API_KEY", ""),
+		TwitchClientID:        getenv("TWITCH_CLIENT_ID", ""),
+		TwitchClientSecret:    getenv("TWITCH_CLIENT_SECRET", ""),
 		GTagID:                getenv("GTAG_ID", ""),
 	}
 }
@@ -62,6 +66,10 @@ func (c Config) DiscordEnabled() bool {
 
 func (c Config) YouTubeEnabled() bool {
 	return c.YouTubeClientID != "" && c.YouTubeClientSecret != ""
+}
+
+func (c Config) TwitchEnabled() bool {
+	return c.TwitchClientID != "" && c.TwitchClientSecret != ""
 }
 
 func (c Config) CookieSecure() bool {

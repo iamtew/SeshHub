@@ -45,12 +45,12 @@ func TestAdminBotPage(t *testing.T) {
 		t.Fatalf("get %d", rec.Code)
 	}
 	body := rec.Body.String()
-	for _, want := range []string{"Discord bot", "missing", "not configured", "Bot ID", "Last @mention", `<select name="home_channel_id"`, `<select name="channel_id"`, "New published news", "New forum thread", "New access request"} {
+	for _, want := range []string{"Discord bot", "missing", "not configured", "Bot ID", "Last @mention", `<select name="home_channel_id"`, `<select name="channel_id"`, "New published news", "New forum thread", "New access request", "Twitch going live", "twitch_msg"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("page missing %q", want)
 		}
 	}
-	form := url.Values{"channel_id": {"123456789012345678"}, "home_channel_id": {"223456789012345678"}, "news": {"1"}}
+	form := url.Values{"channel_id": {"123456789012345678"}, "home_channel_id": {"223456789012345678"}, "news": {"1"}, "twitch": {"1"}, "twitch_msg": {"{name} live {url}"}}
 	post := httptest.NewRequest(http.MethodPost, "/admin/bot", strings.NewReader(form.Encode()))
 	post.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	post.AddCookie(&http.Cookie{Name: auth.CookieName, Value: tok})
@@ -60,7 +60,7 @@ func TestAdminBotPage(t *testing.T) {
 		t.Fatalf("post %d", rec.Code)
 	}
 	settings, err := b.Settings()
-	if err != nil || settings.ChannelID != "123456789012345678" || settings.HomeChannelID != "223456789012345678" || !settings.News || settings.Forum || settings.Access {
+	if err != nil || settings.ChannelID != "123456789012345678" || settings.HomeChannelID != "223456789012345678" || !settings.News || settings.Forum || settings.Access || !settings.Twitch || settings.TwitchMsg != "{name} live {url}" {
 		t.Fatalf("%+v %v", settings, err)
 	}
 	body = get().Body.String()
