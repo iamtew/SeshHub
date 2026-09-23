@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"html/template"
 	"io"
+	"mime"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -59,7 +60,7 @@ func (s *Server) forumIncoming(w http.ResponseWriter, r *http.Request) (body, pa
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return "", "", nil, nil, false
 			}
-			files = append(files, forum.FileIn{R: bytes.NewReader(raw)})
+			files = append(files, forum.FileIn{R: bytes.NewReader(raw), Name: fh.Filename})
 		}
 	}
 	if len(files) > forum.PhotoMax {
@@ -145,6 +146,15 @@ func (s *Server) mediaForum(w http.ResponseWriter, r *http.Request) {
 	}
 	if ct := forum.MimeFor(file); ct != "" {
 		w.Header().Set("Content-Type", ct)
+	}
+	if name := forum.PhotoDownloadName(s.db, file); name != "" {
+		disp := "inline"
+		if r.URL.Query().Get("dl") != "" {
+			disp = "attachment"
+		}
+		if cd := mime.FormatMediaType(disp, map[string]string{"filename": name}); cd != "" {
+			w.Header().Set("Content-Disposition", cd)
+		}
 	}
 	serveMedia(w, r, path)
 }

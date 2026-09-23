@@ -63,7 +63,14 @@ func TestSniffAndAttach(t *testing.T) {
 	}
 	t.Cleanup(func() { RemovePhotos([]string{png.ID + "." + png.Ext}) })
 
-	if err := Reply(sqldb, th.ID, alice.ID, "listen", "", []FileIn{{R: bytes.NewReader(mp3)}}); err != nil {
+	if got := AttachName(`C:\mix\listen.mp3`, "id", "mp3"); got != "listen.mp3" {
+		t.Fatalf("name %q", got)
+	}
+	if got := AttachName("", "id", "mp3"); got != "id.mp3" {
+		t.Fatalf("empty %q", got)
+	}
+
+	if err := Reply(sqldb, th.ID, alice.ID, "listen", "", []FileIn{{Name: "listen.mp3", R: bytes.NewReader(mp3)}}); err != nil {
 		t.Fatal(err)
 	}
 	posts, err = ListPosts(sqldb, th.ID)
@@ -71,8 +78,12 @@ func TestSniffAndAttach(t *testing.T) {
 		t.Fatalf("audio post %+v %v", posts, err)
 	}
 	au := posts[1].Photos[0]
-	if au.Kind != "audio" || au.Ext != "mp3" || !au.IsAudio() {
+	if au.Kind != "audio" || au.Ext != "mp3" || !au.IsAudio() || au.Name != "listen.mp3" {
 		t.Fatalf("audio saved %+v", au)
+	}
+	exp, err := Export(sqldb, alice.ID)
+	if err != nil || len(exp) < 2 || len(exp[1].Photos) != 1 || exp[1].Photos[0].Name != "listen.mp3" {
+		t.Fatalf("export %+v %v", exp, err)
 	}
 	t.Cleanup(func() { RemovePhotos([]string{au.ID + "." + au.Ext}) })
 

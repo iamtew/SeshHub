@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -16,7 +17,8 @@ const PhotoMax = 3
 const photoEdge = 1600
 
 type FileIn struct {
-	R io.Reader
+	R    io.Reader
+	Name string
 }
 
 func PhotoURL(id, ext string) string {
@@ -77,6 +79,37 @@ func RemovePhotos(files []string) {
 	for _, f := range files {
 		RemovePhoto(f)
 	}
+}
+
+func AttachName(raw, id, ext string) string {
+	fallback := id + "." + ext
+	base := path.Base(strings.ReplaceAll(raw, `\`, "/"))
+	base = strings.Trim(base, " .")
+	base = strings.ReplaceAll(base, "\x00", "")
+	if i := strings.LastIndexByte(base, '.'); i > 0 {
+		base = base[:i]
+	}
+	if base == "" || base == "." || base == ".." {
+		return fallback
+	}
+	if len(base) > 180 {
+		base = base[:180]
+	}
+	return base + "." + ext
+}
+
+func PhotoDownloadName(db *sql.DB, file string) string {
+	i := strings.LastIndexByte(file, '.')
+	if i <= 0 {
+		return file
+	}
+	id, ext := file[:i], file[i+1:]
+	var name string
+	_ = db.QueryRow(`SELECT name FROM forum_post_photos WHERE id=?`, id).Scan(&name)
+	if name == "" {
+		return id + "." + ext
+	}
+	return name
 }
 
 func (p Photo) IsImage() bool { return p.Kind == "image" }
@@ -173,35 +206,19 @@ func photosByPosts(db *sql.DB, postIDs []string) (map[string][]Photo, error) {
 		args[i] = id
 		ph[i] = "?"
 	}
-	rows, err := db.Query(`SELECT id, post_id, kind, ext, mime FROM forum_post_photos WHERE post_id IN (`+strings.Join(ph, ",")+`) ORDER BY pos, id`, args...)
+	rows, err := db.Query(`SELECT id, post_id, kind, ext, mime, name FROM forum_post_photos WHERE post_id IN (`+strings.Join(ph, ",")+`) ORDER BY pos, id`, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var id, postID, kind, ext, mime string
-		if err := rows.Scan(&id, &postID, &kind, &ext, &mime); err != nil {
+		var id, postID, kind, ext, mime, name string
+		if err := rows.Scan(&id, &postID, &kind, &ext, &mime, &name); err != nil {
 			return nil, err
 		}
-		out[postID] = append(out[postID], Photo{ID: id, URL: PhotoURL(id, ext), Kind: kind, Ext: ext, MIME: mime})
+		out[postID] = append(out[postID], Photo{ID: id, URL: PhotoURL(id, ext), Kind: kind, Ext: ext, MIME: mime, Name: name})
 	}
 	return out, rows.Err()
-}
-
-func photoURLsByPosts(db *sql.DB, postIDs []string) (map[string][]string, error) {
-	photos, err := photosByPosts(db, postIDs)
-	if err != nil {
-		return nil, err
-	}
-	out := map[string][]string{}
-	for id, list := range photos {
-		urls := make([]string, len(list))
-		for i, p := range list {
-			urls[i] = p.URL
-		}
-		out[id] = urls
-	}
-	return out, nil
 }
 
 func addPhotos(tx *sql.Tx, postID string, start int, files []FileIn) error {
@@ -234,7 +251,8 @@ func addPhotos(tx *sql.Tx, postID string, start int, files []FileIn) error {
 				return err
 			}
 		}
-		if _, err := tx.Exec(`INSERT INTO forum_post_photos (id, post_id, pos, kind, ext, mime) VALUES (?,?,?,?,?,?)`, id, postID, start+i, kind, ext, mime); err != nil {
+		name := AttachName(f.Name, id, ext)
+		if _, err := tx.Exec(`INSERT INTO forum_post_photos (id, post_id, pos, kind, ext, mime, name) VALUES (?,?,?,?,?,?,?)`, id, postID, start+i, kind, ext, mime, name); err != nil {
 			RemovePhoto(id + "." + ext)
 			return err
 		}

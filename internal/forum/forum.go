@@ -45,6 +45,14 @@ type Photo struct {
 	Kind string
 	Ext  string
 	MIME string
+	Name string
+}
+
+func (p Photo) DisplayName() string {
+	if p.Name != "" {
+		return p.Name
+	}
+	return p.ID + "." + p.Ext
 }
 
 type Post struct {
@@ -83,12 +91,17 @@ func (p Post) AvatarClass() string {
 	return skater.FrameClass(st)
 }
 
+type OwnFile struct {
+	URL  string `json:"url"`
+	Name string `json:"name,omitempty"`
+}
+
 type OwnPost struct {
-	ThreadTitle string   `json:"thread_title"`
-	BodyRaw     string   `json:"body_raw"`
-	CreatedAt   string   `json:"created_at"`
-	First       bool     `json:"is_first_post"`
-	Photos      []string `json:"photos,omitempty"`
+	ThreadTitle string    `json:"thread_title"`
+	BodyRaw     string    `json:"body_raw"`
+	CreatedAt   string    `json:"created_at"`
+	First       bool      `json:"is_first_post"`
+	Photos      []OwnFile `json:"photos,omitempty"`
 }
 
 func newID() string {
@@ -677,12 +690,17 @@ func Export(db *sql.DB, userID string) ([]OwnPost, error) {
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-	urls, err := photoURLsByPosts(db, ids)
+	photos, err := photosByPosts(db, ids)
 	if err != nil {
 		return nil, err
 	}
 	for i, id := range ids {
-		out[i].Photos = urls[id]
+		list := photos[id]
+		files := make([]OwnFile, len(list))
+		for j, ph := range list {
+			files[j] = OwnFile{URL: ph.URL, Name: ph.DisplayName()}
+		}
+		out[i].Photos = files
 	}
 	return out, nil
 }

@@ -1,6 +1,7 @@
 package web
 
 import (
+	"bytes"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -162,6 +163,41 @@ func TestForumMentionsAndMedia(t *testing.T) {
 	s.ServeHTTP(rec, req)
 	if rec.Code != 200 {
 		t.Fatalf("media auth %d", rec.Code)
+	}
+	mp3 := append([]byte("ID3"), make([]byte, 20)...)
+	if err := forum.Reply(sqldb, th.ID, alice.ID, "song", "", []forum.FileIn{{Name: `C:\mix\listen.mp3`, R: bytes.NewReader(mp3)}}); err != nil {
+		t.Fatal(err)
+	}
+	posts, err = forum.ListPosts(sqldb, th.ID)
+	if err != nil || len(posts) < 1 {
+		t.Fatal(err)
+	}
+	var au forum.Photo
+	for _, p := range posts {
+		for _, ph := range p.Photos {
+			if ph.IsAudio() {
+				au = ph
+			}
+		}
+	}
+	if au.ID == "" || au.Name != "listen.mp3" {
+		t.Fatalf("audio name %+v", au)
+	}
+	t.Cleanup(func() { forum.RemovePhotos([]string{au.ID + "." + au.Ext}) })
+	req = httptest.NewRequest(http.MethodGet, au.URL, nil)
+	req.AddCookie(&http.Cookie{Name: auth.CookieName, Value: tok})
+	rec = httptest.NewRecorder()
+	s.ServeHTTP(rec, req)
+	if rec.Code != 200 || !strings.Contains(rec.Header().Get("Content-Disposition"), "listen.mp3") || strings.Contains(rec.Header().Get("Content-Disposition"), "attachment") {
+		t.Fatalf("inline %d %q", rec.Code, rec.Header().Get("Content-Disposition"))
+	}
+	req = httptest.NewRequest(http.MethodGet, au.URL+"?dl=1", nil)
+	req.AddCookie(&http.Cookie{Name: auth.CookieName, Value: tok})
+	rec = httptest.NewRecorder()
+	s.ServeHTTP(rec, req)
+	cd := rec.Header().Get("Content-Disposition")
+	if rec.Code != 200 || !strings.Contains(cd, "listen.mp3") || !strings.Contains(cd, "attachment") {
+		t.Fatalf("attachment %d %q", rec.Code, cd)
 	}
 }
 

@@ -1,0 +1,1 @@
+ALTER TABLE forum_post_photos ADD COLUMN name TEXT NOT NULL DEFAULT '';
