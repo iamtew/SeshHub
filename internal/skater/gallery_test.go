@@ -70,6 +70,50 @@ func TestGalleryCapAndDelete(t *testing.T) {
 	}
 }
 
+func TestDisplaceOldest(t *testing.T) {
+	sqldb, err := db.Open(":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = sqldb.Close() })
+	if err := db.Migrate(sqldb, "../db/migrations"); err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(t.TempDir())
+	if _, err := sqldb.Exec(`INSERT INTO skater_profiles (id, slug, skater_name) VALUES ('p-disp', 'disp', 'Disp')`); err != nil {
+		t.Fatal(err)
+	}
+	raw := tinyPNG()
+	first, err := AddGallery(sqldb, "p-disp", bytes.NewReader(raw))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 1; i < GalleryMax; i++ {
+		if _, err := AddGallery(sqldb, "p-disp", bytes.NewReader(raw)); err != nil {
+			t.Fatalf("add %d: %v", i, err)
+		}
+	}
+	extra, err := AddGalleryDisplace(sqldb, "p-disp", bytes.NewReader(raw))
+	if err != nil {
+		t.Fatal(err)
+	}
+	list, err := ListByProfile(sqldb, "p-disp")
+	if err != nil || len(list) != GalleryMax {
+		t.Fatalf("list %d %v", len(list), err)
+	}
+	if _, err := os.Stat(GalleryPath(first.ID)); !os.IsNotExist(err) {
+		t.Fatal("oldest file")
+	}
+	if _, err := os.Stat(GalleryPath(extra.ID)); err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range list {
+		if p.ID == first.ID {
+			t.Fatal("oldest row")
+		}
+	}
+}
+
 func TestReorderGallery(t *testing.T) {
 	sqldb, err := db.Open(":memory:")
 	if err != nil {

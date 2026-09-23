@@ -2,14 +2,25 @@ package bot
 
 import (
 	"database/sql"
+	"fmt"
+	"io"
 	"log/slog"
+	"net/http"
+	"net/url"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+
+	"seshhub/internal/auth"
+	"seshhub/internal/skater"
 )
+
+const shrugEmoji = "🤷‍♂️"
+const frameEmoji = "🖼"
 
 // ponytail: ring of 50, persist if the log needs to survive a restart.
 const logCap = 50
@@ -51,6 +62,9 @@ type Bot struct {
 	guildID string
 	sess    *discordgo.Session
 	post    func(channelID, content string) error
+	get     func(rawURL string) (io.ReadCloser, error)
+	history func(channelID, beforeID string, limit int) ([]*discordgo.Message, error)
+	react   func(channelID, messageID, emoji string) error
 
 	mu      sync.Mutex
 	state   string
@@ -85,6 +99,13 @@ func Open(db *sql.DB, token, guildID string) *Bot {
 	b.post = func(channelID, content string) error {
 		_, err := dg.ChannelMessageSend(channelID, content)
 		return err
+	}
+	b.get = discordGet
+	b.history = func(channelID, beforeID string, limit int) ([]*discordgo.Message, error) {
+		return dg.ChannelMessages(channelID, limit, beforeID, "", "")
+	}
+	b.react = func(channelID, messageID, emoji string) error {
+		return dg.MessageReactionAdd(channelID, messageID, emoji)
 	}
 	b.state = "connecting"
 	if err := dg.Open(); err != nil {
@@ -289,7 +310,197 @@ func (b *Bot) onMessage(_ *discordgo.Session, m *discordgo.MessageCreate) {
 	if !hears(s.HomeChannelID, self, m.Message) {
 		return
 	}
-	// ponytail: gate only. Commands land here when there is something to say. Message text is not stored.
+	if !mentioned(self, m.Message) {
+		return
+	}
+	b.ingestGallery(m.Message)
+}
+
+func (b *Bot) ingestGallery(m *discordgo.Message) {
+	if b == nil || m == nil || m.Author == nil {
+		return
+	}
+	u, err := auth.GetByDiscordID(b.db, m.Author.ID)
+	if err != nil || !auth.HasPublicRoster(u.Role) {
+		return
+	}
+	name := strings.TrimSpace(u.Username)
+	if name == "" {
+		name = strings.TrimSpace(u.DisplayName)
+	}
+	p, err := skater.Get(b.db, "user_id", u.ID)
+	if err == sql.ErrNoRows {
+		p, err = skater.EnsureForUser(b.db, u.ID, name)
+	}
+	if err != nil {
+		b.fail("gallery", err)
+		return
+	}
+	src := m
+	urls := jpegPNGURLs(src)
+	if len(urls) == 0 {
+		if b.history == nil {
+			return
+		}
+		hist, err := b.history(m.ChannelID, m.ID, 50)
+		if err != nil {
+			b.fail("gallery", err)
+			return
+		}
+		src = nearestPhoto(lastByAuthor(hist, m.Author.ID, 3))
+		if src == nil {
+			if b.react != nil {
+				_ = b.react(m.ChannelID, m.ID, shrugEmoji)
+			}
+			return
+		}
+		urls = jpegPNGURLs(src)
+	}
+	n := 0
+	for _, rawURL := range urls {
+		body, err := b.fetch(rawURL)
+		if err != nil {
+			b.fail("gallery", err)
+			continue
+		}
+		_, err = skater.AddGalleryDisplace(b.db, p.ID, body)
+		_ = body.Close()
+		if err != nil {
+			b.fail("gallery", err)
+			continue
+		}
+		n++
+	}
+	if n > 0 {
+		if b.react != nil {
+			_ = b.react(m.ChannelID, src.ID, frameEmoji)
+		}
+		b.push("gallery", strconv.Itoa(n)+" photos", "")
+	}
+}
+
+func (b *Bot) fetch(rawURL string) (io.ReadCloser, error) {
+	if b.get == nil {
+		return nil, fmt.Errorf("no get")
+	}
+	rc, err := b.get(rawURL)
+	if err != nil {
+		return nil, err
+	}
+	return &limitedClose{Reader: io.LimitReader(rc, int64(skater.GalleryBytes)+1), c: rc}, nil
+}
+
+type limitedClose struct {
+	io.Reader
+	c io.Closer
+}
+
+func (l *limitedClose) Close() error { return l.c.Close() }
+
+func (b *Bot) fail(kind string, err error) {
+	if err == nil {
+		return
+	}
+	b.mu.Lock()
+	b.lastErr = err.Error()
+	b.mu.Unlock()
+	b.push(kind, "", err.Error())
+}
+
+func mentioned(selfID string, m *discordgo.Message) bool {
+	if selfID == "" || m == nil {
+		return false
+	}
+	for _, u := range m.Mentions {
+		if u != nil && u.ID == selfID {
+			return true
+		}
+	}
+	return false
+}
+
+func lastByAuthor(msgs []*discordgo.Message, authorID string, n int) []*discordgo.Message {
+	var out []*discordgo.Message
+	for _, m := range msgs {
+		if m == nil || m.Author == nil || m.Author.ID != authorID || m.Author.Bot {
+			continue
+		}
+		out = append(out, m)
+		if len(out) == n {
+			break
+		}
+	}
+	return out
+}
+
+func nearestPhoto(msgs []*discordgo.Message) *discordgo.Message {
+	for _, m := range msgs {
+		if len(jpegPNGURLs(m)) > 0 {
+			return m
+		}
+	}
+	return nil
+}
+
+func jpegPNGURLs(m *discordgo.Message) []string {
+	if m == nil {
+		return nil
+	}
+	var out []string
+	for _, a := range m.Attachments {
+		if a == nil || !isJPEGPNG(a) || !discordCDN(a.URL) {
+			continue
+		}
+		out = append(out, a.URL)
+	}
+	return out
+}
+
+func isJPEGPNG(a *discordgo.MessageAttachment) bool {
+	t := strings.ToLower(a.ContentType)
+	if i := strings.IndexByte(t, ';'); i >= 0 {
+		t = t[:i]
+	}
+	t = strings.TrimSpace(t)
+	if t == "image/jpeg" || t == "image/jpg" || t == "image/png" {
+		return true
+	}
+	n := strings.ToLower(a.Filename)
+	return strings.HasSuffix(n, ".jpg") || strings.HasSuffix(n, ".jpeg") || strings.HasSuffix(n, ".png")
+}
+
+func discordHost(h string) bool {
+	h = strings.ToLower(h)
+	return h == "cdn.discordapp.com" || h == "media.discordapp.net"
+}
+
+func discordCDN(raw string) bool {
+	u, err := url.Parse(raw)
+	return err == nil && u.Scheme == "https" && discordHost(u.Hostname())
+}
+
+var cdnClient = &http.Client{
+	CheckRedirect: func(req *http.Request, via []*http.Request) error {
+		if req.URL == nil || !discordHost(req.URL.Hostname()) {
+			return http.ErrUseLastResponse
+		}
+		return nil
+	},
+}
+
+func discordGet(raw string) (io.ReadCloser, error) {
+	if !discordCDN(raw) {
+		return nil, fmt.Errorf("not discord cdn")
+	}
+	resp, err := cdnClient.Get(raw)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		resp.Body.Close()
+		return nil, fmt.Errorf("cdn %d", resp.StatusCode)
+	}
+	return resp.Body, nil
 }
 
 // hears is true in the home channel, and elsewhere only when the bot is @mentioned or replied to.

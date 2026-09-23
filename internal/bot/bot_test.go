@@ -1,11 +1,19 @@
 package bot
 
 import (
+	"bytes"
+	"image"
+	"image/color"
+	"image/png"
+	"io"
+	"os"
 	"testing"
 
 	"github.com/bwmarrin/discordgo"
 
+	"seshhub/internal/auth"
 	"seshhub/internal/db"
+	"seshhub/internal/skater"
 )
 
 func TestAnnounceGate(t *testing.T) {
@@ -85,5 +93,233 @@ func TestHears(t *testing.T) {
 	fromBot := &discordgo.Message{ChannelID: "home", Author: &discordgo.User{ID: "bot", Bot: true}}
 	if hears("home", "bot", fromBot) {
 		t.Fatal("bot messages")
+	}
+}
+
+func tinyPNG() []byte {
+	src := image.NewRGBA(image.Rect(0, 0, 20, 10))
+	for y := 0; y < 10; y++ {
+		for x := 0; x < 20; x++ {
+			src.Set(x, y, color.RGBA{B: 200, A: 255})
+		}
+	}
+	var buf bytes.Buffer
+	_ = png.Encode(&buf, src)
+	return buf.Bytes()
+}
+
+func galleryBot(t *testing.T) *Bot {
+	t.Helper()
+	sqldb, err := db.Open(":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = sqldb.Close() })
+	if err := db.Migrate(sqldb, "../db/migrations"); err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(t.TempDir())
+	if _, err := sqldb.Exec(`INSERT INTO users (id, username, display_name, role, discord_id) VALUES ('uid','bob','Bob','skater','u')`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := sqldb.Exec(`INSERT INTO skater_profiles (id, user_id, slug, skater_name) VALUES ('p','uid','bob','Bob')`); err != nil {
+		t.Fatal(err)
+	}
+	b := &Bot{db: sqldb, guildID: "g", selfID: "bot"}
+	if err := b.SaveSettings(Settings{HomeChannelID: "home"}); err != nil {
+		t.Fatal(err)
+	}
+	return b
+}
+
+func mentionMsg(id, ch string, atts []*discordgo.MessageAttachment) *discordgo.MessageCreate {
+	return &discordgo.MessageCreate{Message: &discordgo.Message{
+		ID: id, ChannelID: ch, GuildID: "g",
+		Author:      &discordgo.User{ID: "u", Username: "bob"},
+		Mentions:    []*discordgo.User{{ID: "bot"}},
+		Attachments: atts,
+	}}
+}
+
+func pngAtt(id, name string) *discordgo.MessageAttachment {
+	return &discordgo.MessageAttachment{
+		ID: id, Filename: name, ContentType: "image/png",
+		URL: "https://cdn.discordapp.com/attachments/1/2/" + name,
+	}
+}
+
+func TestGalleryMentionRequired(t *testing.T) {
+	b := galleryBot(t)
+	var got []string
+	b.get = func(u string) (io.ReadCloser, error) {
+		got = append(got, u)
+		return io.NopCloser(bytes.NewReader(tinyPNG())), nil
+	}
+	b.onMessage(nil, &discordgo.MessageCreate{Message: &discordgo.Message{
+		ID: "m", ChannelID: "home", GuildID: "g",
+		Author:      &discordgo.User{ID: "u", Username: "bob"},
+		Attachments: []*discordgo.MessageAttachment{pngAtt("a", "a.png")},
+	}})
+	if len(got) != 0 {
+		t.Fatal("no mention")
+	}
+}
+
+func TestGalleryMentionPhotos(t *testing.T) {
+	b := galleryBot(t)
+	looked := false
+	b.history = func(string, string, int) ([]*discordgo.Message, error) {
+		looked = true
+		return nil, nil
+	}
+	var got []string
+	b.get = func(u string) (io.ReadCloser, error) {
+		got = append(got, u)
+		return io.NopCloser(bytes.NewReader(tinyPNG())), nil
+	}
+	var emoji string
+	b.react = func(ch, id, e string) error {
+		if ch != "home" || id != "m1" {
+			t.Fatalf("%s %s", ch, id)
+		}
+		emoji = e
+		return nil
+	}
+	b.onMessage(nil, mentionMsg("m1", "home", []*discordgo.MessageAttachment{
+		pngAtt("a", "a.png"),
+		{ID: "g", Filename: "x.gif", ContentType: "image/gif", URL: "https://cdn.discordapp.com/attachments/1/2/x.gif"},
+		pngAtt("b", "b.png"),
+	}))
+	if looked {
+		t.Fatal("lookback")
+	}
+	if len(got) != 2 {
+		t.Fatalf("gets %v", got)
+	}
+	if emoji != frameEmoji {
+		t.Fatalf("emoji %q", emoji)
+	}
+	list, err := skater.ListByProfile(b.db, "p")
+	if err != nil || len(list) != 2 {
+		t.Fatalf("photos %d %v", len(list), err)
+	}
+}
+
+func TestGalleryLookbackNearest(t *testing.T) {
+	b := galleryBot(t)
+	b.history = func(ch, before string, limit int) ([]*discordgo.Message, error) {
+		if ch != "home" || before != "m1" || limit != 50 {
+			t.Fatalf("%s %s %d", ch, before, limit)
+		}
+		return []*discordgo.Message{
+			{ID: "p1", Author: &discordgo.User{ID: "other"}, Attachments: []*discordgo.MessageAttachment{pngAtt("x", "x.png")}},
+			{ID: "p2", Author: &discordgo.User{ID: "u"}, Attachments: []*discordgo.MessageAttachment{
+				{ID: "g", Filename: "x.gif", ContentType: "image/gif", URL: "https://cdn.discordapp.com/attachments/1/2/x.gif"},
+			}},
+			{ID: "p3", Author: &discordgo.User{ID: "u"}, Attachments: []*discordgo.MessageAttachment{pngAtt("keep", "keep.png")}},
+			{ID: "p4", Author: &discordgo.User{ID: "u"}, Attachments: []*discordgo.MessageAttachment{pngAtt("old", "old.png")}},
+		}, nil
+	}
+	var got []string
+	b.get = func(u string) (io.ReadCloser, error) {
+		got = append(got, u)
+		return io.NopCloser(bytes.NewReader(tinyPNG())), nil
+	}
+	var emoji, reactID string
+	b.react = func(ch, id, e string) error {
+		if ch != "home" {
+			t.Fatalf("ch %s", ch)
+		}
+		reactID, emoji = id, e
+		return nil
+	}
+	b.onMessage(nil, mentionMsg("m1", "home", nil))
+	if len(got) != 1 || got[0] != "https://cdn.discordapp.com/attachments/1/2/keep.png" {
+		t.Fatalf("nearest %v", got)
+	}
+	if reactID != "p3" || emoji != frameEmoji {
+		t.Fatalf("react %s %q", reactID, emoji)
+	}
+	list, err := skater.ListByProfile(b.db, "p")
+	if err != nil || len(list) != 1 {
+		t.Fatalf("photos %d %v", len(list), err)
+	}
+}
+
+func TestGalleryShrug(t *testing.T) {
+	b := galleryBot(t)
+	b.history = func(string, string, int) ([]*discordgo.Message, error) {
+		return []*discordgo.Message{
+			{ID: "p1", Author: &discordgo.User{ID: "u"}, Attachments: []*discordgo.MessageAttachment{
+				{ID: "g", Filename: "x.gif", ContentType: "image/gif", URL: "https://cdn.discordapp.com/attachments/1/2/x.gif"},
+			}},
+		}, nil
+	}
+	b.get = func(string) (io.ReadCloser, error) {
+		t.Fatal("get")
+		return nil, nil
+	}
+	var emoji string
+	b.react = func(ch, id, e string) error {
+		if ch != "home" || id != "m1" {
+			t.Fatalf("%s %s", ch, id)
+		}
+		emoji = e
+		return nil
+	}
+	b.onMessage(nil, mentionMsg("m1", "home", nil))
+	if emoji != shrugEmoji {
+		t.Fatalf("emoji %q", emoji)
+	}
+}
+
+func TestGalleryPendingQuiet(t *testing.T) {
+	b := galleryBot(t)
+	if _, err := b.db.Exec(`UPDATE users SET role=? WHERE id='uid'`, auth.RolePending); err != nil {
+		t.Fatal(err)
+	}
+	reacted := false
+	b.react = func(string, string, string) error {
+		reacted = true
+		return nil
+	}
+	b.get = func(string) (io.ReadCloser, error) {
+		t.Fatal("get")
+		return nil, nil
+	}
+	b.onMessage(nil, mentionMsg("m1", "home", []*discordgo.MessageAttachment{pngAtt("a", "a.png")}))
+	if reacted {
+		t.Fatal("shrug")
+	}
+}
+
+func TestGalleryCDNHost(t *testing.T) {
+	b := galleryBot(t)
+	b.get = func(string) (io.ReadCloser, error) {
+		t.Fatal("get")
+		return nil, nil
+	}
+	b.onMessage(nil, mentionMsg("m1", "home", []*discordgo.MessageAttachment{{
+		ID: "a", Filename: "a.png", ContentType: "image/png",
+		URL: "https://evil.example/a.png",
+	}}))
+	list, err := skater.ListByProfile(b.db, "p")
+	if err != nil || len(list) != 0 {
+		t.Fatalf("photos %d %v", len(list), err)
+	}
+}
+
+func TestGalleryFilesWritten(t *testing.T) {
+	b := galleryBot(t)
+	b.get = func(string) (io.ReadCloser, error) {
+		return io.NopCloser(bytes.NewReader(tinyPNG())), nil
+	}
+	b.onMessage(nil, mentionMsg("m1", "elsewhere", []*discordgo.MessageAttachment{pngAtt("a", "a.png")}))
+	list, err := skater.ListByProfile(b.db, "p")
+	if err != nil || len(list) != 1 {
+		t.Fatalf("photos %d %v", len(list), err)
+	}
+	if _, err := os.Stat(skater.GalleryPath(list[0].ID)); err != nil {
+		t.Fatal(err)
 	}
 }

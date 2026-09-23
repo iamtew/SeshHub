@@ -161,6 +161,10 @@ func GetUser(db *sql.DB, id string) (User, error) {
 	return scanUser(db.QueryRow(`SELECT `+userCols+` FROM users WHERE id = ?`, id))
 }
 
+func GetByDiscordID(db *sql.DB, discordID string) (User, error) {
+	return scanUser(db.QueryRow(`SELECT `+userCols+` FROM users WHERE discord_id = ?`, discordID))
+}
+
 func GetVideoFilter(db *sql.DB, userID string) (string, error) {
 	var s sql.NullString
 	err := db.QueryRow(`SELECT video_filter FROM users WHERE id=?`, userID).Scan(&s)

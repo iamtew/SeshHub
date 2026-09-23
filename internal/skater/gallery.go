@@ -1,7 +1,9 @@
 package skater
 
 import (
+	"bytes"
 	"database/sql"
+	"errors"
 	"fmt"
 	"image"
 	"io"
@@ -13,6 +15,8 @@ import (
 const GalleryMax = 10
 const GalleryBytes = PhotoMax
 const galleryEdge = 1600
+
+var ErrGalleryFull = errors.New("gallery full")
 
 type Photo struct {
 	ID   string `json:"id"`
@@ -91,9 +95,33 @@ func AddGallery(db *sql.DB, profileID string, r io.Reader) (Photo, error) {
 	n, _ := res.RowsAffected()
 	if n == 0 {
 		RemoveGallery(id)
-		return Photo{}, fmt.Errorf("gallery full")
+		return Photo{}, ErrGalleryFull
 	}
 	return Photo{ID: id, URL: GalleryURL(id)}, nil
+}
+
+func DropOldest(db *sql.DB, profileID string) error {
+	var id string
+	err := db.QueryRow(`SELECT id FROM gallery_photos WHERE profile_id=? ORDER BY created_at ASC, rowid ASC LIMIT 1`, profileID).Scan(&id)
+	if err != nil {
+		return err
+	}
+	return DeleteGallery(db, profileID, id)
+}
+
+func AddGalleryDisplace(db *sql.DB, profileID string, r io.Reader) (Photo, error) {
+	raw, err := io.ReadAll(r)
+	if err != nil {
+		return Photo{}, err
+	}
+	p, err := AddGallery(db, profileID, bytes.NewReader(raw))
+	if !errors.Is(err, ErrGalleryFull) {
+		return p, err
+	}
+	if err := DropOldest(db, profileID); err != nil {
+		return Photo{}, err
+	}
+	return AddGallery(db, profileID, bytes.NewReader(raw))
 }
 
 func DeleteGallery(db *sql.DB, profileID, id string) error {
