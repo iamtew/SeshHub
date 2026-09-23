@@ -445,6 +445,7 @@
       var on = tabBtns[i].getAttribute('data-tab') === name;
       tabBtns[i].setAttribute('aria-selected', on ? 'true' : 'false');
       tabBtns[i].tabIndex = on ? 0 : -1;
+      if (on) tabBtns[i].scrollIntoView({ inline: 'nearest', block: 'nearest' });
     }
     var fields = document.querySelectorAll('input[name="tab"]');
     for (i = 0; i < fields.length; i++) fields[i].value = name;
