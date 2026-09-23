@@ -7,6 +7,7 @@ import (
 	"image/png"
 	"io"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/bwmarrin/discordgo"
@@ -93,6 +94,18 @@ func TestHears(t *testing.T) {
 	fromBot := &discordgo.Message{ChannelID: "home", Author: &discordgo.User{ID: "bot", Bot: true}}
 	if hears("home", "bot", fromBot) {
 		t.Fatal("bot messages")
+	}
+}
+
+func TestMentionedInContent(t *testing.T) {
+	if !mentioned("bot", &discordgo.Message{Content: "hey <@bot> hi"}) {
+		t.Fatal("content")
+	}
+	if !mentioned("bot", &discordgo.Message{Content: "hey <@!bot> hi"}) {
+		t.Fatal("nick")
+	}
+	if mentioned("bot", &discordgo.Message{Content: "hey <@botx>"}) {
+		t.Fatal("other")
 	}
 }
 
@@ -271,6 +284,9 @@ func TestGalleryShrug(t *testing.T) {
 	if emoji != shrugEmoji {
 		t.Fatalf("emoji %q", emoji)
 	}
+	if act := b.Activity(); len(act) != 1 || !strings.Contains(act[0].Text, "shrug") {
+		t.Fatalf("%+v", b.Activity())
+	}
 }
 
 func TestGalleryPendingQuiet(t *testing.T) {
@@ -290,6 +306,24 @@ func TestGalleryPendingQuiet(t *testing.T) {
 	b.onMessage(nil, mentionMsg("m1", "home", []*discordgo.MessageAttachment{pngAtt("a", "a.png")}))
 	if reacted {
 		t.Fatal("shrug")
+	}
+	if act := b.Activity(); len(act) != 1 || !strings.Contains(act[0].Text, "role=pending") {
+		t.Fatalf("%+v", b.Activity())
+	}
+}
+
+func TestGalleryNoHome(t *testing.T) {
+	b := galleryBot(t)
+	if err := b.SaveSettings(Settings{}); err != nil {
+		t.Fatal(err)
+	}
+	b.get = func(string) (io.ReadCloser, error) {
+		t.Fatal("get")
+		return nil, nil
+	}
+	b.onMessage(nil, mentionMsg("m1", "home", []*discordgo.MessageAttachment{pngAtt("a", "a.png")}))
+	if act := b.Activity(); len(act) != 1 || !strings.Contains(act[0].Text, "no-home-channel") {
+		t.Fatalf("%+v", b.Activity())
 	}
 }
 

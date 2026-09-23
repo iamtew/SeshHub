@@ -43,6 +43,7 @@ type Status struct {
 	Configured bool
 	State      string
 	Username   string
+	SelfID     string
 	Latency    time.Duration
 	GuildOK    bool
 	LastError  string
@@ -296,21 +297,44 @@ func perms(guild *discordgo.Guild, ch *discordgo.Channel, userID string, roles [
 	return p
 }
 
+func (b *Bot) self() string {
+	if b == nil {
+		return ""
+	}
+	b.mu.Lock()
+	id := b.selfID
+	b.mu.Unlock()
+	if id != "" {
+		return id
+	}
+	if b.sess != nil && b.sess.State != nil && b.sess.State.User != nil {
+		id = b.sess.State.User.ID
+		b.mu.Lock()
+		b.selfID = id
+		b.mu.Unlock()
+	}
+	return id
+}
+
 func (b *Bot) onMessage(_ *discordgo.Session, m *discordgo.MessageCreate) {
-	if m == nil || m.Message == nil || m.GuildID != b.guildID {
+	if m == nil || m.Message == nil || m.Author == nil || m.Author.Bot {
+		return
+	}
+	self := b.self()
+	if !mentioned(self, m.Message) {
+		return
+	}
+	if b.guildID != "" && m.GuildID != b.guildID {
+		b.push("gallery", note(m.Message, "mention skip other-guild"), "")
 		return
 	}
 	s, err := b.Settings()
-	if err != nil || s.HomeChannelID == "" {
+	if err != nil {
+		b.fail("gallery", err)
 		return
 	}
-	b.mu.Lock()
-	self := b.selfID
-	b.mu.Unlock()
-	if !hears(s.HomeChannelID, self, m.Message) {
-		return
-	}
-	if !mentioned(self, m.Message) {
+	if s.HomeChannelID == "" {
+		b.push("gallery", note(m.Message, "mention skip no-home-channel"), "")
 		return
 	}
 	b.ingestGallery(m.Message)
@@ -321,7 +345,16 @@ func (b *Bot) ingestGallery(m *discordgo.Message) {
 		return
 	}
 	u, err := auth.GetByDiscordID(b.db, m.Author.ID)
-	if err != nil || !auth.HasPublicRoster(u.Role) {
+	if err == sql.ErrNoRows {
+		b.push("gallery", note(m, "mention skip unknown-user"), "")
+		return
+	}
+	if err != nil {
+		b.fail("gallery", err)
+		return
+	}
+	if !auth.HasPublicRoster(u.Role) {
+		b.push("gallery", note(m, "mention skip role="+u.Role), "")
 		return
 	}
 	name := strings.TrimSpace(u.Username)
@@ -340,6 +373,7 @@ func (b *Bot) ingestGallery(m *discordgo.Message) {
 	urls := jpegPNGURLs(src)
 	if len(urls) == 0 {
 		if b.history == nil {
+			b.push("gallery", note(m, "mention skip no-history"), "")
 			return
 		}
 		hist, err := b.history(m.ChannelID, m.ID, 50)
@@ -349,9 +383,8 @@ func (b *Bot) ingestGallery(m *discordgo.Message) {
 		}
 		src = nearestPhoto(lastByAuthor(hist, m.Author.ID, 3))
 		if src == nil {
-			if b.react != nil {
-				_ = b.react(m.ChannelID, m.ID, shrugEmoji)
-			}
+			b.push("gallery", note(m, "mention shrug"), "")
+			b.tryReact(m.ChannelID, m.ID, shrugEmoji)
 			return
 		}
 		urls = jpegPNGURLs(src)
@@ -372,11 +405,27 @@ func (b *Bot) ingestGallery(m *discordgo.Message) {
 		n++
 	}
 	if n > 0 {
-		if b.react != nil {
-			_ = b.react(m.ChannelID, src.ID, frameEmoji)
-		}
-		b.push("gallery", strconv.Itoa(n)+" photos", "")
+		b.tryReact(m.ChannelID, src.ID, frameEmoji)
+		b.push("gallery", strconv.Itoa(n)+" photos d="+m.Author.ID+" ch="+m.ChannelID+" msg="+src.ID, "")
+	} else {
+		b.push("gallery", note(m, "mention skip no-photos-saved"), "")
 	}
+}
+
+func (b *Bot) tryReact(channelID, messageID, emoji string) {
+	if b == nil || b.react == nil {
+		return
+	}
+	if err := b.react(channelID, messageID, emoji); err != nil {
+		b.fail("gallery", err)
+	}
+}
+
+func note(m *discordgo.Message, what string) string {
+	if m == nil || m.Author == nil {
+		return what
+	}
+	return what + " d=" + m.Author.ID + " ch=" + m.ChannelID
 }
 
 func (b *Bot) fetch(rawURL string) (io.ReadCloser, error) {
@@ -416,7 +465,7 @@ func mentioned(selfID string, m *discordgo.Message) bool {
 			return true
 		}
 	}
-	return false
+	return strings.Contains(m.Content, "<@"+selfID+">") || strings.Contains(m.Content, "<@!"+selfID+">")
 }
 
 func lastByAuthor(msgs []*discordgo.Message, authorID string, n int) []*discordgo.Message {
@@ -604,6 +653,7 @@ func (b *Bot) Status() Status {
 		Configured: b.token != "",
 		State:      b.state,
 		Username:   b.user,
+		SelfID:     b.selfID,
 		GuildOK:    b.guildOK,
 		LastError:  b.lastErr,
 		Since:      b.since,

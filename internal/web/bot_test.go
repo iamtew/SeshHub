@@ -45,7 +45,7 @@ func TestAdminBotPage(t *testing.T) {
 		t.Fatalf("get %d", rec.Code)
 	}
 	body := rec.Body.String()
-	for _, want := range []string{"Discord bot", "missing", "not configured", `<select name="home_channel_id"`, `<select name="channel_id"`, "New published news", "New forum thread", "New access request"} {
+	for _, want := range []string{"Discord bot", "missing", "not configured", "Bot ID", "Last @mention", `<select name="home_channel_id"`, `<select name="channel_id"`, "New published news", "New forum thread", "New access request"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("page missing %q", want)
 		}

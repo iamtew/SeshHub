@@ -58,9 +58,11 @@ func (s *Server) adminBot(w http.ResponseWriter, r *http.Request) {
 			homeListed = true
 		}
 	}
+	events := activityView(s.bot.Activity())
 	s.render(w, r, "admin_bot.html", map[string]any{
 		"Title": "Discord bot", "Path": "/admin/bot",
-		"Bot": botView(st, s.cfg.DiscordGuildID), "Settings": settings, "Activity": activityView(s.bot.Activity()),
+		"Bot": botView(st, s.cfg.DiscordGuildID, events), "Settings": settings, "Activity": events,
+		"HomeName": homeName(settings.HomeChannelID, channels),
 		"Channels": channels, "ChannelListed": listed, "HomeListed": homeListed,
 		"ChannelNote": channelNote(st, s.cfg.DiscordGuildID, channels, chErr),
 	})
@@ -98,28 +100,44 @@ func channelID(s string) bool {
 }
 
 type botStatusView struct {
-	Configured bool
-	State      string
-	Username   string
-	Latency    string
-	Guild      string
-	LastError  string
-	Since      string
+	Configured  bool
+	State       string
+	Username    string
+	SelfID      string
+	Latency     string
+	Guild       string
+	LastError   string
+	Since       string
+	LastMention string
 }
 
-func botView(st bot.Status, guildID string) botStatusView {
+func homeName(id string, channels []bot.Channel) string {
+	if id == "" {
+		return "none — @mentions are ignored until you pick one"
+	}
+	for _, c := range channels {
+		if c.ID == id {
+			return c.Name
+		}
+	}
+	return id
+}
+
+func botView(st bot.Status, guildID string, events []botEventView) botStatusView {
 	state := st.State
 	if state == "ready" {
 		state = "connected"
 	}
 	v := botStatusView{
-		Configured: st.Configured,
-		State:      state,
-		Username:   orDash(st.Username),
-		Latency:    "—",
-		Guild:      "—",
-		LastError:  orDash(st.LastError),
-		Since:      "—",
+		Configured:  st.Configured,
+		State:       state,
+		Username:    orDash(st.Username),
+		SelfID:      orDash(st.SelfID),
+		Latency:     "—",
+		Guild:       "—",
+		LastError:   orDash(st.LastError),
+		Since:       "—",
+		LastMention: "—",
 	}
 	if state == "connected" {
 		v.Latency = st.Latency.Round(time.Millisecond).String()
@@ -138,6 +156,12 @@ func botView(st bot.Status, guildID string) botStatusView {
 		v.Guild = "in " + guildID
 	default:
 		v.Guild = "not in " + guildID
+	}
+	for _, e := range events {
+		if e.Kind == "gallery" {
+			v.LastMention = strings.TrimSpace(e.When + " " + e.Text + " " + e.Err)
+			break
+		}
 	}
 	return v
 }
