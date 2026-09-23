@@ -3,8 +3,8 @@
 <header class="forum-topic">
     <h1>{{.T.Title}}</h1>
     {{if .CanEditThread}}
-    <details class="forum-edit">
-        <summary>Rename</summary>
+    <details class="forum-mod">
+        <summary aria-label="Moderation">···</summary>
         <form method="post" action="/forum/{{.S.Slug}}/{{.T.Slug}}" class="form">
             <label>Title <input name="title" required value="{{.T.Title}}"></label>
             <button type="submit">Save title</button>
@@ -39,36 +39,39 @@
         {{end}}
         </ul>
         {{end}}
-        <p class="forum-post-actions">
+        <div class="forum-post-actions">
             {{if not $.T.Locked}}<button type="button" class="forum-reply-btn" data-parent="{{.ID}}" data-author="{{.AuthorName}}" data-excerpt="{{.Quote}}">Reply</button>{{end}}
-        </p>
-        {{if .CanEdit}}
-        <details class="forum-edit">
-            <summary>Edit</summary>
-            <form method="post" action="/forum/{{$.S.Slug}}/{{$.T.Slug}}/posts/{{.ID}}" class="form forum-compose" enctype="multipart/form-data">
-                {{template "forum_mdbar"}}
-                <label>Body <textarea name="body" rows="6" required class="forum-body">{{.BodyRaw}}</textarea></label>
-                <div class="forum-preview prose forum-cooked" aria-live="polite"></div>
-                {{if .Photos}}
-                <fieldset class="forum-existing">
-                    <legend>Files</legend>
-                    {{range .Photos}}
-                    <label><input type="checkbox" name="remove_photo" value="{{.ID}}"> Remove {{if .IsImage}}<img src="{{.URL}}" alt="">{{else}}{{.DisplayName}}{{end}}</label>
+            {{if .CanEdit}}
+            <details class="forum-mod">
+                <summary aria-label="Moderation">···</summary>
+                <form method="post" action="/forum/{{$.S.Slug}}/{{$.T.Slug}}/posts/{{.ID}}" class="form forum-compose" enctype="multipart/form-data">
+                    {{template "forum_mdbar"}}
+                    <label>Body <textarea name="body" rows="6" required class="forum-body">{{.BodyRaw}}</textarea></label>
+                    <div class="forum-preview prose forum-cooked" aria-live="polite"></div>
+                    {{if .Photos}}
+                    <fieldset class="forum-existing">
+                        <legend>Files</legend>
+                        {{range .Photos}}
+                        <label><input type="checkbox" name="remove_photo" value="{{.ID}}"> Remove {{if .IsImage}}<img src="{{.URL}}" alt="">{{else}}{{.DisplayName}}{{end}}</label>
+                        {{end}}
+                    </fieldset>
                     {{end}}
-                </fieldset>
-                {{end}}
-                {{template "forum_files"}}
-                <button type="submit">Save</button>
-            </form>
-            <form method="post" action="/forum/{{$.S.Slug}}/{{$.T.Slug}}/posts/{{.ID}}/delete">
-                <button type="submit">Delete</button>
-            </form>
-        </details>
-        {{else if .CanDelete}}
-        <form method="post" action="/forum/{{$.S.Slug}}/{{$.T.Slug}}/posts/{{.ID}}/delete" class="forum-edit">
-            <button type="submit">Delete</button>
-        </form>
-        {{end}}
+                    {{template "forum_files"}}
+                    <button type="submit">Save</button>
+                </form>
+                <form method="post" action="/forum/{{$.S.Slug}}/{{$.T.Slug}}/posts/{{.ID}}/delete">
+                    <button type="submit">Delete</button>
+                </form>
+            </details>
+            {{else if .CanDelete}}
+            <details class="forum-mod">
+                <summary aria-label="Moderation">···</summary>
+                <form method="post" action="/forum/{{$.S.Slug}}/{{$.T.Slug}}/posts/{{.ID}}/delete">
+                    <button type="submit">Delete</button>
+                </form>
+            </details>
+            {{end}}
+        </div>
     </div>
 </article>
 {{end}}

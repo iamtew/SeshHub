@@ -67,6 +67,16 @@
     }
   });
 
+  document.querySelectorAll(".forum-mod").forEach(function (d) {
+    d.addEventListener("toggle", function () {
+      if (!d.open) return;
+      document.querySelectorAll(".forum-mod[open]").forEach(function (o) {
+        if (o !== d) o.removeAttribute("open");
+      });
+      d.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    });
+  });
+
   document.querySelectorAll(".forum-body").forEach(function (ta) {
     var form = ta.closest("form");
     var prev = form && form.querySelector(".forum-preview");
