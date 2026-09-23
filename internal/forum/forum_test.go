@@ -10,6 +10,7 @@ import (
 
 	"seshhub/internal/auth"
 	"seshhub/internal/db"
+	"strings"
 )
 
 func TestCreateUnreadReply(t *testing.T) {
@@ -69,6 +70,35 @@ func TestCreateUnreadReply(t *testing.T) {
 	}
 	if got.ReplyCount != 1 {
 		t.Fatalf("replies %d", got.ReplyCount)
+	}
+	list, err = ListThreads(sqldb, sec.ID, alice.ID)
+	if err != nil || list[0].LastAuthorName != "Bob" {
+		t.Fatalf("last author %+v %v", list, err)
+	}
+	secs, err := ListSections(sqldb, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var general Section
+	for _, s := range secs {
+		if s.Slug == "general" {
+			general = s
+			break
+		}
+	}
+	if general.LastAuthorName != "Bob" {
+		t.Fatalf("section last %q", general.LastAuthorName)
+	}
+	st, err := Stats(sqldb)
+	if err != nil || st.Posts != 2 || st.Threads != 1 || st.Members < 2 || st.NewestName == "" {
+		t.Fatalf("stats %+v %v", st, err)
+	}
+	resetOnline()
+	Touch(alice.ID)
+	Touch(bob.ID)
+	who, err := Online(sqldb)
+	if err != nil || len(who) != 2 {
+		t.Fatalf("online %+v %v", who, err)
 	}
 	n, err = UnreadCount(sqldb, alice.ID)
 	if err != nil || n != 1 {
@@ -251,5 +281,12 @@ func TestCanEditOwnerOnly(t *testing.T) {
 	}
 	if !CanDelete("admin", "x", "a") || !CanDelete("friend", "a", "a") || CanDelete("friend", "x", "a") {
 		t.Fatal("delete")
+	}
+}
+
+func TestLocalTime(t *testing.T) {
+	h := string(LocalTime("2026-09-23 12:00:00"))
+	if !strings.Contains(h, `datetime="2026-09-23T12:00:00Z"`) || !strings.Contains(h, `data-fmt="local"`) {
+		t.Fatal(h)
 	}
 }

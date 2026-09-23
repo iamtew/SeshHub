@@ -1,17 +1,21 @@
 {{define "content"}}
-<p class="who"><a href="/forum">Forum</a> · Mentions</p>
+<p class="who forum-crumb"><a href="/forum">Forum</a> · Mentions</p>
 <h1>Mentions</h1>
 {{if not .Items}}
 <p>No mentions yet.</p>
 {{else}}
-<ul class="forum-cats">
+<div class="forum-board forum-board--mentions">
+<div class="forum-board-head" aria-hidden="true"><span>Topic</span><span>When</span></div>
 {{range .Items}}
-<li>
-    <a href="{{.Href}}">{{.ThreadTitle}}</a>
-    <p class="who">{{.AuthorName}} · {{.CreatedAt}}</p>
-    {{if .Excerpt}}<p>{{.Excerpt}}</p>{{end}}
-</li>
+<div class="forum-board-row">
+    <div class="forum-board-main">
+        <a href="{{.Href}}">{{.ThreadTitle}}</a>
+        {{if .Excerpt}}<p>{{.Excerpt}}</p>{{end}}
+    </div>
+    <span class="forum-board-last">{{.AuthorName}} · {{.When}}</span>
+    <p class="forum-board-meta who">{{.AuthorName}} · {{.When}}</p>
+</div>
 {{end}}
-</ul>
+</div>
 {{end}}
 {{end}}

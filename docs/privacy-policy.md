@@ -171,7 +171,9 @@ We do not send email. There is no newsletter. Mentions on the Forum are in-site 
 
 **What:** categories (name, slug, description, sort order, active flag); threads (title, slug, author account id, last-activity time, locked/sticky flags); posts (markdown source, sanitized HTML, author account id, optional parent post id for a quoted reply, timestamps); @username mentions pointing at an account id; a per-user watermark of when you last opened a thread (for the unread badge); and a per-user watermark of when you last opened `/forum/mentions`. No IP addresses.
 
-**Why:** a signed-in-only forum at `/forum`. Guests cannot read it. Mentions exist so you can find posts that named you.
+An in-memory list of account IDs for signed-in people who loaded a page in the last five minutes is used only to show **Who is online** on the Forum index (display names already on the account). It is not written to the database, does not include IP addresses or User-Agent strings, and is gone when the server process stops.
+
+**Why:** a signed-in-only forum at `/forum`. Guests cannot read it. Mentions exist so you can find posts that named you. The online list and board counts (posts, threads, members, newest member display name) are the index chrome.
 
 **Created:** when an administrator adds a section, or when you start a thread or reply. A mention row is created when a post contains `@username` for an existing account other than your own. The thread watermark is created or updated when you open a thread. The mention watermark is created or updated when you open `/forum/mentions`.
 
@@ -235,6 +237,7 @@ Each of these companies handles your data under its own privacy policy. You can 
 | Keep a hash of a YouTube channel ID after a rejected YouTube-only access request | To tell you once that the request was denied, after we deleted the account | Art. 6(1)(f) - legitimate interest in informing you of the decision |
 | Publish your skater profile, gallery photos, and article authorship | This is the purpose of the roster, `/photos`, and the news section, and you control the content | Art. 6(1)(f), with your role in publishing it |
 | Host the Forum | Signed-in discussion is part of the members' service | Art. 6(1)(b), and Art. 6(1)(f) legitimate interest in a private community board |
+| Show signed-in display names of people who loaded a page in the last five minutes, plus post/thread/member counts, on the Forum index | So the private board can show who is around and how large it is | Art. 6(1)(f), as part of that members' board |
 | Post a public news title, a forum thread title, or your name on an access request into a Discord channel an administrator chose | So the Sesh Sofa Discord can see those hub events | Art. 6(1)(f) - legitimate interest in community notices, only while that announcement is switched on |
 | Ping your linked Discord account when someone @mentions you on the Forum | So you can see that mention in Discord | Art. 6(1)(f) - legitimate interest, only while that switch is on. The post body is not sent. No ping if Discord is not linked |
 | Read a Discord message in the home channel an administrator chose, or a message elsewhere that @mentions the bot or replies to it | So the bot can take part where it lives, and when someone addresses it | Art. 6(1)(f) - legitimate interest, only after that home channel is set. The message text is not stored |
@@ -251,6 +254,7 @@ Each of these companies handles your data under its own privacy policy. You can 
 - **Access denial hash:** SHA-256 of a YouTube channel ID, kept only until that channel’s next sign-in (the denial notice), then deleted.
 - **Bot settings:** the announce channel ID, the home channel ID, and the on/off switches, kept until an administrator changes them. They identify channels, not a person.
 - **Bot activity list:** held in memory only (the last connects, disconnects, and posts). Cleared when the server process stops. Not stored in the database. Discord message text is not stored.
+- **Forum “who is online”:** held in memory only (account IDs of signed-in people who loaded a page in the last five minutes). Cleared when the server process stops. Not stored in the database.
 - **Articles, episode entries, and Forum posts:** kept as part of the site's archive. Deleted authors are shown as "Former member". Forum thread-read and mention-read watermarks, and mention rows naming you, are deleted with the account. Attachments on remaining forum posts stay with those posts.
 
 ## 9. Your rights under the GDPR

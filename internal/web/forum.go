@@ -82,14 +82,25 @@ func (s *Server) forumIndex(w http.ResponseWriter, r *http.Request) {
 	if u == nil {
 		return
 	}
+	forum.Touch(u.ID)
 	list, err := forum.ListSections(s.db, true)
+	if err != nil {
+		http.Error(w, "db error", http.StatusInternalServerError)
+		return
+	}
+	st, err := forum.Stats(s.db)
+	if err != nil {
+		http.Error(w, "db error", http.StatusInternalServerError)
+		return
+	}
+	who, err := forum.Online(s.db)
 	if err != nil {
 		http.Error(w, "db error", http.StatusInternalServerError)
 		return
 	}
 	s.render(w, r, "forum_index.html", map[string]any{
 		"Title": "Forum", "Path": "/forum", "Sections": list, "Admin": u.Role == auth.RoleAdmin,
-		"ForumJS": true,
+		"Stats": st, "Online": who, "ForumJS": true,
 	})
 }
 

@@ -5,14 +5,32 @@
 {{if not .Sections}}
 <p>No sections yet.</p>
 {{else}}
-<ul class="forum-cats">
+<div class="forum-board forum-board--index">
+<div class="forum-board-head" aria-hidden="true"><span>Forum</span><span>Threads</span><span>Last post</span></div>
 {{range .Sections}}
-<li>
-    <a href="/forum/{{.Slug}}">{{.Name}}</a>
-    {{if .Description}}<p>{{.Description}}</p>{{end}}
-    <p class="who">{{.ThreadCount}} thread{{if ne .ThreadCount 1}}s{{end}}{{if .LastPostAt}} · last {{.LastPostAt}}{{end}}</p>
-</li>
+<div class="forum-board-row">
+    <div class="forum-board-main">
+        <a href="/forum/{{.Slug}}">{{.Name}}</a>
+        {{if .Description}}<p>{{.Description}}</p>{{end}}
+    </div>
+    <span class="forum-board-stat">{{.ThreadCount}}</span>
+    <span class="forum-board-last">{{if .LastPostAt}}{{if .LastAuthorURL}}<a href="{{.LastAuthorURL}}">{{.LastAuthorName}}</a>{{else}}{{.LastAuthorName}}{{end}} {{.When}}{{else}}—{{end}}</span>
+    <p class="forum-board-meta who">{{.ThreadCount}} thread{{if ne .ThreadCount 1}}s{{end}}{{if .LastPostAt}} · {{if .LastAuthorName}}{{.LastAuthorName}} · {{end}}{{.When}}{{end}}</p>
+</div>
 {{end}}
-</ul>
+</div>
 {{end}}
+<div class="forum-board forum-board--info">
+<div class="forum-board-head">Who is online</div>
+<div class="forum-board-row">
+    <p class="who">{{len .Online}} signed-in member{{if ne (len .Online) 1}}s{{end}} in the last 5 minutes.</p>
+    {{if .Online}}<p>{{range $i, $p := .Online}}{{if $i}}, {{end}}{{if $p.URL}}<a href="{{$p.URL}}">{{$p.Name}}</a>{{else}}{{$p.Name}}{{end}}{{end}}</p>{{end}}
+</div>
+</div>
+<div class="forum-board forum-board--info">
+<div class="forum-board-head">Statistics</div>
+<div class="forum-board-row">
+    <p>Total posts {{.Stats.Posts}} · Total threads {{.Stats.Threads}} · Total members {{.Stats.Members}}{{if .Stats.NewestName}} · Our newest member {{if .Stats.NewestURL}}<a href="{{.Stats.NewestURL}}">{{.Stats.NewestName}}</a>{{else}}{{.Stats.NewestName}}{{end}}{{end}}</p>
+</div>
+</div>
 {{end}}

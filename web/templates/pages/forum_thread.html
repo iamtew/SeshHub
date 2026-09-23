@@ -1,5 +1,5 @@
 {{define "content"}}
-<p class="who"><a href="/forum">Forum</a> · <a href="/forum/{{.S.Slug}}">{{.S.Name}}</a></p>
+<p class="who forum-crumb"><a href="/forum">Forum</a> · <a href="/forum/{{.S.Slug}}">{{.S.Name}}</a></p>
 <header class="forum-topic">
     <h1>{{.T.Title}}</h1>
     {{if .CanEditThread}}
@@ -15,61 +15,61 @@
 <div class="forum-stream">
 {{range .Posts}}
 <article class="forum-post{{if .First}} forum-post--op{{end}}" id="p-{{.ID}}">
-    <header class="forum-post-meta">
+    <aside class="forum-post-user">
         {{if .AuthorAvatar}}{{if .AuthorURL}}<a class="avframe {{.AvatarClass}}" href="{{.AuthorURL}}" style="{{.AvatarStyle}}" aria-label="{{.AuthorName}}"><img class="avatar" src="{{.AuthorAvatar}}" alt="" referrerpolicy="no-referrer"></a>{{else}}<span class="avframe {{.AvatarClass}}" style="{{.AvatarStyle}}"><img class="avatar" src="{{.AuthorAvatar}}" alt="" referrerpolicy="no-referrer"></span>{{end}}{{end}}
-        <div>
-            <p class="forum-author">{{if .AuthorURL}}<a href="{{.AuthorURL}}">{{.AuthorName}}</a>{{else}}{{.AuthorName}}{{end}}{{if .First}} <span class="forum-op">OP</span>{{end}}</p>
-            <p class="who"><a href="{{$.PagerBase}}?n={{$.Per}}&amp;post={{.ID}}">{{.CreatedAt}}</a>{{if .Edited}} · edited{{end}}</p>
-        </div>
-    </header>
-    {{if .ParentID}}
-    <a class="forum-quote" href="{{$.PagerBase}}?n={{$.Per}}&amp;post={{.ParentID}}">{{if .ParentAuthor}}{{.ParentAuthor}}{{else}}Deleted post{{end}}{{if .ParentExcerpt}} — {{.ParentExcerpt}}{{end}}</a>
-    {{end}}
-    <div class="forum-cooked prose">{{.HTML}}</div>
-    {{if .Photos}}
-    <ul class="forum-thumbs">
-    {{range .Photos}}
-    <li>
-      {{if .IsImage}}<button type="button" data-src="{{.URL}}"><img src="{{.URL}}" alt=""></button>
-      {{else if .IsAudio}}<audio controls preload="metadata" src="{{.URL}}"{{if .MIME}} type="{{.MIME}}"{{end}}></audio><a class="forum-dl" href="{{.URL}}?dl=1" download="{{.DisplayName}}">{{.DisplayName}}</a>
-      {{else if .IsVideo}}<video controls playsinline webkit-playsinline preload="metadata"><source src="{{.URL}}"{{if .MIME}} type="{{.MIME}}"{{end}}></video><a class="forum-dl" href="{{.URL}}?dl=1" download="{{.DisplayName}}">{{.DisplayName}}</a>
-      {{else if .IsPDF}}<iframe class="forum-pdf" src="{{.URL}}" title="{{.DisplayName}}"></iframe><a class="forum-dl" href="{{.URL}}?dl=1" download="{{.DisplayName}}">{{.DisplayName}}</a>
-      {{else}}<a class="forum-dl" href="{{.URL}}?dl=1" download="{{.DisplayName}}">{{.DisplayName}}</a>
-      {{end}}
-    </li>
-    {{end}}
-    </ul>
-    {{end}}
-    <p class="forum-post-actions">
-        {{if not $.T.Locked}}<button type="button" class="forum-reply-btn" data-parent="{{.ID}}" data-author="{{.AuthorName}}" data-excerpt="{{.Quote}}">Reply</button>{{end}}
-    </p>
-    {{if .CanEdit}}
-    <details class="forum-edit">
-        <summary>Edit</summary>
-        <form method="post" action="/forum/{{$.S.Slug}}/{{$.T.Slug}}/posts/{{.ID}}" class="form forum-compose" enctype="multipart/form-data">
-            {{template "forum_mdbar"}}
-            <label>Body <textarea name="body" rows="6" required class="forum-body">{{.BodyRaw}}</textarea></label>
-            <div class="forum-preview prose forum-cooked" aria-live="polite"></div>
-            {{if .Photos}}
-            <fieldset class="forum-existing">
-                <legend>Files</legend>
-                {{range .Photos}}
-                <label><input type="checkbox" name="remove_photo" value="{{.ID}}"> Remove {{if .IsImage}}<img src="{{.URL}}" alt="">{{else}}{{.DisplayName}}{{end}}</label>
+        <p class="forum-author">{{if .AuthorURL}}<a href="{{.AuthorURL}}">{{.AuthorName}}</a>{{else}}{{.AuthorName}}{{end}}{{if .First}} <span class="forum-op">OP</span>{{end}}</p>
+    </aside>
+    <div class="forum-post-body">
+        <p class="who forum-post-when"><a href="{{$.PagerBase}}?n={{$.Per}}&amp;post={{.ID}}">{{.When}}</a>{{if .Edited}} · edited{{end}}</p>
+        {{if .ParentID}}
+        <a class="forum-quote" href="{{$.PagerBase}}?n={{$.Per}}&amp;post={{.ParentID}}">{{if .ParentAuthor}}{{.ParentAuthor}}{{else}}Deleted post{{end}}{{if .ParentExcerpt}} — {{.ParentExcerpt}}{{end}}</a>
+        {{end}}
+        <div class="forum-cooked prose">{{.HTML}}</div>
+        {{if .Photos}}
+        <ul class="forum-thumbs">
+        {{range .Photos}}
+        <li>
+          {{if .IsImage}}<button type="button" data-src="{{.URL}}"><img src="{{.URL}}" alt=""></button>
+          {{else if .IsAudio}}<audio controls preload="metadata" src="{{.URL}}"{{if .MIME}} type="{{.MIME}}"{{end}}></audio><a class="forum-dl" href="{{.URL}}?dl=1" download="{{.DisplayName}}">{{.DisplayName}}</a>
+          {{else if .IsVideo}}<video controls playsinline webkit-playsinline preload="metadata"><source src="{{.URL}}"{{if .MIME}} type="{{.MIME}}"{{end}}></video><a class="forum-dl" href="{{.URL}}?dl=1" download="{{.DisplayName}}">{{.DisplayName}}</a>
+          {{else if .IsPDF}}<iframe class="forum-pdf" src="{{.URL}}" title="{{.DisplayName}}"></iframe><a class="forum-dl" href="{{.URL}}?dl=1" download="{{.DisplayName}}">{{.DisplayName}}</a>
+          {{else}}<a class="forum-dl" href="{{.URL}}?dl=1" download="{{.DisplayName}}">{{.DisplayName}}</a>
+          {{end}}
+        </li>
+        {{end}}
+        </ul>
+        {{end}}
+        <p class="forum-post-actions">
+            {{if not $.T.Locked}}<button type="button" class="forum-reply-btn" data-parent="{{.ID}}" data-author="{{.AuthorName}}" data-excerpt="{{.Quote}}">Reply</button>{{end}}
+        </p>
+        {{if .CanEdit}}
+        <details class="forum-edit">
+            <summary>Edit</summary>
+            <form method="post" action="/forum/{{$.S.Slug}}/{{$.T.Slug}}/posts/{{.ID}}" class="form forum-compose" enctype="multipart/form-data">
+                {{template "forum_mdbar"}}
+                <label>Body <textarea name="body" rows="6" required class="forum-body">{{.BodyRaw}}</textarea></label>
+                <div class="forum-preview prose forum-cooked" aria-live="polite"></div>
+                {{if .Photos}}
+                <fieldset class="forum-existing">
+                    <legend>Files</legend>
+                    {{range .Photos}}
+                    <label><input type="checkbox" name="remove_photo" value="{{.ID}}"> Remove {{if .IsImage}}<img src="{{.URL}}" alt="">{{else}}{{.DisplayName}}{{end}}</label>
+                    {{end}}
+                </fieldset>
                 {{end}}
-            </fieldset>
-            {{end}}
-            {{template "forum_files"}}
-            <button type="submit">Save</button>
-        </form>
-        <form method="post" action="/forum/{{$.S.Slug}}/{{$.T.Slug}}/posts/{{.ID}}/delete">
+                {{template "forum_files"}}
+                <button type="submit">Save</button>
+            </form>
+            <form method="post" action="/forum/{{$.S.Slug}}/{{$.T.Slug}}/posts/{{.ID}}/delete">
+                <button type="submit">Delete</button>
+            </form>
+        </details>
+        {{else if .CanDelete}}
+        <form method="post" action="/forum/{{$.S.Slug}}/{{$.T.Slug}}/posts/{{.ID}}/delete" class="forum-edit">
             <button type="submit">Delete</button>
         </form>
-    </details>
-    {{else if .CanDelete}}
-    <form method="post" action="/forum/{{$.S.Slug}}/{{$.T.Slug}}/posts/{{.ID}}/delete" class="forum-edit">
-        <button type="submit">Delete</button>
-    </form>
-    {{end}}
+        {{end}}
+    </div>
 </article>
 {{end}}
 </div>
@@ -79,6 +79,7 @@
 {{else}}
 <section class="forum-composer" id="forum-reply">
     <h2>Reply</h2>
+    <div class="forum-composer-body">
     <p class="forum-quote-preview who" hidden></p>
     <form method="post" action="/forum/{{.S.Slug}}/{{.T.Slug}}/reply" class="form forum-compose" enctype="multipart/form-data">
         <input type="hidden" name="parent_id" id="forum-parent" value="">
@@ -89,6 +90,7 @@
         {{template "forum_files"}}
         <button type="submit">Post reply</button>
     </form>
+    </div>
 </section>
 {{end}}
 <dialog class="slideshow-full" id="forum-full">

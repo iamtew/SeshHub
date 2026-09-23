@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"html"
+	"html/template"
 	"regexp"
 	"sort"
 	"strings"
@@ -29,6 +30,8 @@ type MentionItem struct {
 	CreatedAt   string `json:"created_at"`
 	Index       int    `json:"-"`
 }
+
+func (m MentionItem) When() template.HTML { return LocalTime(m.CreatedAt) }
 
 func extractHandles(raw string) []string {
 	seen := map[string]bool{}

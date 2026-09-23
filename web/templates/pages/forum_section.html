@@ -1,19 +1,25 @@
 {{define "content"}}
-<p class="who"><a href="/forum">Forum</a>{{if .Admin}} · <a href="/admin/forum/sections">Manage sections</a>{{end}}</p>
+<p class="who forum-crumb"><a href="/forum">Forum</a>{{if .Admin}} · <a href="/admin/forum/sections">Manage sections</a>{{end}}</p>
 <h1>{{.S.Name}}</h1>
 {{if .S.Description}}<p>{{.S.Description}}</p>{{end}}
 <p><a class="btn" href="/forum/{{.S.Slug}}/new">New thread</a></p>
 {{if not .Threads}}
 <p>No threads yet — start one.</p>
 {{else}}
-<ul class="forum-cats">
+<div class="forum-board forum-board--topics">
+<div class="forum-board-head" aria-hidden="true"><span>Topic</span><span>Author</span><span>Replies</span><span>Last post</span></div>
 {{range .Threads}}
-<li>
-    <a class="forum-hit" href="/forum/{{$.S.Slug}}/{{.Slug}}"><span>{{.Title}}</span>{{if .Unread}} <span class="forum-badge" aria-label="{{.Unread}} unread">{{.Unread}}</span>{{end}}</a>
-    <p class="who">{{if .AuthorURL}}<a href="{{.AuthorURL}}">{{.AuthorName}}</a>{{else}}{{.AuthorName}}{{end}} · {{.ReplyCount}} {{if eq .ReplyCount 1}}reply{{else}}replies{{end}} · {{.LastPostAt}}</p>
-</li>
+<div class="forum-board-row">
+    <div class="forum-board-main">
+        <a class="forum-hit" href="/forum/{{$.S.Slug}}/{{.Slug}}"><span>{{.Title}}</span>{{if .Unread}} <span class="forum-badge" aria-label="{{.Unread}} unread">{{.Unread}}</span>{{end}}</a>
+    </div>
+    <span class="forum-board-author">{{if .AuthorURL}}<a href="{{.AuthorURL}}">{{.AuthorName}}</a>{{else}}{{.AuthorName}}{{end}}</span>
+    <span class="forum-board-stat">{{.ReplyCount}}</span>
+    <span class="forum-board-last">{{if .LastAuthorURL}}<a href="{{.LastAuthorURL}}">{{.LastAuthorName}}</a>{{else}}{{.LastAuthorName}}{{end}} {{.When}}</span>
+    <p class="forum-board-meta who">{{if .AuthorURL}}<a href="{{.AuthorURL}}">{{.AuthorName}}</a>{{else}}{{.AuthorName}}{{end}} · {{.ReplyCount}} {{if eq .ReplyCount 1}}reply{{else}}replies{{end}} · {{if .LastAuthorName}}{{.LastAuthorName}} · {{end}}{{.When}}</p>
+</div>
 {{end}}
-</ul>
+</div>
 {{if gt .Total .Per}}{{template "pager.html" .}}{{end}}
 {{end}}
 {{end}}

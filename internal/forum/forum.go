@@ -5,39 +5,51 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"fmt"
+	"html"
 	"html/template"
 	"strings"
+	"sync"
+	"time"
 
 	"seshhub/internal/article"
+	"seshhub/internal/auth"
 	"seshhub/internal/skater"
 )
 
 type Section struct {
-	ID          string
-	Name        string
-	Slug        string
-	Description string
-	SortOrder   int
-	Active      bool
-	ThreadCount int
-	LastPostAt  string
+	ID             string
+	Name           string
+	Slug           string
+	Description    string
+	SortOrder      int
+	Active         bool
+	ThreadCount    int
+	LastPostAt     string
+	LastAuthorName string
+	LastAuthorURL  string
 }
 
+func (s Section) When() template.HTML { return LocalTime(s.LastPostAt) }
+
 type Thread struct {
-	ID         string
-	SectionID  string
-	UserID     string
-	Title      string
-	Slug       string
-	Locked     bool
-	Sticky     bool
-	LastPostAt string
-	CreatedAt  string
-	AuthorName string
-	AuthorURL  string
-	ReplyCount int
-	Unread     int
+	ID             string
+	SectionID      string
+	UserID         string
+	Title          string
+	Slug           string
+	Locked         bool
+	Sticky         bool
+	LastPostAt     string
+	CreatedAt      string
+	AuthorName     string
+	AuthorURL      string
+	LastAuthorName string
+	LastAuthorURL  string
+	ReplyCount     int
+	Unread         int
 }
+
+func (t Thread) When() template.HTML { return LocalTime(t.LastPostAt) }
 
 type Photo struct {
 	ID   string
@@ -81,6 +93,8 @@ type Post struct {
 	Photos            []Photo
 }
 
+func (p Post) When() template.HTML { return LocalTime(p.CreatedAt) }
+
 func (p Post) AvatarStyle() template.CSS {
 	st, col, w := skater.NormalizeBorder(p.AvatarBorderStyle, p.AvatarBorderColor, p.AvatarBorder)
 	return skater.FrameCSS(p.AvatarR1, p.AvatarR2, p.AvatarR3, p.AvatarR4, st, col, w, p.AvatarBorderBlur)
@@ -121,6 +135,122 @@ func authorURL(role, slug string) string {
 	return ""
 }
 
+func LocalTime(s string) template.HTML {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return ""
+	}
+	t, err := parseSQLiteTime(s)
+	if err != nil {
+		return template.HTML(html.EscapeString(s))
+	}
+	iso := html.EscapeString(t.UTC().Format(time.RFC3339))
+	fallback := html.EscapeString(t.UTC().Format("2 Jan 2006 15:04 MST"))
+	return template.HTML(`<time class="md-date" data-fmt="local" datetime="` + iso + `">` + fallback + `</time>`)
+}
+
+func parseSQLiteTime(s string) (time.Time, error) {
+	if t, err := time.Parse(time.RFC3339, s); err == nil {
+		return t, nil
+	}
+	for _, layout := range []string{"2006-01-02 15:04:05", "2006-01-02 15:04:05.000", time.RFC3339Nano} {
+		if t, err := time.ParseInLocation(layout, s, time.UTC); err == nil {
+			return t, nil
+		}
+	}
+	return time.Time{}, fmt.Errorf("time")
+}
+
+type Person struct {
+	Name string
+	URL  string
+}
+
+type BoardStats struct {
+	Posts      int
+	Threads    int
+	Members    int
+	NewestName string
+	NewestURL  string
+}
+
+var (
+	onlineMu sync.Mutex
+	online   = map[string]time.Time{}
+)
+
+func Touch(userID string) {
+	if userID == "" || userID == auth.TombstoneID {
+		return
+	}
+	onlineMu.Lock()
+	online[userID] = time.Now()
+	onlineMu.Unlock()
+}
+
+func resetOnline() {
+	onlineMu.Lock()
+	online = map[string]time.Time{}
+	onlineMu.Unlock()
+}
+
+func Online(db *sql.DB) ([]Person, error) {
+	cutoff := time.Now().Add(-5 * time.Minute)
+	onlineMu.Lock()
+	ids := make([]string, 0, len(online))
+	for id, at := range online {
+		if at.Before(cutoff) {
+			delete(online, id)
+			continue
+		}
+		ids = append(ids, id)
+	}
+	onlineMu.Unlock()
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	args := make([]any, len(ids))
+	ph := make([]string, len(ids))
+	for i, id := range ids {
+		args[i] = id
+		ph[i] = "?"
+	}
+	rows, err := db.Query(`SELECT u.display_name, u.role, IFNULL(sp.slug,'') FROM users u
+		LEFT JOIN skater_profiles sp ON sp.user_id = u.id
+		WHERE u.id IN (`+strings.Join(ph, ",")+`) ORDER BY u.display_name`, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Person
+	for rows.Next() {
+		var p Person
+		var role, slug string
+		if err := rows.Scan(&p.Name, &role, &slug); err != nil {
+			return nil, err
+		}
+		p.URL = authorURL(role, slug)
+		out = append(out, p)
+	}
+	return out, rows.Err()
+}
+
+func Stats(db *sql.DB) (BoardStats, error) {
+	var st BoardStats
+	var role, slug string
+	err := db.QueryRow(`SELECT
+		(SELECT COUNT(*) FROM forum_posts),
+		(SELECT COUNT(*) FROM forum_threads),
+		(SELECT COUNT(*) FROM users WHERE id != ?),
+		IFNULL((SELECT display_name FROM users WHERE id != ? ORDER BY created_at DESC LIMIT 1),''),
+		IFNULL((SELECT role FROM users WHERE id != ? ORDER BY created_at DESC LIMIT 1),''),
+		IFNULL((SELECT IFNULL(sp.slug,'') FROM users u LEFT JOIN skater_profiles sp ON sp.user_id = u.id WHERE u.id != ? ORDER BY u.created_at DESC LIMIT 1),'')`,
+		auth.TombstoneID, auth.TombstoneID, auth.TombstoneID, auth.TombstoneID).
+		Scan(&st.Posts, &st.Threads, &st.Members, &st.NewestName, &role, &slug)
+	st.NewestURL = authorURL(role, slug)
+	return st, err
+}
+
 func UnreadCount(db *sql.DB, userID string) (int, error) {
 	var n int
 	err := db.QueryRow(`
@@ -143,7 +273,10 @@ func MarkRead(db *sql.DB, userID, threadID string) error {
 func ListSections(db *sql.DB, activeOnly bool) ([]Section, error) {
 	q := `SELECT s.id, s.name, s.slug, s.description, s.sort_order, s.is_active,
 		(SELECT COUNT(*) FROM forum_threads t WHERE t.section_id = s.id),
-		IFNULL((SELECT MAX(t.last_post_at) FROM forum_threads t WHERE t.section_id = s.id),'')
+		IFNULL((SELECT MAX(t.last_post_at) FROM forum_threads t WHERE t.section_id = s.id),''),
+		IFNULL((SELECT u.display_name FROM forum_posts p JOIN forum_threads t ON t.id = p.thread_id JOIN users u ON u.id = p.user_id WHERE t.section_id = s.id ORDER BY p.created_at DESC, p.rowid DESC LIMIT 1),''),
+		IFNULL((SELECT u.role FROM forum_posts p JOIN forum_threads t ON t.id = p.thread_id JOIN users u ON u.id = p.user_id WHERE t.section_id = s.id ORDER BY p.created_at DESC, p.rowid DESC LIMIT 1),''),
+		IFNULL((SELECT IFNULL(sp.slug,'') FROM forum_posts p JOIN forum_threads t ON t.id = p.thread_id LEFT JOIN skater_profiles sp ON sp.user_id = p.user_id WHERE t.section_id = s.id ORDER BY p.created_at DESC, p.rowid DESC LIMIT 1),'')
 		FROM forum_sections s`
 	if activeOnly {
 		q += ` WHERE s.is_active = 1`
@@ -158,10 +291,12 @@ func ListSections(db *sql.DB, activeOnly bool) ([]Section, error) {
 	for rows.Next() {
 		var s Section
 		var active int
-		if err := rows.Scan(&s.ID, &s.Name, &s.Slug, &s.Description, &s.SortOrder, &active, &s.ThreadCount, &s.LastPostAt); err != nil {
+		var lastRole, lastSlug string
+		if err := rows.Scan(&s.ID, &s.Name, &s.Slug, &s.Description, &s.SortOrder, &active, &s.ThreadCount, &s.LastPostAt, &s.LastAuthorName, &lastRole, &lastSlug); err != nil {
 			return nil, err
 		}
 		s.Active = active != 0
+		s.LastAuthorURL = authorURL(lastRole, lastSlug)
 		out = append(out, s)
 	}
 	return out, rows.Err()
@@ -187,19 +322,23 @@ func GetSectionByID(db *sql.DB, id string) (Section, error) {
 
 const threadCols = `t.id, t.section_id, t.user_id, t.title, t.slug, t.is_locked, t.is_sticky, t.last_post_at, t.created_at,
 	u.display_name, u.role, IFNULL(sp.slug,''),
-	(SELECT COUNT(*) FROM forum_posts p WHERE p.thread_id = t.id)`
+	(SELECT COUNT(*) FROM forum_posts p WHERE p.thread_id = t.id),
+	IFNULL((SELECT u2.display_name FROM forum_posts p2 JOIN users u2 ON u2.id = p2.user_id WHERE p2.thread_id = t.id ORDER BY p2.created_at DESC, p2.rowid DESC LIMIT 1),''),
+	IFNULL((SELECT u2.role FROM forum_posts p2 JOIN users u2 ON u2.id = p2.user_id WHERE p2.thread_id = t.id ORDER BY p2.created_at DESC, p2.rowid DESC LIMIT 1),''),
+	IFNULL((SELECT IFNULL(sp2.slug,'') FROM forum_posts p2 LEFT JOIN skater_profiles sp2 ON sp2.user_id = p2.user_id WHERE p2.thread_id = t.id ORDER BY p2.created_at DESC, p2.rowid DESC LIMIT 1),'')`
 
 func scanThread(s func(dest ...any) error) (Thread, error) {
 	var t Thread
 	var locked, sticky int
-	var role, slug string
-	err := s(&t.ID, &t.SectionID, &t.UserID, &t.Title, &t.Slug, &locked, &sticky, &t.LastPostAt, &t.CreatedAt, &t.AuthorName, &role, &slug, &t.ReplyCount)
+	var role, slug, lastRole, lastSlug string
+	err := s(&t.ID, &t.SectionID, &t.UserID, &t.Title, &t.Slug, &locked, &sticky, &t.LastPostAt, &t.CreatedAt, &t.AuthorName, &role, &slug, &t.ReplyCount, &t.LastAuthorName, &lastRole, &lastSlug)
 	t.Locked = locked != 0
 	t.Sticky = sticky != 0
 	if t.ReplyCount > 0 {
 		t.ReplyCount--
 	}
 	t.AuthorURL = authorURL(role, slug)
+	t.LastAuthorURL = authorURL(lastRole, lastSlug)
 	return t, err
 }
 

@@ -65,8 +65,10 @@ func TestEditorTemplatesParse(t *testing.T) {
 		filepath.Join(root, "partials", "consent.html"),
 		filepath.Join(root, "partials", "md_editor.html"),
 		filepath.Join(root, "partials", "pager.html"),
+		filepath.Join(root, "partials", "forum_badge.html"),
+		filepath.Join(root, "partials", "forum_md.html"),
 	}
-	for _, page := range []string{"article_form.html", "page_form.html", "admin_spot.html", "skater_form.html"} {
+	for _, page := range []string{"article_form.html", "page_form.html", "admin_spot.html", "skater_form.html", "forum_index.html", "forum_section.html", "forum_thread.html", "forum_mentions.html", "forum_form.html", "admin_forum.html"} {
 		files := append(append([]string{}, shared...), filepath.Join(root, "pages", page))
 		if _, err := template.ParseFiles(files...); err != nil {
 			t.Fatal(page, err)

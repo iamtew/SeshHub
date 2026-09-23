@@ -58,9 +58,13 @@
       preview.hidden = false;
       preview.textContent = "Replying to " + (reply.getAttribute("data-author") || "") + " — " + (reply.getAttribute("data-excerpt") || "");
     }
-    if (ta) ta.focus();
+    if (ta) ta.focus({ preventScroll: true });
     var box = document.getElementById("forum-reply");
-    if (box) box.scrollIntoView({ behavior: "smooth" });
+    if (box) {
+      var go = function () { box.scrollIntoView({ block: "end", behavior: "smooth" }); };
+      go();
+      setTimeout(go, 350);
+    }
   });
 
   document.querySelectorAll(".forum-body").forEach(function (ta) {

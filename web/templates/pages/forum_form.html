@@ -1,6 +1,8 @@
 {{define "content"}}
-<p class="who"><a href="/forum">Forum</a> · <a href="/forum/{{.S.Slug}}">{{.S.Name}}</a></p>
-<h1>New thread</h1>
+<p class="who forum-crumb"><a href="/forum">Forum</a> · <a href="/forum/{{.S.Slug}}">{{.S.Name}}</a></p>
+<section class="forum-composer">
+<h2>New thread</h2>
+<div class="forum-composer-body">
 <form method="post" action="/forum/{{.S.Slug}}/new" class="form forum-compose" enctype="multipart/form-data">
     <label>Title <input name="title" required value="{{.TitleVal}}"></label>
     {{template "forum_mdbar"}}
@@ -9,4 +11,6 @@
     {{template "forum_files"}}
     <button type="submit">Create thread</button>
 </form>
+</div>
+</section>
 {{end}}

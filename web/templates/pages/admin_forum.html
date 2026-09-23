@@ -1,5 +1,5 @@
 {{define "content"}}
-<p class="who"><a href="/forum">Forum</a></p>
+<p class="who forum-crumb"><a href="/forum">Forum</a></p>
 <h1>Forum sections</h1>
 <p>Add, hide, rename, reorder, or remove categories. Hidden sections drop off the board. Remove deletes the section and every thread in it.</p>
 <form method="post" class="form forum-sec-add">
@@ -11,29 +11,31 @@
 {{if not .Sections}}
 <p>None yet.</p>
 {{else}}
-<ul class="forum-cats">
+<div class="forum-board forum-board--admin">
 {{range .Sections}}
-<li>
-    <strong>{{.Name}}</strong>
-    <p class="who">{{if .Description}}{{.Description}} · {{end}}{{if .Active}}on the board{{else}}hidden{{end}} · {{.ThreadCount}} thread{{if ne .ThreadCount 1}}s{{end}}</p>
-    <div class="forum-sec-actions">
-        <form method="post"><input type="hidden" name="action" value="up"><input type="hidden" name="id" value="{{.ID}}"><button type="submit">Up</button></form>
-        <form method="post"><input type="hidden" name="action" value="down"><input type="hidden" name="id" value="{{.ID}}"><button type="submit">Down</button></form>
-        <form method="post" action="/admin/forum/sections/{{.ID}}/delete"><button type="submit">Remove</button></form>
-        <details class="forum-edit">
-            <summary>Edit</summary>
-            <form method="post" class="form">
-                <input type="hidden" name="action" value="save">
-                <input type="hidden" name="id" value="{{.ID}}">
-                <label>Name <input name="name" required value="{{.Name}}"></label>
-                <label>Description <input name="description" value="{{.Description}}"></label>
-                <label><input type="checkbox" name="is_active" value="1" {{if .Active}}checked{{end}}> Show on the board</label>
-                <button type="submit">Save</button>
-            </form>
-        </details>
+<div class="forum-board-row">
+    <div class="forum-board-main">
+        <strong>{{.Name}}</strong>
+        <p class="who">{{if .Description}}{{.Description}} · {{end}}{{if .Active}}on the board{{else}}hidden{{end}} · {{.ThreadCount}} thread{{if ne .ThreadCount 1}}s{{end}}</p>
+        <div class="forum-sec-actions">
+            <form method="post"><input type="hidden" name="action" value="up"><input type="hidden" name="id" value="{{.ID}}"><button type="submit">Up</button></form>
+            <form method="post"><input type="hidden" name="action" value="down"><input type="hidden" name="id" value="{{.ID}}"><button type="submit">Down</button></form>
+            <form method="post" action="/admin/forum/sections/{{.ID}}/delete"><button type="submit">Remove</button></form>
+            <details class="forum-edit">
+                <summary>Edit</summary>
+                <form method="post" class="form">
+                    <input type="hidden" name="action" value="save">
+                    <input type="hidden" name="id" value="{{.ID}}">
+                    <label>Name <input name="name" required value="{{.Name}}"></label>
+                    <label>Description <input name="description" value="{{.Description}}"></label>
+                    <label><input type="checkbox" name="is_active" value="1" {{if .Active}}checked{{end}}> Show on the board</label>
+                    <button type="submit">Save</button>
+                </form>
+            </details>
+        </div>
     </div>
-</li>
+</div>
 {{end}}
-</ul>
+</div>
 {{end}}
 {{end}}
