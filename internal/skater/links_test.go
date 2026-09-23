@@ -40,8 +40,15 @@ func TestJoinLinksCapAndSkip(t *testing.T) {
 }
 
 func TestProfileLinksYouTubeFirst(t *testing.T) {
-	links := ProfileLinks("UC1", "https://www.youtube.com/watch?v=x\nhttps://twitch.tv/n")
+	links := ProfileLinks("UC1", "https://www.youtube.com/watch?v=x\nhttps://twitch.tv/n", "")
 	if len(links) != 2 || links[0].Icon != "fa-brands fa-youtube" || links[1].Icon != "fa-brands fa-twitch" {
+		t.Fatalf("%+v", links)
+	}
+}
+
+func TestProfileLinksTwitchLogin(t *testing.T) {
+	links := ProfileLinks("UC1", "https://twitch.tv/other", "tew020")
+	if len(links) != 2 || links[0].Icon != "fa-brands fa-youtube" || links[1].URL != "https://www.twitch.tv/tew020" {
 		t.Fatalf("%+v", links)
 	}
 }

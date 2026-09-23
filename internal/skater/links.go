@@ -3,6 +3,8 @@ package skater
 import (
 	"net/url"
 	"strings"
+
+	"seshhub/internal/twitch"
 )
 
 const MaxLinks = 10
@@ -48,19 +50,34 @@ func ChannelLink(channelID string) (Link, bool) {
 	return Link{URL: "https://www.youtube.com/channel/" + id, Label: "YouTube", Icon: "fa-brands fa-youtube"}, true
 }
 
-func ProfileLinks(channelID, social string) []Link {
+func ProfileLinks(channelID, social, twitchLogin string) []Link {
 	var out []Link
 	yt, hasYT := ChannelLink(channelID)
 	if hasYT {
 		out = append(out, yt)
 	}
+	tw, hasTW := twitchLink(twitchLogin)
+	if hasTW {
+		out = append(out, tw)
+	}
 	for _, l := range ParseLinks(social) {
 		if hasYT && l.Icon == "fa-brands fa-youtube" {
+			continue
+		}
+		if hasTW && l.Icon == "fa-brands fa-twitch" {
 			continue
 		}
 		out = append(out, l)
 	}
 	return out
+}
+
+func twitchLink(login string) (Link, bool) {
+	u := twitch.ChannelURL(login)
+	if u == "" {
+		return Link{}, false
+	}
+	return Link{URL: u, Label: "Twitch", Icon: "fa-brands fa-twitch"}, true
 }
 
 func parseLink(s string) (Link, bool) {

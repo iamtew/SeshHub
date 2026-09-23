@@ -164,7 +164,7 @@ func (s *Server) skaterDetail(w http.ResponseWriter, r *http.Request) {
 	if owner, err := auth.GetUser(s.db, p.UserID); err == nil {
 		channelID = owner.YouTubeChannelID
 	}
-	data["Links"] = skater.ProfileLinks(channelID, p.SocialLinks)
+	data["Links"] = skater.ProfileLinks(channelID, p.SocialLinks, p.TwitchLogin)
 	if strings.TrimSpace(p.Bio) != "" {
 		data["BioHTML"] = template.HTML(article.Render(p.Bio))
 	}
