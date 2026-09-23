@@ -410,8 +410,13 @@ form[action*="/unlink/"] button { background: var(--magenta); }
     display: grid;
     grid-template-columns: 9.5rem minmax(0, 1fr);
     border-top: 2px solid var(--violet);
-    background: rgb(0 0 0 / 0.45);
     scroll-margin-top: 1rem;
+}
+.forum-stream .forum-post:nth-child(odd) {
+    background: color-mix(in srgb, var(--red) 25%, transparent);
+}
+.forum-stream .forum-post:nth-child(even) {
+    background: color-mix(in srgb, var(--chartreuse) 25%, transparent);
 }
 .forum-stream .forum-post:first-child { border-top: 0; }
 .forum-post:target { outline: 2px solid var(--chartreuse); outline-offset: -2px; }
