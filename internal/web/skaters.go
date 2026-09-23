@@ -32,6 +32,9 @@ func formProfile(r *http.Request, existing skater.Profile) skater.Profile {
 	if _, ok := r.PostForm["featured_video_id"]; ok {
 		existing.FeaturedVideoID = r.FormValue("featured_video_id")
 	}
+	if _, ok := r.PostForm["link"]; ok {
+		existing.SocialLinks = skater.JoinLinks(r.PostForm["link"])
+	}
 	return existing
 }
 
@@ -62,7 +65,6 @@ func applyPhoto(r *http.Request, p skater.Profile) (skater.Profile, error) {
 func skaterView(p skater.Profile) map[string]any {
 	return map[string]any{
 		"P": p, "Sponsors": skater.Lines(p.Sponsors), "Tricks": skater.Lines(p.SignatureTricks),
-		"Social": skater.Lines(p.SocialLinks),
 	}
 }
 
@@ -153,6 +155,11 @@ func (s *Server) skaterDetail(w http.ResponseWriter, r *http.Request) {
 	data["CanEdit"] = canEdit
 	data["HasYouTube"] = hasYT
 	data["FeedNext"] = wantPath + "/" + p.Slug
+	var channelID string
+	if owner, err := auth.GetUser(s.db, p.UserID); err == nil {
+		channelID = owner.YouTubeChannelID
+	}
+	data["Links"] = skater.ProfileLinks(channelID, p.SocialLinks)
 	if strings.TrimSpace(p.Bio) != "" {
 		data["BioHTML"] = template.HTML(article.Render(p.Bio))
 	}
@@ -420,6 +427,7 @@ func (s *Server) renderSkaterProfile(w http.ResponseWriter, r *http.Request, u *
 		"Title": "Profile", "Path": "/dashboard/profile", "P": p, "Action": "/dashboard/profile", "BioEdit": true,
 		"Videos": vids, "FilterRows": sspec.Rules, "KindOn": kindOn, "Test": test, "Tab": tab,
 		"DefaultName": defName, "DefaultSlug": skater.Slugify(defName), "SlugPrefix": skater.RosterPath(u.Role) + "/",
+		"Social": skater.Lines(p.SocialLinks),
 	}
 	if test {
 		check := yt.NormalizeSpec(sspec)
@@ -439,7 +447,7 @@ func (s *Server) renderSkaterProfile(w http.ResponseWriter, r *http.Request, u *
 
 func profilePath(tab string) string {
 	switch tab {
-	case "profile", "youtube":
+	case "profile", "youtube", "links":
 		return "/dashboard/profile#" + tab
 	default:
 		return "/dashboard/profile#photo"

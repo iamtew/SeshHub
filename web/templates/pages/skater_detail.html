@@ -5,6 +5,7 @@
         <div>
             <h1>{{.P.PublicName}}</h1>
             <p class="who">{{.P.Stance}} · {{.P.Status}}{{if .P.Location}} · {{.P.Location}}{{end}}</p>
+            {{if .Links}}<p class="profile-links">{{range .Links}}<a class="hub-btn" href="{{.URL}}" target="_blank" rel="noopener noreferrer" aria-label="{{.Label}}"><i class="{{.Icon}}" aria-hidden="true"></i></a>{{end}}</p>{{end}}
         </div>
     </div>
     {{if .BioHTML}}<div class="prose">{{.BioHTML}}</div>{{end}}
@@ -66,7 +67,6 @@
     </ul>
     {{if not .HasYouTube}}{{template "pager.html" .}}{{end}}
     {{end}}
-    {{if .Social}}<h2>Links</h2><ul>{{range .Social}}<li>{{.}}</li>{{end}}</ul>{{end}}
     {{if .Sponsors}}<h2>Sponsors</h2><ul>{{range .Sponsors}}<li>{{.}}</li>{{end}}</ul>{{end}}
     {{if .Tricks}}<h2>Tricks</h2><ul>{{range .Tricks}}<li>{{.}}</li>{{end}}</ul>{{end}}
     {{if .CanEdit}}<p><a href="/dashboard/profile"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i> Edit profile</a></p>{{end}}

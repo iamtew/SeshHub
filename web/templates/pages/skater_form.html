@@ -4,6 +4,7 @@
 <div class="profile-tablist" role="tablist" aria-label="Profile settings">
     <button type="button" role="tab" id="tab-photo" data-tab="photo" aria-controls="panel-photo" aria-selected="true"><i class="fa-solid fa-image" aria-hidden="true"></i> Photo</button>
     <button type="button" role="tab" id="tab-profile" data-tab="profile" aria-controls="panel-profile" aria-selected="false" tabindex="-1"><i class="fa-solid fa-user" aria-hidden="true"></i> Profile</button>
+    <button type="button" role="tab" id="tab-links" data-tab="links" aria-controls="panel-links" aria-selected="false" tabindex="-1"><i class="fa-solid fa-link" aria-hidden="true"></i> Links</button>
     <button type="button" role="tab" id="tab-youtube" data-tab="youtube" aria-controls="panel-youtube" aria-selected="false" tabindex="-1"><i class="fa-brands fa-youtube" aria-hidden="true"></i> YouTube</button>
 </div>
 <form method="post" action="{{.Action}}" class="form" id="profile-form" enctype="multipart/form-data" data-default-name="{{.DefaultName}}" data-default-slug="{{.DefaultSlug}}" data-default-avatar="{{.User.ProviderAvatar}}">
@@ -80,6 +81,24 @@
         </label>
         <span>Bio</span>
         {{template "md_editor" .}}
+    </div>
+    <div id="panel-links" role="tabpanel" data-panel="links" aria-labelledby="tab-links">
+        <p class="who">Public buttons on your roster page. YouTube is added automatically from a linked channel. https only, max 10.</p>
+        <div id="link-rows">
+            {{range .Social}}
+            <div class="link-row">
+                <label>URL <input type="url" name="link" value="{{.}}" maxlength="2048" placeholder="https://"></label>
+                <button type="button" class="link-remove"><i class="fa-solid fa-trash" aria-hidden="true"></i> Remove</button>
+            </div>
+            {{end}}
+            {{if lt (len .Social) 10}}
+            <div class="link-row">
+                <label>URL <input type="url" name="link" value="" maxlength="2048" placeholder="https://"></label>
+                <button type="button" class="link-remove"><i class="fa-solid fa-trash" aria-hidden="true"></i> Remove</button>
+            </div>
+            {{end}}
+        </div>
+        <p><button type="button" id="link-add" {{if ge (len .Social) 10}}hidden{{end}}><i class="fa-solid fa-plus" aria-hidden="true"></i> Add link</button></p>
     </div>
     <div id="panel-youtube" role="tabpanel" data-panel="youtube" aria-labelledby="tab-youtube">
         {{if .User.YouTubeChannelID}}
@@ -417,8 +436,8 @@
   if (discard) discard.addEventListener('click', function () { location.reload(); });
   var root = document.getElementById('profile-tabs');
   var tabBtns = root ? root.querySelectorAll('[role="tab"]') : [];
-  var tabNames = ['photo', 'profile', 'youtube'];
-  function okTab(n) { return n === 'profile' || n === 'youtube' ? n : 'photo'; }
+  var tabNames = ['photo', 'profile', 'links', 'youtube'];
+  function okTab(n) { return tabNames.indexOf(n) >= 0 ? n : 'photo'; }
   function setTab(name, hash) {
     name = okTab(name);
     if (root) root.setAttribute('data-tab', name);
@@ -445,20 +464,54 @@
       if (!t) return;
       var i = tabNames.indexOf(t.getAttribute('data-tab'));
       if (i < 0) return;
+      var n = tabNames.length;
       if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
         e.preventDefault();
-        i = e.key === 'ArrowRight' ? (i + 1) % 3 : (i + 2) % 3;
+        i = e.key === 'ArrowRight' ? (i + 1) % n : (i + n - 1) % n;
       } else if (e.key === 'Home') {
         e.preventDefault();
         i = 0;
       } else if (e.key === 'End') {
         e.preventDefault();
-        i = 2;
+        i = n - 1;
       } else {
         return;
       }
       setTab(tabNames[i], true);
       tabBtns[i].focus();
+    });
+  }
+  var linkRows = document.getElementById('link-rows');
+  var linkAdd = document.getElementById('link-add');
+  function linkCount() { return linkRows ? linkRows.querySelectorAll('.link-row').length : 0; }
+  function syncLinkAdd() { if (linkAdd) linkAdd.hidden = linkCount() >= 10; }
+  if (linkRows) {
+    linkRows.addEventListener('click', function (e) {
+      var b = e.target.closest('.link-remove');
+      if (!b) return;
+      var row = b.closest('.link-row');
+      if (!row) return;
+      if (linkCount() === 1) {
+        var inp = row.querySelector('input');
+        if (inp) inp.value = '';
+      } else {
+        row.remove();
+      }
+      syncLinkAdd();
+      syncBar();
+    });
+  }
+  if (linkAdd && linkRows) {
+    linkAdd.addEventListener('click', function () {
+      if (linkCount() >= 10) return;
+      var src = linkRows.querySelector('.link-row');
+      if (!src) return;
+      var row = src.cloneNode(true);
+      var inp = row.querySelector('input');
+      if (inp) inp.value = '';
+      linkRows.appendChild(row);
+      syncLinkAdd();
+      syncBar();
     });
   }
   baseline = snap();

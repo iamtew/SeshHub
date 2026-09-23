@@ -244,7 +244,7 @@ button, .btn {
 button .fa, .btn .fa, a .fa { margin-inline-end: 0.4em; }
 .pager .fa, .slideshow-prev .fa, .slideshow-next .fa, .slideshow-tprev .fa, .slideshow-tnext .fa,
 .slideshow-full-prev .fa, .slideshow-full-next .fa, .forum-mod > summary .fa,
-.clip-tools button[aria-label="Set as featured"] .fa, .forum-md .fa { margin-inline-end: 0; }
+.clip-tools button[aria-label="Set as featured"] .fa, .forum-md .fa, .profile-links .fa { margin-inline-end: 0; }
 button:hover:not(:active):not(.hero-play), .btn:hover:not(:active) { box-shadow: 0 0 12px var(--violet); }
 button:active:not(:disabled):not(.hero-play), .btn:active, .signin .btn:active, .pager > a:active {
     filter: brightness(0.8);
@@ -640,6 +640,7 @@ a.profile-head { padding: 1rem; color: inherit; text-decoration: none; }
 .profile-tabs [data-panel] { display: none; }
 .profile-tabs[data-tab="photo"] [data-panel="photo"],
 .profile-tabs[data-tab="profile"] [data-panel="profile"],
+.profile-tabs[data-tab="links"] [data-panel="links"],
 .profile-tabs[data-tab="youtube"] [data-panel="youtube"] {
     display: flex; flex-direction: column; gap: 1.1rem;
 }
@@ -647,6 +648,14 @@ a.profile-head { padding: 1rem; color: inherit; text-decoration: none; }
 .profile-head > div { min-width: 0; }
 .profile-head h1 { margin: 0; }
 .profile-head .who { display: block; margin: 0.35rem 0 0; }
+.profile-links { display: flex; flex-wrap: wrap; gap: 0.45rem; margin: 0.65rem 0 0; }
+.profile-links .hub-btn {
+    display: flex; align-items: center; justify-content: center;
+    color: var(--fg); text-decoration: none;
+}
+.profile-links .hub-btn .fa { margin-inline-end: 0; font-size: 1.2rem; }
+.link-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: end; }
+.link-row label { flex: 1 1 16rem; }
 .avframe { position: relative; display: block; overflow: visible; }
 .profile-head .avframe, .profile-head .avatar-drop {
     width: 12rem; height: 12rem; max-width: none; display: block;
