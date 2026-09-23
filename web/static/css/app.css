@@ -241,6 +241,10 @@ button, .btn {
     background: var(--violet); color: var(--fg); border: 0;
     padding: 0.5rem 1.1rem; font: inherit; cursor: pointer; min-height: 2.5rem; border-radius: 0.6rem;
 }
+button .fa, .btn .fa, a .fa { margin-inline-end: 0.4em; }
+.pager .fa, .slideshow-prev .fa, .slideshow-next .fa, .slideshow-tprev .fa, .slideshow-tnext .fa,
+.slideshow-full-prev .fa, .slideshow-full-next .fa, .forum-mod > summary .fa,
+.clip-tools button[aria-label="Set as featured"] .fa, .forum-md .fa { margin-inline-end: 0; }
 button:hover:not(:active):not(.hero-play), .btn:hover:not(:active) { box-shadow: 0 0 12px var(--violet); }
 button:active:not(:disabled):not(.hero-play), .btn:active, .signin .btn:active, .pager > a:active {
     filter: brightness(0.8);

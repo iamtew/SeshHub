@@ -4,8 +4,8 @@
     <form method="post" action="/consent">
         <input type="hidden" name="return" value="{{.Path}}">
         <p>Google Analytics is optional. Allow it, or decline and we never load it.</p>
-        <button type="submit" name="choice" value="yes">Allow</button>
-        <button type="submit" name="choice" value="no">Decline</button>
+        <button type="submit" name="choice" value="yes"><i class="fa-solid fa-check" aria-hidden="true"></i> Allow</button>
+        <button type="submit" name="choice" value="no"><i class="fa-solid fa-xmark" aria-hidden="true"></i> Decline</button>
     </form>
 </aside>
 {{end}}

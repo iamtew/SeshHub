@@ -11,10 +11,10 @@
     <span class="who">Discord {{if $u.DiscordID}}{{$u.DiscordID}}{{else}}—{{end}}</span>
     <span class="who">YouTube {{if $u.YouTubeChannelTitle}}{{$u.YouTubeChannelTitle}}{{else if $u.YouTubeChannelID}}{{$u.YouTubeChannelID}}{{else}}—{{end}}</span>
     {{if $u.DiscordID}}
-    <form method="post" action="/admin/users/{{$u.ID}}/unlink/discord"><button type="submit">Unlink Discord</button></form>
+    <form method="post" action="/admin/users/{{$u.ID}}/unlink/discord"><button type="submit"><i class="fa-solid fa-link-slash" aria-hidden="true"></i> Unlink Discord</button></form>
     {{end}}
     {{if $u.YouTubeChannelID}}
-    <form method="post" action="/admin/users/{{$u.ID}}/unlink/youtube"><button type="submit">Unlink YouTube</button></form>
+    <form method="post" action="/admin/users/{{$u.ID}}/unlink/youtube"><button type="submit"><i class="fa-solid fa-link-slash" aria-hidden="true"></i> Unlink YouTube</button></form>
     {{end}}
     <details class="forum-edit">
         <summary>Merge from</summary>
@@ -28,11 +28,11 @@
                     {{end}}
                 </select>
             </label>
-            <button type="submit">Merge</button>
+            <button type="submit"><i class="fa-solid fa-code-merge" aria-hidden="true"></i> Merge</button>
         </form>
     </details>
     {{if ne $u.ID $.User.ID}}
-    <form method="post" action="/admin/users/{{$u.ID}}/delete"><button type="submit">Delete</button></form>
+    <form method="post" action="/admin/users/{{$u.ID}}/delete"><button type="submit"><i class="fa-solid fa-trash" aria-hidden="true"></i> Delete</button></form>
     {{end}}
 </li>
 {{end}}

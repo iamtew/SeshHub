@@ -4,10 +4,10 @@
     <h1>{{.T.Title}}</h1>
     {{if .CanEditThread}}
     <details class="forum-mod">
-        <summary aria-label="Moderation">···</summary>
+        <summary aria-label="Moderation"><i class="fa-solid fa-ellipsis" aria-hidden="true"></i></summary>
         <form method="post" action="/forum/{{.S.Slug}}/{{.T.Slug}}" class="form">
             <label>Title <input name="title" required value="{{.T.Title}}"></label>
-            <button type="submit">Save title</button>
+            <button type="submit"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save title</button>
         </form>
     </details>
     {{end}}
@@ -40,10 +40,10 @@
         </ul>
         {{end}}
         <div class="forum-post-actions">
-            {{if not $.T.Locked}}<button type="button" class="forum-reply-btn" data-parent="{{.ID}}" data-author="{{.AuthorName}}" data-excerpt="{{.Quote}}">Reply</button>{{end}}
+            {{if not $.T.Locked}}<button type="button" class="forum-reply-btn" data-parent="{{.ID}}" data-author="{{.AuthorName}}" data-excerpt="{{.Quote}}"><i class="fa-solid fa-reply" aria-hidden="true"></i> Reply</button>{{end}}
             {{if .CanEdit}}
             <details class="forum-mod">
-                <summary aria-label="Moderation">···</summary>
+                <summary aria-label="Moderation"><i class="fa-solid fa-ellipsis" aria-hidden="true"></i></summary>
                 <form method="post" action="/forum/{{$.S.Slug}}/{{$.T.Slug}}/posts/{{.ID}}" class="form forum-compose" enctype="multipart/form-data">
                     {{template "forum_mdbar"}}
                     <label>Body <textarea name="body" rows="6" required class="forum-body">{{.BodyRaw}}</textarea></label>
@@ -57,17 +57,17 @@
                     </fieldset>
                     {{end}}
                     {{template "forum_files"}}
-                    <button type="submit">Save</button>
+                    <button type="submit"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save</button>
                 </form>
                 <form method="post" action="/forum/{{$.S.Slug}}/{{$.T.Slug}}/posts/{{.ID}}/delete">
-                    <button type="submit">Delete</button>
+                    <button type="submit"><i class="fa-solid fa-trash" aria-hidden="true"></i> Delete</button>
                 </form>
             </details>
             {{else if .CanDelete}}
             <details class="forum-mod">
-                <summary aria-label="Moderation">···</summary>
+                <summary aria-label="Moderation"><i class="fa-solid fa-ellipsis" aria-hidden="true"></i></summary>
                 <form method="post" action="/forum/{{$.S.Slug}}/{{$.T.Slug}}/posts/{{.ID}}/delete">
-                    <button type="submit">Delete</button>
+                    <button type="submit"><i class="fa-solid fa-trash" aria-hidden="true"></i> Delete</button>
                 </form>
             </details>
             {{end}}
@@ -91,19 +91,19 @@
         <textarea id="forum-reply-body" class="forum-body" name="body" rows="6" required placeholder="Write a reply…"></textarea>
         <div class="forum-preview prose forum-cooked" aria-live="polite"></div>
         {{template "forum_files"}}
-        <button type="submit">Post reply</button>
+        <button type="submit"><i class="fa-solid fa-reply" aria-hidden="true"></i> Post reply</button>
     </form>
     </div>
 </section>
 {{end}}
 <dialog class="slideshow-full" id="forum-full">
-    <button type="button" class="slideshow-full-prev" aria-label="Previous photo">◀</button>
+    <button type="button" class="slideshow-full-prev" aria-label="Previous photo"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
     <div class="slideshow-stage">
         <div class="slideshow-frame">
             <img class="slideshow-full-img" alt="">
         </div>
     </div>
-    <button type="button" class="slideshow-full-next" aria-label="Next photo">▶</button>
-    <button type="button" class="slideshow-full-close" aria-label="Close">Close</button>
+    <button type="button" class="slideshow-full-next" aria-label="Next photo"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
+    <button type="button" class="slideshow-full-close" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i> Close</button>
 </dialog>
 {{end}}

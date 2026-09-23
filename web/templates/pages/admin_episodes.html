@@ -1,6 +1,6 @@
 {{define "content"}}
 <h1>Episodes</h1>
-<p><a class="btn" href="/admin/episodes/new">New episode</a></p>
+<p><a class="btn" href="/admin/episodes/new"><i class="fa-solid fa-plus" aria-hidden="true"></i> New episode</a></p>
 {{if not .Episodes}}
 <p>None yet.</p>
 {{else}}
@@ -9,8 +9,8 @@
 <li>
     <a href="/admin/episodes/{{.Number}}">EP{{.Number}} {{.Title}}</a>
     <span class="who">{{if .ShowWinner}}{{.WinnerName}}{{else}}no winner{{end}}</span>
-    <a class="btn" href="/admin/episodes/{{.Number}}">Edit</a>
-    <form method="post" action="/admin/episodes/{{.Number}}/delete"><button type="submit">Delete</button></form>
+    <a class="btn" href="/admin/episodes/{{.Number}}"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i> Edit</a>
+    <form method="post" action="/admin/episodes/{{.Number}}/delete"><button type="submit"><i class="fa-solid fa-trash" aria-hidden="true"></i> Delete</button></form>
 </li>
 {{end}}
 </ul>

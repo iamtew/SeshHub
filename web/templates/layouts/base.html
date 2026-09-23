@@ -19,6 +19,7 @@
     <link href="https://fonts.cdnfonts.com/css/pill-gothic-600mg" rel="stylesheet">
     <link href="https://fonts.cdnfonts.com/css/monster-chiller" rel="stylesheet">
     <link href="https://fonts.cdnfonts.com/css/turbo-jungle" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/all.min.css">
     <link rel="stylesheet" href="/static/css/app.css">
     <script src="/static/js/dates.js" defer></script>
     <script src="/static/js/smokepuff.js" defer></script>
@@ -54,14 +55,14 @@
                 <source src="/static/vid/seshsofa.mp4" type="video/mp4">
             </video>
         </div>
-        <button type="button" class="hero-close" hidden>Close</button>
+        <button type="button" class="hero-close" hidden><i class="fa-solid fa-xmark" aria-hidden="true"></i> Close</button>
     </section>
     {{end}}
     {{if not .AuthPage}}{{template "nav.html" .}}{{end}}
     {{if .MentionBanner}}<aside class="forum-mention-banner"><a href="/forum/mentions">You have {{.MentionBanner}} new mention{{if ne .MentionBanner 1}}s{{end}}</a></aside>{{end}}
     <main class="wrap{{if .AuthPage}} auth{{end}}">
         {{template "content" .}}
-        {{if and .User .EditHref}}<p><a href="{{.EditHref}}">Edit</a></p>{{end}}
+        {{if and .User .EditHref}}<p><a href="{{.EditHref}}"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i> Edit</a></p>{{end}}
     </main>
     {{if not .AuthPage}}{{template "footer.html" .}}{{end}}
     {{template "consent.html" .}}

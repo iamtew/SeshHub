@@ -16,9 +16,9 @@
                 <option value="inactive" {{if eq .Status "inactive"}}selected{{end}}>Inactive</option>
             </select>
         </label>
-        <button type="submit">Save</button>
+        <button type="submit"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save</button>
     </form>
-    <form method="post" action="/admin/skaters/{{.ID}}/delete"><button type="submit">Delete</button></form>
+    <form method="post" action="/admin/skaters/{{.ID}}/delete"><button type="submit"><i class="fa-solid fa-trash" aria-hidden="true"></i> Delete</button></form>
 </li>
 {{end}}
 </ul>

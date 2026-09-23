@@ -1,9 +1,9 @@
 {{define "md_toolbar"}}
-<p class="md-toolbar"><button type="button" class="md-adv-btn">Advanced editor</button></p>
+<p class="md-toolbar"><button type="button" class="md-adv-btn"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Advanced editor</button></p>
 <dialog class="md-overlay" aria-label="Advanced markdown editor">
     <div class="md-overlay-bar">
-        <button type="button" class="md-overlay-close">Close</button>
-        <button type="button" class="md-overlay-save">Save</button>
+        <button type="button" class="md-overlay-close"><i class="fa-solid fa-xmark" aria-hidden="true"></i> Close</button>
+        <button type="button" class="md-overlay-save"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save</button>
     </div>
     <div class="md-overlay-body">
         <aside class="md-side"></aside>
@@ -31,8 +31,8 @@
 
 {{define "md_actions"}}
 <div class="form-actions">
-    <a class="btn md-discard" href="{{if .Cancel}}{{.Cancel}}{{else}}{{.Path}}{{end}}">Discard and close</a>
-    <button type="submit" name="after" value="stay">Save</button>
-    <button type="submit" name="after" value="close">Save and close</button>
+    <a class="btn md-discard" href="{{if .Cancel}}{{.Cancel}}{{else}}{{.Path}}{{end}}"><i class="fa-solid fa-xmark" aria-hidden="true"></i> Discard and close</a>
+    <button type="submit" name="after" value="stay"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save</button>
+    <button type="submit" name="after" value="close"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save and close</button>
 </div>
 {{end}}

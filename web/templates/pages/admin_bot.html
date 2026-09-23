@@ -38,7 +38,7 @@
     <label><input type="checkbox" name="forum" value="1" {{if .Settings.Forum}}checked{{end}}> New forum thread</label>
     <label><input type="checkbox" name="access" value="1" {{if .Settings.Access}}checked{{end}}> New access request</label>
     <label><input type="checkbox" name="mentions" value="1" {{if .Settings.Mentions}}checked{{end}}> Forum @mention</label>
-    <button type="submit">Save</button>
+    <button type="submit"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save</button>
 </form>
 <p class="who">Empty channel posts nothing. News is the title and public URL the first time an article is published (internal stays on the hub). Forum is the title and thread URL, not the post or the author. Access is the requester’s name and username. A forum @mention pings that person on Discord when their account has Discord linked, with the thread title and URL, not the post.</p>
 <h2>Activity</h2>

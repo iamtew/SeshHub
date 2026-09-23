@@ -7,25 +7,25 @@
         {{if .User.DiscordID}}
         <span class="who">connected ({{.User.DiscordID}})</span>
             {{if .User.YouTubeChannelID}}
-            <form method="post" action="/account/unlink/discord"><button type="submit">Unlink Discord</button></form>
+            <form method="post" action="/account/unlink/discord"><button type="submit"><i class="fa-solid fa-link-slash" aria-hidden="true"></i> Unlink Discord</button></form>
             {{end}}
-        {{else if .DiscordLogin}}<a class="btn auth-discord" href="/auth/discord">Connect Discord</a>{{else}}<span class="who">not configured</span>{{end}}
+        {{else if .DiscordLogin}}<a class="btn auth-discord" href="/auth/discord"><i class="fa-brands fa-discord" aria-hidden="true"></i> Connect Discord</a>{{else}}<span class="who">not configured</span>{{end}}
     </li>
     <li>
         <strong>YouTube</strong>
         {{if .User.YouTubeChannelID}}
         <span class="who">connected ({{.User.YouTubeChannelTitle}})</span>
             {{if .User.DiscordID}}
-            <form method="post" action="/account/unlink/youtube"><button type="submit">Unlink YouTube</button></form>
+            <form method="post" action="/account/unlink/youtube"><button type="submit"><i class="fa-solid fa-link-slash" aria-hidden="true"></i> Unlink YouTube</button></form>
             {{end}}
-        {{else if .YouTubeLogin}}<a class="btn auth-youtube" href="/auth/youtube">Connect YouTube</a>{{else}}<span class="who">not configured</span>{{end}}
+        {{else if .YouTubeLogin}}<a class="btn auth-youtube" href="/auth/youtube"><i class="fa-brands fa-youtube" aria-hidden="true"></i> Connect YouTube</a>{{else}}<span class="who">not configured</span>{{end}}
     </li>
 </ul>
 <p class="who">Skater pages pick up latest YouTube uploads while you are logged in, after YouTube is connected. Unlink needs the other provider still connected; otherwise delete the account.</p>
 <div class="form-actions">
-    <a class="btn" href="/auth/logout">Log out</a>
-    <a class="btn" href="/account/export">Download my data</a>
-    <button type="button" id="account-delete-open" aria-haspopup="dialog" aria-controls="account-delete">Delete my account</button>
+    <a class="btn" href="/auth/logout"><i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i> Log out</a>
+    <a class="btn" href="/account/export"><i class="fa-solid fa-download" aria-hidden="true"></i> Download my data</a>
+    <button type="button" id="account-delete-open" aria-haspopup="dialog" aria-controls="account-delete"><i class="fa-solid fa-trash" aria-hidden="true"></i> Delete my account</button>
 </div>
 <dialog class="account-delete" id="account-delete" aria-labelledby="account-delete-title" data-word="{{or .User.Username .User.DisplayName}}">
     <form method="post" action="/account/delete" class="form" id="account-delete-form">
@@ -36,8 +36,8 @@
             <input name="confirm" autocomplete="off" spellcheck="false" required>
         </label>
         <div class="form-actions">
-            <button type="button" class="md-discard" id="account-delete-cancel">Cancel</button>
-            <button type="submit" id="account-delete-go" disabled>Delete my account</button>
+            <button type="button" class="md-discard" id="account-delete-cancel"><i class="fa-solid fa-xmark" aria-hidden="true"></i> Cancel</button>
+            <button type="submit" id="account-delete-go" disabled><i class="fa-solid fa-trash" aria-hidden="true"></i> Delete my account</button>
         </div>
     </form>
 </dialog>

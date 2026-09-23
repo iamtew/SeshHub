@@ -1,6 +1,6 @@
 {{define "content"}}
 <h1>{{.Title}}</h1>
-<p>{{if .Skater}}<a class="btn" href="/dashboard/articles/new">New draft</a>{{else}}<a class="btn" href="/admin/articles/new">New article</a>{{end}}</p>
+<p>{{if .Skater}}<a class="btn" href="/dashboard/articles/new"><i class="fa-solid fa-plus" aria-hidden="true"></i> New draft</a>{{else}}<a class="btn" href="/admin/articles/new"><i class="fa-solid fa-plus" aria-hidden="true"></i> New article</a>{{end}}</p>
 {{if not .Articles}}
 <p>None yet.</p>
 {{else}}
@@ -10,10 +10,10 @@
     <a href="/news/{{.Slug}}">{{.Title}}</a>
     <span class="who">{{.Status}} · {{.Visibility}}</span>
     {{if $.Skater}}
-    <a class="btn" href="/dashboard/articles/{{.ID}}">Edit</a>
+    <a class="btn" href="/dashboard/articles/{{.ID}}"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i> Edit</a>
     {{else}}
-    <a class="btn" href="/admin/articles/{{.ID}}">Edit</a>
-    <form method="post" action="/admin/articles/{{.ID}}/delete"><button type="submit">Delete</button></form>
+    <a class="btn" href="/admin/articles/{{.ID}}"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i> Edit</a>
+    <form method="post" action="/admin/articles/{{.ID}}/delete"><button type="submit"><i class="fa-solid fa-trash" aria-hidden="true"></i> Delete</button></form>
     {{end}}
 </li>
 {{end}}

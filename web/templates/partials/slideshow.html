@@ -2,32 +2,32 @@
 {{if .Gallery}}
 <div class="slideshow" data-gallery data-json="#{{.GalleryScript}}"{{if .PhotosLive}} data-live="1" data-grid="#photos-grid" data-pager=".pager"{{end}}>
     <div class="slideshow-main">
-        <button type="button" class="slideshow-prev" aria-label="Previous photo">◀</button>
+        <button type="button" class="slideshow-prev" aria-label="Previous photo"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
         <div class="slideshow-stage">
             <div class="slideshow-frame">
                 <img class="slideshow-img" alt="">
                 {{if .PhotosLive}}<a class="photo-credit" hidden></a>{{end}}
             </div>
         </div>
-        <button type="button" class="slideshow-next" aria-label="Next photo">▶</button>
+        <button type="button" class="slideshow-next" aria-label="Next photo"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
     </div>
     {{if not .PhotosLive}}
     <div class="slideshow-thumbs">
-        <button type="button" class="slideshow-tprev" aria-label="Previous thumbnails">▲</button>
+        <button type="button" class="slideshow-tprev" aria-label="Previous thumbnails"><i class="fa-solid fa-chevron-up" aria-hidden="true"></i></button>
         <div class="slideshow-strip"></div>
-        <button type="button" class="slideshow-tnext" aria-label="Next thumbnails">▼</button>
+        <button type="button" class="slideshow-tnext" aria-label="Next thumbnails"><i class="fa-solid fa-chevron-down" aria-hidden="true"></i></button>
     </div>
     {{end}}
     <dialog class="slideshow-full">
-        <button type="button" class="slideshow-full-prev" aria-label="Previous photo">◀</button>
+        <button type="button" class="slideshow-full-prev" aria-label="Previous photo"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
         <div class="slideshow-stage">
             <div class="slideshow-frame">
                 <img class="slideshow-full-img" alt="">
                 {{if .PhotosLive}}<a class="photo-credit" hidden></a>{{end}}
             </div>
         </div>
-        <button type="button" class="slideshow-full-next" aria-label="Next photo">▶</button>
-        <button type="button" class="slideshow-full-close" aria-label="Close">Close</button>
+        <button type="button" class="slideshow-full-next" aria-label="Next photo"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
+        <button type="button" class="slideshow-full-close" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i> Close</button>
     </dialog>
 </div>
 <script type="application/json" id="{{.GalleryScript}}">{{.GalleryJSON}}</script>

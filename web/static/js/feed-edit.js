@@ -19,7 +19,9 @@
     if (act) act.value = hidden ? "show" : "hide";
     if (btn) {
       var label = hidden ? "Unhide" : "Hide";
-      btn.textContent = label;
+      btn.innerHTML = hidden
+        ? '<i class="fa-solid fa-eye-slash" aria-hidden="true"></i> Unhide'
+        : '<i class="fa-regular fa-eye" aria-hidden="true"></i> Hide';
       btn.setAttribute("aria-label", label);
       btn.setAttribute("aria-pressed", hidden ? "true" : "false");
     }
@@ -54,7 +56,10 @@
     setIds(li, id);
     setHideUI(li, !!hidden);
     var star = li.querySelector('button[aria-label="Set as featured"]');
-    if (star) star.removeAttribute("aria-pressed");
+    if (star) {
+      star.removeAttribute("aria-pressed");
+      star.innerHTML = '<i class="fa-regular fa-star" aria-hidden="true"></i>';
+    }
   }
 
   function toGrid(box) {
@@ -96,6 +101,11 @@
     iframe.title = title;
     setIds(feat, id);
     setHideUI(feat, hidden);
+    var star = feat.querySelector('button[aria-label="Set as featured"]');
+    if (star) {
+      star.setAttribute("aria-pressed", "true");
+      star.innerHTML = '<i class="fa-solid fa-star" aria-hidden="true"></i>';
+    }
     if (el.tagName === "LI") el.remove();
   }
 
@@ -104,7 +114,9 @@
       var on = !article.classList.contains("feed-edit");
       article.classList.toggle("feed-edit", on);
       toggle.setAttribute("aria-pressed", on ? "true" : "false");
-      toggle.textContent = on ? "Done" : "Edit YouTube feed";
+      toggle.innerHTML = on
+        ? '<i class="fa-solid fa-check" aria-hidden="true"></i> Done'
+        : '<i class="fa-solid fa-pen-to-square" aria-hidden="true"></i> Edit YouTube feed';
     });
   }
 

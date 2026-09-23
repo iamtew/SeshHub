@@ -6,7 +6,7 @@
 {{range .Gallery}}
 <li draggable="true" data-id="{{.ID}}">
     <img src="{{.URL}}" alt="" class="thumb" draggable="false">
-    <form method="post" action="/dashboard/gallery/{{.ID}}/delete"><button type="submit">Delete</button></form>
+    <form method="post" action="/dashboard/gallery/{{.ID}}/delete"><button type="submit"><i class="fa-solid fa-trash" aria-hidden="true"></i> Delete</button></form>
 </li>
 {{end}}
 </ul>
@@ -58,7 +58,7 @@
         Drop JPEG or PNG here, or click (15MB).
         <input type="file" name="photo" accept="image/jpeg,image/png" multiple>
     </label>
-    <button type="button" id="gallery-pick">Add photo</button>
+    <button type="button" id="gallery-pick"><i class="fa-solid fa-image" aria-hidden="true"></i> Add photo</button>
 </form>
 <script>
 (function () {

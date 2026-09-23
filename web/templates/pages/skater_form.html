@@ -2,9 +2,9 @@
 <h1>{{.Title}}</h1>
 <div class="profile-tabs" id="profile-tabs" data-tab="photo" data-initial-tab="{{or .Tab "photo"}}">
 <div class="profile-tablist" role="tablist" aria-label="Profile settings">
-    <button type="button" role="tab" id="tab-photo" data-tab="photo" aria-controls="panel-photo" aria-selected="true">Photo</button>
-    <button type="button" role="tab" id="tab-profile" data-tab="profile" aria-controls="panel-profile" aria-selected="false" tabindex="-1">Profile</button>
-    <button type="button" role="tab" id="tab-youtube" data-tab="youtube" aria-controls="panel-youtube" aria-selected="false" tabindex="-1">YouTube</button>
+    <button type="button" role="tab" id="tab-photo" data-tab="photo" aria-controls="panel-photo" aria-selected="true"><i class="fa-solid fa-image" aria-hidden="true"></i> Photo</button>
+    <button type="button" role="tab" id="tab-profile" data-tab="profile" aria-controls="panel-profile" aria-selected="false" tabindex="-1"><i class="fa-solid fa-user" aria-hidden="true"></i> Profile</button>
+    <button type="button" role="tab" id="tab-youtube" data-tab="youtube" aria-controls="panel-youtube" aria-selected="false" tabindex="-1"><i class="fa-brands fa-youtube" aria-hidden="true"></i> YouTube</button>
 </div>
 <form method="post" action="{{.Action}}" class="form" id="profile-form" enctype="multipart/form-data" data-default-name="{{.DefaultName}}" data-default-slug="{{.DefaultSlug}}" data-default-avatar="{{.User.ProviderAvatar}}">
     <input type="hidden" name="tab" value="photo">
@@ -19,11 +19,11 @@
                 <div id="avatar-crop" hidden>
                     <canvas width="320" height="320"></canvas>
                     <label>Zoom <input type="range" id="avatar-zoom" min="0" max="100" value="0"></label>
-                    <button type="button" id="avatar-crop-ok">Use crop</button>
+                    <button type="button" id="avatar-crop-ok"><i class="fa-solid fa-crop" aria-hidden="true"></i> Use crop</button>
                 </div>
                 <div class="field-reset">
                     <span class="who">Site photo</span>
-                    <button type="button" data-reset="avatar">Reset</button>
+                    <button type="button" data-reset="avatar"><i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Reset</button>
                 </div>
                 <input type="hidden" name="avatar_reset" value="">
             </div>
@@ -64,11 +64,11 @@
         {{template "md_toolbar" .}}
         <div class="field-reset">
             <label>Display name <input name="display_name" value="{{or .P.RealName .DefaultName}}"></label>
-            <button type="button" data-reset="name">Reset</button>
+            <button type="button" data-reset="name"><i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Reset</button>
         </div>
         <div class="field-reset">
             <label>User slug <span class="who">{{.SlugPrefix}}</span><input name="slug" value="{{.P.Slug}}" autocomplete="off"></label>
-            <button type="button" data-reset="slug">Reset</button>
+            <button type="button" data-reset="slug"><i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Reset</button>
         </div>
         <label>Location <input name="location" value="{{.P.Location}}"></label>
         <label>Stance
@@ -95,13 +95,13 @@
         {{end}}
         {{else}}
         <p class="who">These settings are only available after you link a channel.</p>
-        {{if .YouTubeLogin}}<p><a class="btn" href="/auth/youtube">Connect YouTube</a></p>{{else}}not configured{{end}}
+        {{if .YouTubeLogin}}<p><a class="btn" href="/auth/youtube"><i class="fa-brands fa-youtube" aria-hidden="true"></i> Connect YouTube</a></p>{{else}}not configured{{end}}
         {{end}}
     </div>
     <div id="profile-dirty" class="save-bar" hidden>
         <p>You have unsaved changes</p>
-        <button type="button" id="profile-discard">Discard</button>
-        <button type="submit">Save</button>
+        <button type="button" id="profile-discard"><i class="fa-solid fa-xmark" aria-hidden="true"></i> Discard</button>
+        <button type="submit"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save</button>
     </div>
 </form>
 <script src="/static/js/iro.min.js"></script>
@@ -502,10 +502,10 @@
         <p class="who">Unchecked = all types. Short is duration ≤ 3 minutes; live/premiere from YouTube’s broadcast status.</p>
     </fieldset>
     <div class="form-actions">
-        <button type="submit" name="action" value="save">Save</button>
-        <button type="submit" name="action" value="test">Test</button>
-        <button type="submit" name="action" value="add">Add rule</button>
-        <button type="submit" name="action" value="clear">Clear</button>
+        <button type="submit" name="action" value="save"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save</button>
+        <button type="submit" name="action" value="test"><i class="fa-solid fa-flask" aria-hidden="true"></i> Test</button>
+        <button type="submit" name="action" value="add"><i class="fa-solid fa-plus" aria-hidden="true"></i> Add rule</button>
+        <button type="submit" name="action" value="clear"><i class="fa-solid fa-broom" aria-hidden="true"></i> Clear</button>
     </div>
 </form>
 {{if .Test}}

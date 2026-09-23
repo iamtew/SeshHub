@@ -1,7 +1,7 @@
 {{define "content"}}
 <h1>Forum</h1>
 <p><a href="/forum/mentions">Mentions</a>{{if .MentionUnread}} <span class="forum-badge">{{.MentionUnread}}</span>{{end}}</p>
-{{if .Admin}}<p><a class="btn" href="/admin/forum/sections">Manage sections</a></p>{{end}}
+{{if .Admin}}<p><a class="btn" href="/admin/forum/sections"><i class="fa-solid fa-gear" aria-hidden="true"></i> Manage sections</a></p>{{end}}
 {{if not .Sections}}
 <p>No sections yet.</p>
 {{else}}

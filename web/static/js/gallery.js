@@ -214,9 +214,9 @@
         pager.innerHTML =
           '<span class="pager-size">Rows per page:<details><summary>' + m.per + '</summary><div>' + sizeLinks + '</div></details></span>' +
           '<span class="pager-range">' + m.from + '–' + m.to + ' of ' + photos.length + '</span>' +
-          nav(m.page > 1, '/photos?n=' + m.per + '&p=1', 'First page', '|‹') +
-          nav(m.page > 1, '/photos?n=' + m.per + '&p=' + (m.page - 1), 'Previous page', '‹') +
-          nav(m.to < photos.length, '/photos?n=' + m.per + '&p=' + (m.page + 1), 'Next page', '›');
+          nav(m.page > 1, '/photos?n=' + m.per + '&p=1', 'First page', '<i class="fa-solid fa-angles-left" aria-hidden="true"></i>') +
+          nav(m.page > 1, '/photos?n=' + m.per + '&p=' + (m.page - 1), 'Previous page', '<i class="fa-solid fa-chevron-left" aria-hidden="true"></i>') +
+          nav(m.to < photos.length, '/photos?n=' + m.per + '&p=' + (m.page + 1), 'Next page', '<i class="fa-solid fa-chevron-right" aria-hidden="true"></i>');
       }
     }
 

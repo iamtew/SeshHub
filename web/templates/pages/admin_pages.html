@@ -1,6 +1,6 @@
 {{define "content"}}
 <h1>Pages</h1>
-<p><a class="btn" href="/admin/pages/new">New page</a></p>
+<p><a class="btn" href="/admin/pages/new"><i class="fa-solid fa-plus" aria-hidden="true"></i> New page</a></p>
 {{if not .Pages}}
 <p>None yet.</p>
 {{else}}
@@ -9,8 +9,8 @@
 <li>
     <a href="/{{.Slug}}">{{.Title}}</a>
     <span class="who">{{if .Published}}published{{else}}draft{{end}} · {{.Visibility}}</span>
-    <a class="btn" href="/admin/pages/{{.ID}}">Edit</a>
-    {{if not .IsLocked}}<form method="post" action="/admin/pages/{{.ID}}/delete"><button type="submit">Delete</button></form>{{end}}
+    <a class="btn" href="/admin/pages/{{.ID}}"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i> Edit</a>
+    {{if not .IsLocked}}<form method="post" action="/admin/pages/{{.ID}}/delete"><button type="submit"><i class="fa-solid fa-trash" aria-hidden="true"></i> Delete</button></form>{{end}}
 </li>
 {{end}}
 </ul>

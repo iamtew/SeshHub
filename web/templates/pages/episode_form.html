@@ -39,9 +39,9 @@
         <label>URL <input name="row_url" value="{{.URL}}"></label>
     </fieldset>
     {{end}}
-    <button type="submit">Save</button>
+    <button type="submit"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save</button>
 </form>
 {{if not .New}}
-<form method="post" action="/admin/episodes/{{.E.Number}}/delete"><button type="submit">Delete</button></form>
+<form method="post" action="/admin/episodes/{{.E.Number}}/delete"><button type="submit"><i class="fa-solid fa-trash" aria-hidden="true"></i> Delete</button></form>
 {{end}}
 {{end}}

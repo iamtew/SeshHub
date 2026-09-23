@@ -2,7 +2,7 @@
 <p class="who forum-crumb"><a href="/forum">Forum</a>{{if .Admin}} · <a href="/admin/forum/sections">Manage sections</a>{{end}}</p>
 <h1>{{.S.Name}}</h1>
 {{if .S.Description}}<p>{{.S.Description}}</p>{{end}}
-<p><a class="btn" href="/forum/{{.S.Slug}}/new">New thread</a></p>
+<p><a class="btn" href="/forum/{{.S.Slug}}/new"><i class="fa-solid fa-plus" aria-hidden="true"></i> New thread</a></p>
 {{if not .Threads}}
 <p>No threads yet — start one.</p>
 {{else}}

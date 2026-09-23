@@ -10,7 +10,7 @@
     {{if .BioHTML}}<div class="prose">{{.BioHTML}}</div>{{end}}
     {{template "slideshow.html" .}}
     {{if and .CanEdit .HasYouTube}}
-    <p><button type="button" class="btn" data-feed-toggle aria-pressed="false">Edit YouTube feed</button></p>
+    <p><button type="button" class="btn" data-feed-toggle aria-pressed="false"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i> Edit YouTube feed</button></p>
     {{end}}
     {{if .HasYouTube}}
     <div class="feed-featured embed{{if .Featured}}{{if .Featured.Hidden}} is-hidden{{end}}{{end}}"{{if not .Featured}} hidden{{end}} data-id="{{with .Featured}}{{.ID}}{{end}}" data-thumb="{{with .Featured}}{{.Thumb}}{{end}}" data-title="{{with .Featured}}{{.Title}}{{end}}" data-stats="{{with .Featured}}{{.StatsLine}}{{end}}">
@@ -20,13 +20,13 @@
                 <input type="hidden" name="id" value="{{with .Featured}}{{.ID}}{{end}}">
                 <input type="hidden" name="op" value="feature">
                 <input type="hidden" name="next" value="{{.FeedNext}}">
-                <button type="submit" aria-label="Set as featured" aria-pressed="true">★</button>
+                <button type="submit" aria-label="Set as featured" aria-pressed="true"><i class="fa-solid fa-star" aria-hidden="true"></i></button>
             </form>
             <form method="post" action="/dashboard/profile/clip">
                 <input type="hidden" name="id" value="{{with .Featured}}{{.ID}}{{end}}">
                 <input type="hidden" name="op" value="{{if .Featured}}{{if .Featured.Hidden}}show{{else}}hide{{end}}{{else}}hide{{end}}" data-hide-action>
                 <input type="hidden" name="next" value="{{.FeedNext}}">
-                <button type="submit" data-hide-btn aria-label="{{if .Featured}}{{if .Featured.Hidden}}Unhide{{else}}Hide{{end}}{{else}}Hide{{end}}" aria-pressed="{{if .Featured}}{{.Featured.Hidden}}{{else}}false{{end}}">{{if .Featured}}{{if .Featured.Hidden}}Unhide{{else}}Hide{{end}}{{else}}Hide{{end}}</button>
+                <button type="submit" data-hide-btn aria-label="{{if .Featured}}{{if .Featured.Hidden}}Unhide{{else}}Hide{{end}}{{else}}Hide{{end}}" aria-pressed="{{if .Featured}}{{.Featured.Hidden}}{{else}}false{{end}}">{{if .Featured}}{{if .Featured.Hidden}}<i class="fa-solid fa-eye-slash" aria-hidden="true"></i> Unhide{{else}}<i class="fa-regular fa-eye" aria-hidden="true"></i> Hide{{end}}{{else}}<i class="fa-regular fa-eye" aria-hidden="true"></i> Hide{{end}}</button>
             </form>
         </div>
     </div>
@@ -49,13 +49,13 @@
                     <input type="hidden" name="id" value="{{.ID}}">
                     <input type="hidden" name="op" value="feature">
                     <input type="hidden" name="next" value="{{$.FeedNext}}">
-                    <button type="submit" aria-label="Set as featured">★</button>
+                    <button type="submit" aria-label="Set as featured"><i class="fa-regular fa-star" aria-hidden="true"></i></button>
                 </form>
                 <form method="post" action="/dashboard/profile/clip">
                     <input type="hidden" name="id" value="{{.ID}}">
                     <input type="hidden" name="op" value="{{if .Hidden}}show{{else}}hide{{end}}" data-hide-action>
                     <input type="hidden" name="next" value="{{$.FeedNext}}">
-                    <button type="submit" data-hide-btn aria-label="{{if .Hidden}}Unhide{{else}}Hide{{end}}" aria-pressed="{{.Hidden}}">{{if .Hidden}}Unhide{{else}}Hide{{end}}</button>
+                    <button type="submit" data-hide-btn aria-label="{{if .Hidden}}Unhide{{else}}Hide{{end}}" aria-pressed="{{.Hidden}}">{{if .Hidden}}<i class="fa-solid fa-eye-slash" aria-hidden="true"></i> Unhide{{else}}<i class="fa-regular fa-eye" aria-hidden="true"></i> Hide{{end}}</button>
                 </form>
             </div>
             {{end}}
@@ -69,7 +69,7 @@
     {{if .Social}}<h2>Links</h2><ul>{{range .Social}}<li>{{.}}</li>{{end}}</ul>{{end}}
     {{if .Sponsors}}<h2>Sponsors</h2><ul>{{range .Sponsors}}<li>{{.}}</li>{{end}}</ul>{{end}}
     {{if .Tricks}}<h2>Tricks</h2><ul>{{range .Tricks}}<li>{{.}}</li>{{end}}</ul>{{end}}
-    {{if .CanEdit}}<p><a href="/dashboard/profile">Edit profile</a></p>{{end}}
+    {{if .CanEdit}}<p><a href="/dashboard/profile"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i> Edit profile</a></p>{{end}}
 </article>
 {{if .HasYouTube}}<script src="/static/js/feed-edit.js" defer></script>{{end}}
 {{end}}

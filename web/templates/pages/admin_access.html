@@ -7,8 +7,8 @@
 {{range .Requests}}
 <li>
     <strong>{{.DisplayName}}</strong> <span class="who">{{.Username}}</span>
-    <form method="post" action="/admin/access/{{.ID}}/approve"><button type="submit">Approve</button></form>
-    <form method="post" action="/admin/access/{{.ID}}/reject"><button type="submit">Reject</button></form>
+    <form method="post" action="/admin/access/{{.ID}}/approve"><button type="submit"><i class="fa-solid fa-check" aria-hidden="true"></i> Approve</button></form>
+    <form method="post" action="/admin/access/{{.ID}}/reject"><button type="submit"><i class="fa-solid fa-ban" aria-hidden="true"></i> Reject</button></form>
 </li>
 {{end}}
 </ul>

@@ -12,8 +12,8 @@
         </details>
     </span>
     <span class="pager-range">{{.From}}–{{.To}} of {{.Total}}</span>
-    {{if .HasPrev}}<a href="{{.PagerBase}}?n={{.Per}}&amp;p=1" aria-label="First page">|‹</a>{{else}}<span aria-disabled="true">|‹</span>{{end}}
-    {{if .HasPrev}}<a href="{{.PagerBase}}?n={{.Per}}&amp;p={{.Prev}}" aria-label="Previous page">‹</a>{{else}}<span aria-disabled="true">‹</span>{{end}}
-    {{if .HasNext}}<a href="{{.PagerBase}}?n={{.Per}}&amp;p={{.Next}}" aria-label="Next page">›</a>{{else}}<span aria-disabled="true">›</span>{{end}}
+    {{if .HasPrev}}<a href="{{.PagerBase}}?n={{.Per}}&amp;p=1" aria-label="First page"><i class="fa-solid fa-angles-left" aria-hidden="true"></i></a>{{else}}<span aria-disabled="true"><i class="fa-solid fa-angles-left" aria-hidden="true"></i></span>{{end}}
+    {{if .HasPrev}}<a href="{{.PagerBase}}?n={{.Per}}&amp;p={{.Prev}}" aria-label="Previous page"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></a>{{else}}<span aria-disabled="true"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></span>{{end}}
+    {{if .HasNext}}<a href="{{.PagerBase}}?n={{.Per}}&amp;p={{.Next}}" aria-label="Next page"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></a>{{else}}<span aria-disabled="true"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></span>{{end}}
 </nav>
 {{end}}
