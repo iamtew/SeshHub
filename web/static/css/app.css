@@ -612,6 +612,20 @@ img.emoji { height: 1.2em; width: 1.2em; margin: 0 0.05em; vertical-align: -0.15
 }
 .grid li:has(.thumb) { border: none; }
 .grid li:has(> a.profile-head) { padding: 0; }
+.grid li:has(> a.profile-head--list) {
+    display: grid;
+    grid-template-columns: 6rem minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 0.35rem 1.25rem;
+    align-items: stretch;
+    padding: 1rem;
+    height: calc(6rem + 2rem);
+    box-sizing: border-box;
+}
+.grid li:has(> a.profile-head--list):not(:has(.avframe)) {
+    grid-template-columns: minmax(0, 1fr);
+    height: auto;
+}
 .photo-cell { position: relative; padding: 0; gap: 0; }
 .photo-credit {
     position: absolute; left: 0.45rem; bottom: 0.45rem; z-index: 1;
@@ -676,6 +690,7 @@ img.emoji { height: 1.2em; width: 1.2em; margin: 0 0.05em; vertical-align: -0.15
 .gallery-edit-list li.drag { opacity: 0.55; cursor: grabbing; }
 .gallery-edit-list .thumb { height: 7rem; object-fit: cover; -webkit-user-drag: none; user-select: none; pointer-events: none; }
 a.profile-head { padding: 1rem; color: inherit; text-decoration: none; }
+a.profile-head--list { display: contents; padding: 0; }
 .form { display: flex; flex-direction: column; gap: 1.1rem; max-width: 36rem; }
 .form:has(.avatar-tools) { max-width: 48rem; }
 .profile-tablist {
@@ -724,7 +739,12 @@ a.profile-head { padding: 1rem; color: inherit; text-decoration: none; }
     width: 100%; height: 100%; max-width: none; object-fit: cover; display: block;
     border-radius: inherit; background: var(--black);
 }
-.profile-head--list .avframe { width: 6rem; height: 6rem; flex-basis: 6rem; }
+.profile-head--list .avframe { width: 6rem; height: 6rem; flex-basis: 6rem; grid-column: 1; grid-row: 1 / -1; align-self: start; }
+.profile-head--list > div { grid-column: 2; grid-row: 1; min-width: 0; }
+.grid li > .twitch-live-clip {
+    grid-column: 2; grid-row: 2;
+    min-width: 0; min-height: 0; overflow: hidden; align-self: stretch;
+}
 .avatar-border { border: 3px solid var(--chartreuse); }
 .avb-default, .avb-custom, .avb-pulse, .avb-strobe, .avb-fire, .avb-neon {
     border: var(--avw, 3px) solid #E5F20D;
