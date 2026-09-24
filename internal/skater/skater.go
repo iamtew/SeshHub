@@ -233,14 +233,31 @@ func ListFriends(db *sql.DB) ([]Profile, error) {
 	return list(db, "friend")
 }
 
+func ListTwitchLive(db *sql.DB) ([]Profile, error) {
+	where := `p.twitch_login != ''`
+	if !twitch.On() {
+		where += ` AND IFNULL(p.twitch_started_at,'') != ''`
+	}
+	return listWhere(db, where)
+}
+
 func list(db *sql.DB, roster string) ([]Profile, error) {
-	q := profileSelect + ` ORDER BY COALESCE(NULLIF(p.real_name,''), p.skater_name)`
 	switch roster {
 	case "team":
-		q = profileSelect + ` WHERE u.role IN ('skater','admin') ORDER BY COALESCE(NULLIF(p.real_name,''), p.skater_name)`
+		return listWhere(db, `u.role IN ('skater','admin')`)
 	case "friend":
-		q = profileSelect + ` WHERE u.role = 'friend' ORDER BY COALESCE(NULLIF(p.real_name,''), p.skater_name)`
+		return listWhere(db, `u.role = 'friend'`)
+	default:
+		return listWhere(db, "")
 	}
+}
+
+func listWhere(db *sql.DB, where string) ([]Profile, error) {
+	q := profileSelect
+	if where != "" {
+		q += ` WHERE ` + where
+	}
+	q += ` ORDER BY COALESCE(NULLIF(p.real_name,''), p.skater_name)`
 	rows, err := db.Query(q)
 	if err != nil {
 		return nil, err

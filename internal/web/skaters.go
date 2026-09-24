@@ -500,12 +500,10 @@ func fillTwitchInfo(r *http.Request, cfg config.Config, p skater.Profile, data m
 			return
 		}
 		data["TwitchLive"] = true
-		title, _ := data["TwitchTitle"].(string)
-		if title == "" {
-			data["TwitchTitle"] = "Audition"
+		if _, ok := data["TwitchTitle"]; !ok {
+			data["TwitchTitle"] = p.TwitchTitle
 		}
-		up, _ := data["TwitchUptime"].(string)
-		if up == "" {
+		if _, ok := data["TwitchUptime"]; !ok {
 			data["TwitchUptime"] = p.TwitchUptime()
 		}
 	}()

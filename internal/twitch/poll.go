@@ -75,6 +75,6 @@ func setLive(db *sql.DB, id, title string, started time.Time) error {
 }
 
 func clearLive(db *sql.DB, id string) error {
-	_, err := db.Exec(`UPDATE skater_profiles SET twitch_title='', twitch_started_at=NULL WHERE id=?`, id)
+	_, err := db.Exec(`UPDATE skater_profiles SET twitch_started_at=NULL WHERE id=?`, id)
 	return err
 }

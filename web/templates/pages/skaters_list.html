@@ -11,10 +11,10 @@
         {{if .AvatarURL}}<span class="avframe {{.AvatarClass}}" style="{{.AvatarStyle}}"><img class="avatar" src="{{.AvatarURL}}" alt="" referrerpolicy="no-referrer"></span>{{end}}
         <div>
             <strong>{{.PublicName}}</strong>
-            {{if .TwitchLive}}<span class="live">LIVE</span> <span class="who">{{or .TwitchTitle "Audition"}} · {{.TwitchUptime}}</span>{{end}}
-            <span class="who">{{.Stance}} · {{.Status}}{{if .Location}} · {{.Location}}{{end}}</span>
+            <span class="who">{{.Stance}} · {{.Status}}{{if .Location}} · {{.Location}}</span>
         </div>
     </a>
+    {{if .TwitchLive}}<div class="twitch-live-clip">{{template "twitch-live" .}}</div>{{end}}
 </li>
 {{end}}
 </ul>

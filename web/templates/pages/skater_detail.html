@@ -3,9 +3,9 @@
     <div class="profile-head">
         {{if .P.AvatarURL}}<span class="avframe {{.P.AvatarClass}}" style="{{.P.AvatarStyle}}"><img class="avatar" src="{{.P.AvatarURL}}" alt="" referrerpolicy="no-referrer"></span>{{end}}
         <div>
-            <h1>{{.P.PublicName}}{{if .P.TwitchLive}} <span class="live">LIVE</span>{{end}}</h1>
+            <h1>{{.P.PublicName}}</h1>
             <p class="who">{{.P.Stance}} · {{.P.Status}}{{if .P.Location}} · {{.P.Location}}{{end}}</p>
-            {{if .P.TwitchLive}}<p class="who"><a href="{{.P.TwitchURL}}" target="_blank" rel="noopener noreferrer">{{or .P.TwitchTitle "Audition"}} · {{.P.TwitchUptime}}</a></p>{{end}}
+            {{if .P.TwitchLive}}{{template "twitch-live" .P}}{{end}}
             {{if .Links}}<p class="profile-links">{{range .Links}}<a class="hub-btn" href="{{.URL}}" target="_blank" rel="noopener noreferrer" aria-label="{{.Label}}"><i class="{{.Icon}}" aria-hidden="true"></i></a>{{end}}</p>{{end}}
         </div>
     </div>

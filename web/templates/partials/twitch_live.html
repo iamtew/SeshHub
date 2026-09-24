@@ -1,0 +1,6 @@
+{{define "twitch-live"}}
+<a class="twitch-live" href="{{.TwitchURL}}" target="_blank" rel="noopener noreferrer">
+    <strong>{{.PublicName}} is live on Twitch!</strong>
+    {{if .TwitchTitle}}<span class="twitch-live-title">{{.TwitchTitle}}</span>{{end}}
+</a>
+{{end}}

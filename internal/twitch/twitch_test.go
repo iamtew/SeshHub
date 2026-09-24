@@ -112,8 +112,8 @@ func TestPollWentLiveOnce(t *testing.T) {
 	if err != nil || len(went) != 0 {
 		t.Fatalf("offline %+v %v", went, err)
 	}
-	if err := sqldb.QueryRow(`SELECT twitch_title, IFNULL(twitch_started_at,'') FROM skater_profiles WHERE id='p'`).Scan(&gotTitle, &gotStart); err != nil || gotTitle != "" || gotStart != "" {
-		t.Fatalf("cleared %q %q %v", gotTitle, gotStart, err)
+	if err := sqldb.QueryRow(`SELECT twitch_title, IFNULL(twitch_started_at,'') FROM skater_profiles WHERE id='p'`).Scan(&gotTitle, &gotStart); err != nil || gotTitle != "second" || gotStart != "" {
+		t.Fatalf("kept title %q %q %v", gotTitle, gotStart, err)
 	}
 	live, title = true, "again"
 	went, err = Poll(ctx, sqldb, c)

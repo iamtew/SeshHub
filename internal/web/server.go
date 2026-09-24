@@ -13,6 +13,7 @@ import (
 	"seshhub/internal/bot"
 	"seshhub/internal/config"
 	"seshhub/internal/forum"
+	"seshhub/internal/skater"
 	"seshhub/internal/yt"
 )
 
@@ -166,6 +167,11 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, dat
 	path, _ := data["Path"].(string)
 	data["NavAbout"] = path == "/about" || strings.HasPrefix(path, "/about/")
 	if !authPage {
+		if s.db != nil {
+			if live, err := skater.ListTwitchLive(s.db); err == nil && len(live) > 0 {
+				data["LiveTwitch"] = live
+			}
+		}
 		if u != nil {
 			forum.Touch(u.ID)
 			data["SuperAdmin"] = auth.IsSuperAdmin(u.DiscordID, s.cfg.SuperAdminIDs)
@@ -194,6 +200,7 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, dat
 		filepath.Join(s.webDir, "templates", "partials", "forum_badge.html"),
 		filepath.Join(s.webDir, "templates", "partials", "forum_md.html"),
 		filepath.Join(s.webDir, "templates", "partials", "slideshow.html"),
+		filepath.Join(s.webDir, "templates", "partials", "twitch_live.html"),
 		filepath.Join(s.webDir, "templates", "pages", page),
 	}
 	t, err := template.ParseFiles(files...)
