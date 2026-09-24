@@ -481,9 +481,13 @@ form[action*="/unlink/"] button { background: var(--magenta); }
 .twitch-live-title {
     display: block; margin-top: 0.25rem; font-weight: 600; overflow-wrap: anywhere;
 }
-.twitch-live-clip { min-width: 0; }
+.twitch-live-clip { min-width: 0; overflow: hidden; }
+.twitch-live-clip .twitch-live { overflow: hidden; }
+.twitch-live-clip .twitch-live strong {
+    font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .twitch-live-clip .twitch-live-title {
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; overflow-wrap: normal;
 }
 .profile-head .twitch-live { margin-top: 0.65rem; }
 .forum-cooked { overflow-wrap: anywhere; }
@@ -604,6 +608,7 @@ img.emoji { height: 1.2em; width: 1.2em; margin: 0 0.05em; vertical-align: -0.15
 .grid li {
     border: 2px solid var(--violet); padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem;
     border-radius: var(--ctrl-r); background: rgb(0 0 0 / 0.35);
+    min-width: 0; overflow: hidden;
 }
 .grid li:has(.thumb) { border: none; }
 .grid li:has(> a.profile-head) { padding: 0; }
