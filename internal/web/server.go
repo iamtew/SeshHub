@@ -1,6 +1,7 @@
 package web
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"html/template"
@@ -14,6 +15,7 @@ import (
 	"seshhub/internal/config"
 	"seshhub/internal/forum"
 	"seshhub/internal/skater"
+	"seshhub/internal/twitch"
 	"seshhub/internal/yt"
 )
 
@@ -189,6 +191,7 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, dat
 			data["Hero"] = true
 		}
 	}
+	s.fillTwitchTitles(r.Context(), data)
 	files := []string{
 		filepath.Join(s.webDir, "templates", "layouts", "base.html"),
 		filepath.Join(s.webDir, "templates", "partials", "nav.html"),
@@ -212,6 +215,70 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, dat
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := t.ExecuteTemplate(w, "base.html", data); err != nil {
 		slog.Error("execute template", "err", err, "page", page)
+	}
+}
+
+func (s *Server) fillTwitchTitles(ctx context.Context, data map[string]any) {
+	if s.db == nil {
+		return
+	}
+	live, _ := data["LiveTwitch"].([]skater.Profile)
+	list, _ := data["Skaters"].([]skater.Profile)
+	p, hasP := data["P"].(skater.Profile)
+	need := map[string]struct{}{}
+	take := func(p skater.Profile) {
+		if p.TwitchLogin != "" && strings.TrimSpace(p.TwitchTitle) == "" {
+			need[p.TwitchLogin] = struct{}{}
+		}
+	}
+	for _, x := range live {
+		take(x)
+	}
+	for _, x := range list {
+		take(x)
+	}
+	if hasP {
+		take(p)
+	}
+	if len(need) == 0 {
+		return
+	}
+	logins := make([]string, 0, len(need))
+	for l := range need {
+		logins = append(logins, l)
+	}
+	titles := twitch.LastTitles(ctx, twitch.New(s.cfg.TwitchClientID, s.cfg.TwitchClientSecret), logins)
+	if len(titles) == 0 {
+		return
+	}
+	paint := func(p *skater.Profile) {
+		if strings.TrimSpace(p.TwitchTitle) != "" {
+			return
+		}
+		t := titles[p.TwitchLogin]
+		if t == "" {
+			return
+		}
+		p.TwitchTitle = t
+		if p.ID != "" {
+			_, _ = s.db.Exec(`UPDATE skater_profiles SET twitch_title=? WHERE id=?`, t, p.ID)
+		}
+	}
+	for i := range live {
+		paint(&live[i])
+	}
+	for i := range list {
+		paint(&list[i])
+	}
+	if hasP {
+		paint(&p)
+		data["P"] = p
+	}
+	if live != nil {
+		data["LiveTwitch"] = live
+	}
+	if list != nil {
+		data["Skaters"] = list
 	}
 }
 

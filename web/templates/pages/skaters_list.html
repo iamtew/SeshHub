@@ -11,7 +11,7 @@
         {{if .AvatarURL}}<span class="avframe {{.AvatarClass}}" style="{{.AvatarStyle}}"><img class="avatar" src="{{.AvatarURL}}" alt="" referrerpolicy="no-referrer"></span>{{end}}
         <div>
             <strong>{{.PublicName}}</strong>
-            <span class="who">{{.Stance}} · {{.Status}}{{if .Location}} · {{.Location}}</span>
+            <span class="who">{{.Stance}} · {{.Status}}{{if .Location}} · {{.Location}}{{end}}</span>
         </div>
     </a>
     {{if .TwitchLive}}<div class="twitch-live-clip">{{template "twitch-live" .}}</div>{{end}}

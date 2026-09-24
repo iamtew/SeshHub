@@ -59,13 +59,13 @@
     </section>
     {{end}}
     {{if not .AuthPage}}{{template "nav.html" .}}{{end}}
-    {{if .LiveTwitch}}
-    <div class="twitch-lives">
-    {{range .LiveTwitch}}{{template "twitch-live" .}}{{end}}
-    </div>
-    {{end}}
     {{if .MentionBanner}}<aside class="forum-mention-banner"><a href="/forum/mentions">You have {{.MentionBanner}} new mention{{if ne .MentionBanner 1}}s{{end}}</a></aside>{{end}}
     <main class="wrap{{if .AuthPage}} auth{{end}}">
+        {{if .LiveTwitch}}
+        <div class="twitch-lives">
+        {{range .LiveTwitch}}{{template "twitch-live" .}}{{end}}
+        </div>
+        {{end}}
         {{template "content" .}}
         {{if and .User .EditHref}}<p><a href="{{.EditHref}}"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i> Edit</a></p>{{end}}
     </main>

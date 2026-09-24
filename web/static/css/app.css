@@ -467,9 +467,8 @@ form[action*="/unlink/"] button { background: var(--magenta); }
     background: var(--red); color: var(--fg); vertical-align: middle;
 }
 .twitch-lives {
-    width: 70%; min-width: min(720px, 100%);
     display: flex; flex-direction: column; gap: 0.35rem;
-    margin: 0 0 0.75rem;
+    margin: -1.5rem -1.5rem 1.25rem;
 }
 .twitch-live {
     display: block; min-width: 0; padding: 0.7rem 0.9rem;
@@ -1022,7 +1021,7 @@ input, select, textarea { accent-color: var(--green); }
 }
 @media (max-width: 799px) {
     .md-preview { flex: none; }
-    .hero, .nav, .wrap, .foot, .forum-mention-banner, .twitch-lives { width: 100%; min-width: 0; }
+    .hero, .nav, .wrap, .foot, .forum-mention-banner { width: 100%; min-width: 0; }
     .forum-board { margin-top: 0.6rem; }
     .forum-board-head { display: none; }
     .forum-board--info .forum-board-head { display: grid; }
@@ -1110,8 +1109,9 @@ input, select, textarea { accent-color: var(--green); }
 }
 @media (max-width: 639px) {
     body { padding: max(0.4rem, env(safe-area-inset-top)) max(0.35rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(0.35rem, env(safe-area-inset-left)); }
-    .hero, .nav, .wrap, .foot, .forum-mention-banner, .twitch-lives { width: 100%; min-width: 0; }
+    .hero, .nav, .wrap, .foot, .forum-mention-banner { width: 100%; min-width: 0; }
     .wrap { padding-top: 0.65rem; padding-bottom: 1.1rem; }
+    .twitch-lives { margin-top: -0.65rem; }
     .forum-thumbs { flex-direction: column; align-items: stretch; }
     .forum-thumbs button { width: 100%; }
     .forum-thumbs img, .forum-existing img { max-width: 100%; max-height: 14rem; width: 100%; }

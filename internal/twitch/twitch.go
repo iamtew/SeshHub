@@ -25,6 +25,7 @@ type Client struct {
 	id, secret string
 	HTTP       *http.Client
 	API, Auth  string
+	Decapi     string
 
 	mu    sync.Mutex
 	token string
@@ -39,7 +40,7 @@ type Stream struct {
 }
 
 type Channel struct {
-	Login       string
+	ID, Login   string
 	DisplayName string
 	Description string
 	Created     time.Time
@@ -124,6 +125,7 @@ func (c *Client) User(ctx context.Context, login string) (Channel, error) {
 func parseUser(body []byte) (Channel, error) {
 	var raw struct {
 		Data []struct {
+			ID          string `json:"id"`
 			Login       string `json:"login"`
 			DisplayName string `json:"display_name"`
 			Description string `json:"description"`
@@ -138,6 +140,7 @@ func parseUser(body []byte) (Channel, error) {
 	}
 	it := raw.Data[0]
 	ch := Channel{
+		ID:          it.ID,
 		Login:       strings.ToLower(it.Login),
 		DisplayName: it.DisplayName,
 		Description: it.Description,

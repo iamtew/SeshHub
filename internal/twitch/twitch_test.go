@@ -121,3 +121,28 @@ func TestPollWentLiveOnce(t *testing.T) {
 		t.Fatalf("re-live %+v %v", went, err)
 	}
 }
+
+func TestLastTitlesHelixThenDecapi(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/" || strings.Contains(r.URL.Path, "token") || r.Method == http.MethodPost:
+			_ = json.NewEncoder(w).Encode(map[string]any{"access_token": "t", "expires_in": 3600})
+		case strings.Contains(r.URL.Path, "users"):
+			io.WriteString(w, `{"data":[{"id":"1","login":"adalive"}]}`)
+		case strings.Contains(r.URL.Path, "channels"):
+			io.WriteString(w, `{"data":[{"broadcaster_id":"1","broadcaster_login":"adalive","title":"from helix"}]}`)
+		case strings.Contains(r.URL.Path, "/twitch/title/boblive"):
+			io.WriteString(w, "from decapi")
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	t.Cleanup(srv.Close)
+	c := New("id", "secret")
+	c.HTTP = srv.Client()
+	c.API, c.Auth, c.Decapi = srv.URL, srv.URL, srv.URL
+	got := LastTitles(context.Background(), c, []string{"adalive", "boblive"})
+	if got["adalive"] != "from helix" || got["boblive"] != "from decapi" {
+		t.Fatalf("%v", got)
+	}
+}

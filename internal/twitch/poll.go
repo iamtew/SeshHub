@@ -46,6 +46,13 @@ func Poll(ctx context.Context, db *sql.DB, c *Client) ([]Live, error) {
 	if err != nil {
 		return nil, err
 	}
+	var offline []string
+	for _, t := range list {
+		if _, on := live[t.Login]; !on {
+			offline = append(offline, t.Login)
+		}
+	}
+	last := LastTitles(ctx, c, offline)
 	var went []Live
 	for _, t := range list {
 		s, on := live[t.Login]
@@ -53,6 +60,11 @@ func Poll(ctx context.Context, db *sql.DB, c *Client) ([]Live, error) {
 		if !on {
 			if was {
 				if err := clearLive(db, t.ID); err != nil {
+					return went, err
+				}
+			}
+			if title := last[t.Login]; title != "" && title != t.Title {
+				if err := setTitle(db, t.ID, title); err != nil {
 					return went, err
 				}
 			}
