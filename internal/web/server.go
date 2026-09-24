@@ -76,6 +76,7 @@ func New(cfg config.Config, db *sql.DB, b *bot.Bot) *Server {
 	s.mux.HandleFunc("POST /admin/skaters/{id}/delete", s.adminSkaterDelete)
 	s.mux.HandleFunc("GET /dashboard/profile", s.dashboardProfile)
 	s.mux.HandleFunc("POST /dashboard/profile", s.dashboardProfile)
+	s.mux.HandleFunc("POST /dashboard/profile/twitch-audition", s.dashboardTwitchAudition)
 	s.mux.HandleFunc("POST /dashboard/profile/filter", s.profileFilter)
 	s.mux.HandleFunc("POST /dashboard/profile/clip", s.profileClip)
 	s.mux.HandleFunc("GET /dashboard/gallery", s.dashboardGallery)

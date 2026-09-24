@@ -5,7 +5,7 @@
         <div>
             <h1>{{.P.PublicName}}{{if .P.TwitchLive}} <span class="live">LIVE</span>{{end}}</h1>
             <p class="who">{{.P.Stance}} · {{.P.Status}}{{if .P.Location}} · {{.P.Location}}{{end}}</p>
-            {{if .P.TwitchLive}}<p class="who"><a href="{{.P.TwitchURL}}" target="_blank" rel="noopener noreferrer">{{.P.TwitchTitle}} · {{.P.TwitchUptime}}</a></p>{{end}}
+            {{if .P.TwitchLive}}<p class="who"><a href="{{.P.TwitchURL}}" target="_blank" rel="noopener noreferrer">{{or .P.TwitchTitle "Audition"}} · {{.P.TwitchUptime}}</a></p>{{end}}
             {{if .Links}}<p class="profile-links">{{range .Links}}<a class="hub-btn" href="{{.URL}}" target="_blank" rel="noopener noreferrer" aria-label="{{.Label}}"><i class="{{.Icon}}" aria-hidden="true"></i></a>{{end}}</p>{{end}}
         </div>
     </div>

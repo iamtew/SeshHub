@@ -119,7 +119,7 @@ Quota is cheap: `videos.list` is 1 unit per 50 IDs. We do not download comments,
 
 ### Twitch live (app token, not user OAuth)
 
-Roster users save a Twitch login on **Profile → Twitch**. No Twitch sign-in. Helix `Get Streams` with a client-credentials app token is enough for public live title and `started_at`. Empty `TWITCH_CLIENT_ID` / `TWITCH_CLIENT_SECRET` = poller off (the login still saves). About once a minute the server batches saved logins. LIVE + title + uptime show on `/team`, `/friends`, and the roster page. Offline → live can post to the Discord announce channel when that switch is on. The Twitch tab shows Helix display name, created date, and live/offline after save.
+Roster users save a Twitch login on **Profile → Twitch**. No Twitch sign-in. Helix `Get Streams` with a client-credentials app token is enough for public live title and `started_at`. Empty `TWITCH_CLIENT_ID` / `TWITCH_CLIENT_SECRET` = poller off (the login still saves). About once a minute the server batches saved logins. LIVE + title + uptime show on `/team`, `/friends`, and the roster page. Offline → live can post to the Discord announce channel when that switch is on. The Twitch tab shows Helix display name, created date, and live/offline after save. Superadmin can audition those LIVE badges for 15 minutes from Profile → Twitch (website only, no Discord).
 
 1. [Twitch developer console](https://dev.twitch.tv/console) → your application (or new).
 2. Copy Client ID and Client Secret → `TWITCH_CLIENT_ID` / `TWITCH_CLIENT_SECRET`.

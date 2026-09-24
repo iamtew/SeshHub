@@ -314,6 +314,14 @@ func (s *Server) dashboardProfile(w http.ResponseWriter, r *http.Request) {
 	s.renderSkaterProfile(w, r, u, p, nil, false)
 }
 
+func (s *Server) dashboardTwitchAudition(w http.ResponseWriter, r *http.Request) {
+	if s.requireSuperAdmin(w, r) == nil {
+		return
+	}
+	twitch.Toggle()
+	http.Redirect(w, r, "/dashboard/profile#twitch", http.StatusSeeOther)
+}
+
 func (s *Server) profileClip(w http.ResponseWriter, r *http.Request) {
 	u, p, ok := s.ownProfile(w, r)
 	if !ok {
@@ -449,7 +457,8 @@ func (s *Server) renderSkaterProfile(w http.ResponseWriter, r *http.Request, u *
 		"Title": "Profile", "Path": "/dashboard/profile", "P": p, "Action": "/dashboard/profile", "BioEdit": true,
 		"Videos": vids, "FilterRows": sspec.Rules, "KindOn": kindOn, "Test": test, "Tab": tab,
 		"DefaultName": defName, "DefaultSlug": skater.Slugify(defName), "SlugPrefix": skater.RosterPath(u.Role) + "/",
-		"Social": skater.Lines(p.SocialLinks),
+		"Social":         skater.Lines(p.SocialLinks),
+		"TwitchAudition": twitch.On(), "TwitchAuditionLeft": twitch.RemainingLabel(),
 	}
 	if p.TwitchLogin != "" {
 		fillTwitchInfo(r, s.cfg, p, data)
@@ -486,6 +495,20 @@ func fillTwitchInfo(r *http.Request, cfg config.Config, p skater.Profile, data m
 		data["TwitchTitle"] = p.TwitchTitle
 		data["TwitchUptime"] = p.TwitchUptime()
 	}
+	defer func() {
+		if !twitch.On() || p.TwitchLogin == "" {
+			return
+		}
+		data["TwitchLive"] = true
+		title, _ := data["TwitchTitle"].(string)
+		if title == "" {
+			data["TwitchTitle"] = "Audition"
+		}
+		up, _ := data["TwitchUptime"].(string)
+		if up == "" {
+			data["TwitchUptime"] = p.TwitchUptime()
+		}
+	}()
 	if !cfg.TwitchEnabled() {
 		data["TwitchNote"] = "Name is saved. Helix lookup is off until TWITCH_CLIENT_ID and TWITCH_CLIENT_SECRET are set."
 		return

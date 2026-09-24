@@ -127,7 +127,7 @@ func (p Profile) PublicName() string {
 }
 
 func (p Profile) TwitchLive() bool {
-	return p.TwitchLogin != "" && !p.TwitchStarted.IsZero()
+	return p.TwitchLogin != "" && (!p.TwitchStarted.IsZero() || twitch.On())
 }
 
 func (p Profile) TwitchURL() string {
@@ -135,6 +135,9 @@ func (p Profile) TwitchURL() string {
 }
 
 func (p Profile) TwitchUptime() string {
+	if p.TwitchStarted.IsZero() && twitch.On() {
+		return twitch.Uptime(twitch.Started())
+	}
 	return twitch.Uptime(p.TwitchStarted)
 }
 

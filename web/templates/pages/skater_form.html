@@ -146,6 +146,12 @@
         <button type="submit"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save</button>
     </div>
 </form>
+{{if .SuperAdmin}}
+<form method="post" action="/dashboard/profile/twitch-audition" class="form" data-panel="twitch">
+    <p class="who">Paints every saved Twitch login LIVE on /team, /friends, and roster pages. No Discord. Auto-off in 15 minutes{{if .TwitchAudition}} ({{.TwitchAuditionLeft}} left){{end}}. Process restart clears it.</p>
+    <p><button type="submit">{{if .TwitchAudition}}Stop LIVE audition{{else}}Audition website LIVE{{end}}</button></p>
+</form>
+{{end}}
 <script src="/static/js/iro.min.js"></script>
 <script>
 (function () {
