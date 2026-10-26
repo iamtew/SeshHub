@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"regexp"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 )
@@ -92,6 +94,76 @@ func Fill(md string, vals map[string]string) string {
 	return slot.ReplaceAllStringFunc(md, func(m string) string {
 		return vals[m[2:len(m)-2]]
 	})
+}
+
+const imagesHole = "{{spot_images}}"
+
+// SplitImages cuts markdown at the first {{spot_images}} so the live page can
+// drop the roster slideshow in that hole. Later copies stay for Fill (empty).
+func SplitImages(md string) (before, after string, found bool) {
+	i := strings.Index(md, imagesHole)
+	if i < 0 {
+		return md, "", false
+	}
+	return md[:i], md[i+len(imagesHole):], true
+}
+
+// absImage turns a Subotto image path into an absolute URL on the instance
+// EpisodeURL points at. Absolute http(s) URLs pass through.
+func absImage(s string) string {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return ""
+	}
+	ref, err := url.Parse(s)
+	if err != nil {
+		return ""
+	}
+	if ref.IsAbs() {
+		if ref.Scheme == "http" || ref.Scheme == "https" {
+			return ref.String()
+		}
+		return ""
+	}
+	base, err := url.Parse(EpisodeURL)
+	if err != nil || base.Host == "" {
+		return ""
+	}
+	base.Path, base.RawQuery, base.Fragment = "/", "", ""
+	return base.ResolveReference(ref).String()
+}
+
+func imageURL(v any) string {
+	switch t := v.(type) {
+	case string:
+		return absImage(t)
+	case map[string]any:
+		s, _ := t["url"].(string)
+		return absImage(s)
+	default:
+		return ""
+	}
+}
+
+// Images reads spot_images from Subotto JSON: URL strings or {url} objects.
+func Images(raw []byte) []string {
+	var wrap struct {
+		Images any `json:"spot_images"`
+	}
+	if err := json.Unmarshal(raw, &wrap); err != nil {
+		return nil
+	}
+	arr, ok := wrap.Images.([]any)
+	if !ok {
+		return nil
+	}
+	var out []string
+	for _, v := range arr {
+		if u := imageURL(v); u != "" {
+			out = append(out, u)
+		}
+	}
+	return out
 }
 
 func Items(vals map[string]string) []Item {

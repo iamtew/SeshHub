@@ -16,7 +16,8 @@
     <ul class="md-chips">
         {{range .Items}}<li><button type="button" class="md-insert" data-insert="{{.Placeholder}}" title="{{.Val}}"><code>{{.Placeholder}}</code> <span>{{.Val}}</span></button></li>{{end}}
     </ul>
-    {{else}}
+    {{end}}
+    {{if not .Live}}
     <p class="who">Subotto did not answer. Markdown still saves; placeholders stay empty on the public page until it does.</p>
     {{end}}
     </div>

@@ -2,7 +2,7 @@
 
 **Website:** https://hub.seshsofa.nl
 
-**Last updated:** 24 September 2026
+**Last updated:** 26 October 2026
 
 ## 1. Who we are
 
@@ -218,6 +218,7 @@ Any time your browser loads something from another company's server, that compan
 - **YouTube video players** from `youtube-nocookie.com`, on skater profile pages that have clips. We deliberately use YouTube's privacy-enhanced domain, which does not set tracking cookies until you press play.
 - **Discord avatar images** from `cdn.discordapp.com`, wherever a Discord (or YouTube) avatar is displayed and you have not uploaded a site photo. These are loaded with `referrerpolicy="no-referrer"`, so Discord is not told which page you were on. Site photos are served from this Service at `/media/avatars/…`. Gallery photos are served from this Service at `/media/gallery/…`. Forum attachments are served from this Service at `/media/forum/…` and only after you sign in.
 - **Twemoji images** from `cdn.jsdelivr.net` (the `jdecked/twemoji` files), on Forum pages, so emoji look the same on every device. They are loaded with `referrerpolicy="no-referrer"`. The parser script is served from this Service.
+- **Spot images** from `subotto.seshsofa.nl`, on the homepage slideshow (and any markdown that uses a Subotto image URL). These files live on the Subotto instance; the browser loads them directly.
 
 Our server also talks to these services directly. In those cases your IP address is not sent; ours is.
 

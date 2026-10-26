@@ -1,4 +1,7 @@
 {{define "content"}}
+{{if .HTMLBefore}}<article class="prose">{{.HTMLBefore}}</article>{{end}}
+{{template "slideshow.html" .}}
+{{if .HTMLAfter}}<article class="prose">{{.HTMLAfter}}</article>{{end}}
 {{if .HTML}}<article class="prose">{{.HTML}}</article>{{end}}
 {{if and .User (eq .User.Role "pending")}}
 <p><a href="/access">Request access</a> if you are waiting for Friends.</p>

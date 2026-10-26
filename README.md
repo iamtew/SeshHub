@@ -322,8 +322,8 @@ Two header modes. Same public nav (Spot / Episodes / FS Team / Friends / News / 
 
 ### Special page: Spot
 - **De-facto homepage (`/`)**: Nav label is **Spot**. Not a custom-page slug (reserved). No `/spot` route.
-- **Subotto JSON**: Fetches `https://{SUBOTTO_INSTANCE}/api/get/episode/sesh-sofa` (cached ~60s). Flattened keys (`episode_short`, `listeners.0.name`, …) fill `{{placeholders}}` in the markdown at request time. Missing keys / Subotto down → empty string.
-- **Edit (`/admin/spot`)**: Hosts role only. Live JSON fields and date tags are clickable inserts (basic textarea or Advanced Monaco). One markdown box is the page. Date tags `[date_count:…]` `[date_local:…]` `[date_24h:…]` `[date_12h:…]` wrap an RFC3339 time (usually `{{air_datetime}}`); countdown ticks in the browser.
+- **Subotto JSON**: Fetches `https://{SUBOTTO_INSTANCE}/api/get/episode/sesh-sofa` (cached ~60s). Flattened keys (`episode_short`, `listeners.0.name`, …) fill `{{placeholders}}` in the markdown at request time. Missing keys / Subotto down → empty string. `{{spot_image}}` is the first image URL. `{{spot_images}}` is a placement hole: the page drops the roster slideshow there from the Subotto image list (not a Fill string). Relative image paths are resolved to `https://{SUBOTTO_INSTANCE}/…`.
+- **Edit (`/admin/spot`)**: Hosts role only. Live JSON fields and date tags are clickable inserts (basic textarea or Advanced Monaco). One markdown box is the page. Date tags `[date_count:…]` `[date_local:…]` `[date_24h:…]` `[date_12h:…]` wrap an RFC3339 time (usually `{{air_datetime}}`); countdown ticks in the browser. The `{{spot_images}}` chip inserts the slideshow hole.
 
 ### Special page: Episodes
 - **Archive (`/episodes`)**: Auto table (Episode / Submissions / Winner / Spot) with `#epN` anchors, then one heading plus configurable link rows per show (full VOD, playlists, winner, trick of the show). Winner and trick stay hidden until set. YouTube thumbs use the Videos-page `<img class="thumb">` pattern plus the heartbeat hover from the old show-site CSS. Reserved slug (not a custom page).

@@ -52,3 +52,38 @@ func TestFlattenFill(t *testing.T) {
 		t.Fatalf("%+v", sh)
 	}
 }
+
+func TestImagesSplit(t *testing.T) {
+	old := EpisodeURL
+	EpisodeURL = "https://subotto.seshsofa.nl/api/get/episode/sesh-sofa"
+	t.Cleanup(func() { EpisodeURL = old })
+	urls := Images([]byte(`{"spot_images":["https://a.example/1.jpg","/media/2.jpg","spots/3.jpg","ftp://no","",{"url":"https://c.example/4.jpg"},{"url":"/media/5.jpg"}]}`))
+	want := []string{
+		"https://a.example/1.jpg",
+		"https://subotto.seshsofa.nl/media/2.jpg",
+		"https://subotto.seshsofa.nl/spots/3.jpg",
+		"https://c.example/4.jpg",
+		"https://subotto.seshsofa.nl/media/5.jpg",
+	}
+	if len(urls) != len(want) {
+		t.Fatal(urls)
+	}
+	for i := range want {
+		if urls[i] != want[i] {
+			t.Fatal(urls)
+		}
+	}
+	if n := len(Images([]byte(`{"spot_images":[]}`))); n != 0 {
+		t.Fatal(n)
+	}
+	if Images(nil) != nil {
+		t.Fatal("bad json")
+	}
+	b, a, ok := SplitImages("hello {{spot_images}} world {{spot_images}}")
+	if !ok || b != "hello " || a != " world {{spot_images}}" {
+		t.Fatalf("%q %q %v", b, a, ok)
+	}
+	if _, _, ok := SplitImages("no hole"); ok {
+		t.Fatal("wanted no hole")
+	}
+}
